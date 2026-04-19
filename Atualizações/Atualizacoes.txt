@@ -12,3 +12,7 @@
      * O Usuario precisa ter um token aleatório (uma tabela só para tokens, que se deletam após X tempo)
     para comunicação com o sistema, para impedir que outros usuarios façam alteração em nome de outra
     pessoa.
+
+
+[|UPDT|0002|20260419|-|Ajustes no DER|pendente|]:
+     * O usuario deve ter uma permissao de "querer receber proposta de posse de rastreador"

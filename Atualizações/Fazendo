@@ -1,0 +1,11 @@
+Resolvendo o impasse da posse de um rastreador e seus ouvintes:
+    * um rastreador sempre tera pelo menos um ouvinte (o proprio dono), mas como prevenção, considerar a exceção
+    * usar sempre o Usuario_Rastreador, pra evitar conflito numa troca de posse
+    * o dono primeiro registra um rastreador, e depois se auto-elege como ouvinte do mesmo
+
+    
+    
+    * usar coalesce no view vw_vinculo_rastreadores pra tentar colocar o id do dono no lugar do usuario, quando for null
+    * otimizando: Mostra todas as localizacoes de cada ouvinte e se a localizacao esta oculta para ele
+
+    
