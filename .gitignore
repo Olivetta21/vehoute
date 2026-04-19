@@ -3,6 +3,7 @@ node_modules
 /dist
 
 _*
+.theia
 
 # local env files
 .env.local
