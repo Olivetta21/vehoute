@@ -1,0 +1,43 @@
+REQUISITOS NÂO FUNCIONAIS
+
+1. Segurança
+RNF-01| Todas as comunicações entre rastreadores, sistema-ponte, clientes e web devem ser criptografadas.
+RNF-02| Senhas de clientes e rastreadores devem ser armazenadas de forma criptografada.
+RNF-03| O sistema deve utilizar autenticação por token seguro para comunicação entre cliente/servidor.
+RNF-04| O sistema deve implementar mecanismo de prevenção a replay attack e sniffing.
+RNF-05| O sistema deve bloquear ou encerrar conexões suspeitas de sniffing ou inconsistência de mensagens.
+RNF-06| O sistema deve registrar logs de segurança (tentativas de login inválidas, acessos suspeitos, falhas de autenticação).
+
+2. Disponibilidade & Confiabilidade
+RNF-07| O sistema-ponte deve estar disponível 24/7, tolerando falhas temporárias de conexão.
+RNF-08| Rastreadores devem poder armazenar localizações offline em fila FIFO, e reenvia-las em lote quando reconectar.
+RNF-09| O sistema deve garantir que localizações não sejam perdidas em caso de falha temporária de rede.
+RNF-10| O sistema deve suportar recuperação automática em caso de falhas de conexão entre rastreador e ponte.
+
+3. Escalabilidade & Performance
+RNF-11| O sistema deve ser capaz de processar múltiplos rastreadores conectados simultaneamente.
+RNF-12| A latência máxima entre envio da localização e exibição no cliente não deve ultrapassar 10 segundos.
+RNF-13| O sistema deve suportar o balanceamento de carga.
+RNF-14| O sistema deve otimizar o envio de localizações em lote para reduzir tráfego em reconexões.
+
+4. Usabilidade
+RNF-15| A interface web deve ser responsiva e acessível em dispositivos móveis.
+RNF-16| O sistema deve oferecer mensagens claras de erro e notificação para o usuário.
+RNF-17| O sistema deve permitir recuperação de senha/login de forma simples (email).
+
+5. Privacidade & Conformidade
+RNF-18| O sistema deve garantir que somente usuários autorizados possam visualizar dados de rastreio.
+RNF-19| O sistema deve permitir que o cliente oculte intervalos de rastreamento e esses dados não devem ser exibidos em consultas.
+RNF-20| O sistema deve permitir a exclusão definitiva de dados de localização mediante solicitação do cliente.
+
+6. Monitoramento & Auditoria
+RNF-21| O sistema deve manter logs de conexões, desconexões, modificações e ações sem permissão.
+RNF-22| Os logs devem conter informações como data/hora, usuário/rastreador envolvido e IP de origem.
+RNF-23| O tempo de retenção de logs deve ser configurável.
+RNF-24| Administradores devem ter acesso a relatórios de status do sistema, incluindo rastreadores ativos/inativos.
+
+7. Manutenibilidade & Extensibilidade
+RNF-25| O sistema deve ser desenvolvido de forma modular, permitindo a substituição de componentes (ex.: protocolo de comunicação).
+RNF-26| O código deve ser documentado e seguir boas práticas de desenvolvimento.
+RNF-27| A arquitetura deve permitir integração futura com serviços de terceiros.
+

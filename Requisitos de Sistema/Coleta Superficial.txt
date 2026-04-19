@@ -1,0 +1,120 @@
+REQUISITOS DO SISTEMA DE RASTREAMENTO
+Desenvolvimento em:
+    - Web (acesso principal dos usuarios, clientes e administradores)
+    - Desktop (servidor ponte, fará a comunicação entre o Web e Embarcados)
+    - Embarcado (Microcontrolador, capta a localização e envia ao servidor para ser processado)
+
+1 Cadastros
+    1 Cliente:
+        1 Nome
+        2 Login
+        3 Senha
+        4 CPF/CNPJ
+        5 Telefone
+        6 Email
+        7 Status
+    2 Rastreador:
+        1 Dono
+        2 Token (visivel apenas em nível das máquinas)
+        3 pubToken (o usuario usa esse para identificar)
+        4 Senha
+        5 Observacao
+        6 Status
+        7 Ativo
+        8 Hardware
+
+2 Permissoes
+    1 Cliente:
+        1 Login
+        2 Ver o mapa, carregar a API...
+        3 Registrar Rastreador
+        4 Modificar Rastreador
+        5 Alterar Informações do Perfil
+        6 Transferir a posse do rastreador
+        7 Adicionar/Remover/Aceitar/Revogar/Pausar/Retomar um usuario à seu rastreador
+        8 Receber localização salvas do rastrador
+        9 Receber atualizações em tempo real do rastreio
+        10 Querer receber propostas de rastreamento
+        11 Receber propostas de inclusão em um rastreador
+        12 Pode ocultar intervalos de rastreio
+        13 Pode ativar/Desativar um rastreador
+    2 Rastreador:
+        1 Se conectar ao servidor
+        2 Enviar localizações pro servidor
+        3 Pode ser registrado
+        4 Pode ser rastreado em tempo real
+        5 Pode ser rastreado com localização salva
+        6 Pode receber pedidos de rastreamento de outros usuarios
+    3 Rastreador-para-cliente (multi-ligação):
+        1 Enviar localizações salvas (exceto o que tiver dentro do intervalo oculto)
+        2 Enviar localizações em tempo real
+
+3 Ações
+    1 Cliente:
+        1 Fazer login
+        2 Registrar um Rastreador sem dono
+        3 Acessar o mapa
+        4 Receber localizações do Rastreador
+        5 Registrar um Rastreador de outro usuario
+        6 Autorizar outros usuarios à rastrear
+        7 Revogar outro usuario rastrando seu Rastreador
+        8 Modificar um Rastreador
+        9 Transferir propriedade do Rastreador próprio
+        10 Excluir um rastreador
+        11 Adicionar intervalos para ocultar um rastreio
+        12 Recuperar login
+        13 Desativar/Ativar um rastrador
+    2 Rastreador:
+        1 Se conecta ao sistema
+        2 Envia sua localização
+    3 Administrador (além de cliente):
+        1 Criar usuarios
+        2 Criar rastreadores
+        3 Desativar usuarios
+        4 Desativar rastreadores
+
+4 Sistema-Ponte (Funcionalidade)
+    1 Rastreadores se conectam
+        1 Verifica na tabela de Rastreadores se existe esse token, e se ele tem permissão para se conectar.
+    2 Rastreador envia localização
+        1 Verifica se ele tem permissão para enviar localização antes de processar.
+    3 Adiciona a localização ao banco
+        1 Envia a localização em tempo real aos clientes aptos (e conectados).
+    4 Clientes se conectam
+        1 Verifica o login do cliente e se ele tem permissão de fazer o login
+    5 Cliente avisa que quer receber as localizações em tempo real
+        1 Verifica se ele tem permissao para receber localização em tempo real
+    6 Rastreador sem conexão
+        1 O rastreador acumula uma fila de localizações caso ele não conseguir se conectar, e envia todas de uma vez ao
+        conseguir, ordem fifo caso a fila encher.
+
+5 Funcionalidades (Gerais)
+    1 Cliente adicionar um rastreador.
+        1 O sistema procura por um rastreador com o código digitado e se ele ainda não tem dono, procedimento padrão. Se houver
+        dono, o rastreio fica ocioso e uma notificação chega ao real dono, para que ele aprove a adição.
+        2 No caso de o rastreador não poder ser rastreado, o sistema apenas diz que não existe, por segurança.
+    2 Cliente ver o rastreio de um rastreador.
+        1 (O rastreador já está cadastrado, aprovado, e ativado) O sistema manda as ultimas localizações do rastreador
+        selecionado. O cliente se conecta à ponte e avisa que quer receber em tempo real as localizações.
+        2 Se não houver permissoes o suficiente para receber as localizações em tempo real, o sistema apenas carrega as já salvas.
+    3 Cliente adiciona um novo usuario à seu rastreador.
+        1 Se o usuario à ser adicionado puder receber novas propostas, e o rastreador puder ser rastreado por terceiros, um novo
+        pedido é enviado. Do contrário, o sistema fala que o usuario não existe, ou que o seu rastreador não pode enviar à terceiros
+    4 Logs.
+        1 Se cliente tentar fazer algo que não tem permissão.
+        2 Modificações (qualquer).
+        3 Conexões/Desconexões (qualquer).
+    5 Evitar sniffing de localização e re-envio dos mesmos.
+        1 O rastreador pede ao servidor um id (numerico), gerado aleatoriamente, o servidor responde. O rastreador, agora passará a enviar
+        as localizações sempre adicionando 1 ao valor do ID (retorna a 0 se estourar), o servidor sempre esperará pelo "ID+1" (ou 0 se ele
+        for estourar), e elimina a conexão em caso de divergência.
+    6 Notificação para usuarios (U) ou administradores (A).
+        1 Enviar email para coisas críticas.
+            1 U. Proposta de inclusão em algum rastrador
+            2 U. Aceito/Declinio de um pedido de rastrear
+            3 U. Transferência de propriedade
+            4 U. Modificações no rastreador proprio
+            5 A. Detecção de sniffing
+        2 Toast Messages.
+            1 U. Proposta de inclusão em algum rastrador
+            2 U. Aceito/Declinio de um pedido de rastrear

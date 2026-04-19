@@ -1,0 +1,80 @@
+REQUISITOS FUNCIONAIS
+
+1. Cadastro
+RF-01| O sistema deve permitir o cadastro de clientes com os seguintes dados: nome, login, senha, CPF/CNPJ, telefone, email.
+RF-02| O sistema deve permitir o cadastro de rastreadores com os seguintes dados: dono, token, pubToken, senha, observação e hardware.
+
+2. Permissões
+RF-03| O cliente pode ou não realizar login.
+RF-04| O cliente pode ou não acessar o mapa e carregar a API de visualização.
+RF-05| O cliente pode ou não cadastrar rastreadores.
+RF-06| O cliente pode ou não modificar rastreadores.
+RF-07| O cliente pode ou não alterar informações do seu perfil.
+RF-08| O cliente pode ou não transferir a posse de um rastreador.
+RF-09| O cliente pode ou não gerenciar usuários vinculados a um rastreador (adicionar, remover, aceitar, revogar, pausar, retomar).
+RF-10| O cliente pode ou não receber as localizações salvas do rastreador.
+RF-11| O cliente pode ou não receber atualizações em tempo real do rastreio.
+RF-12| O cliente pode ou não receber propostas de inclusão em um rastreador.
+RF-13| O cliente pode ou não ocultar intervalos de rastreio.
+RF-14| O cliente pode ou não desativar/ativar o seu rastreador.
+RF-15| O rastreador pode ou não se conectar ao servidor.
+RF-16| O rastreador pode ou não enviar localizações ao servidor.
+RF-17| O rastreador pode ou não ser rastreado.
+RF-18| O rastreador pode ou não receber pedidos de rastreamento de outros usuários.
+RF-19| O sistema pode ou não permitir a ligação de múltiplos clientes a um mesmo rastreador, enviando localizações salvas (exceto intervalos ocultos).
+RF-20| O sistema pode ou não permitir o envio de localizações em tempo real para clientes autorizados.
+
+3. Ações do Cliente
+RF-21| O cliente deve poder fazer login.
+RF-22| O cliente deve poder registrar um rastreador sem dono.
+RF-23| O cliente deve poder acessar o mapa para visualizar rastreadores.
+RF-24| O cliente deve poder receber localizações de rastreadores autorizados.
+RF-25| O cliente deve poder registrar um rastreador de outro usuário, mediante autorização.
+RF-26| O cliente deve poder autorizar outros usuários a rastrear seu rastreador.
+RF-27| O cliente deve poder revogar a autorização de outros usuários.
+RF-28| O cliente deve poder modificar informações de um rastreador.
+RF-29| O cliente deve poder transferir a propriedade de um rastreador.
+RF-30| O cliente deve poder excluir um rastreador.
+RF-31| O cliente deve poder definir intervalos para ocultar rastreios.
+RF-32| O cliente deve poder recuperar o login/esquecer senha.
+RF-33| O cliente deve poder ativar ou desativar um rastreador.
+
+4. Ações do Rastreador
+RF-34| O rastreador deve poder se conectar ao sistema.
+RF-35| O rastreador deve poder enviar sua localização.
+
+5. Ações do Administrador
+RF-36| O administrador deve poder criar usuarios
+RF-37| O administrador deve poder desativar usuarios
+RF-38| O administrador deve poder criar rastreadores
+RF-39| O administrador deve poder desativar rastradores
+
+5. Sistema-Ponte
+RF-40| O sistema deve validar o token de cada rastreador que tentar se conectar.
+RF-41| O sistema deve verificar permissões antes de aceitar o envio de localização de um rastreador.
+RF-42| O sistema deve armazenar localizações recebidas no banco de dados.
+RF-43| O sistema deve enviar localizações em tempo real para clientes autorizados e conectados.
+RF-44| O sistema deve validar login e permissões de clientes ao se conectar.
+RF-45| O sistema deve verificar se o cliente possui permissão para receber localizações em tempo real.
+
+6. Rastreador
+RF-46| O rastreador deve acumular localizações em fila FIFO quando não houver conexão e reenviar ao reconectar.
+
+7. Funcionalidades Gerais
+RF-47| O sistema deve permitir que o cliente adicione um rastreador com código.
+    | Se o rastreador não tiver dono: cliente se torna dono.
+    | Se já tiver dono: o sistema envia notificação ao dono para aprovação.
+    | Se o rastreador não puder ser rastreado: o sistema informa que não existe.
+RF-48| O sistema deve permitir que o cliente visualize rastreamentos: 
+    | Enviar últimas localizações cadastradas.
+    | Permitir recebimento em tempo real, se autorizado.
+    | Se não autorizado, mostrar apenas dados salvos.
+RF-49| O sistema deve permitir que o cliente convide outro usuário a rastrear seu rastreador, enviando proposta para aprovação.
+RF-50| O sistema deve registrar logs de: 
+    | Tentativas de ações sem permissão.
+    | Modificações em dados.
+    | Conexões e desconexões.
+RF-51| O sistema deve adotar mecanismo anti-replay (ID incremental no envio de localizações).
+RF-52| O sistema deve notificar usuários e administradores sobre eventos críticos via: 
+    | Email (propostas, aceites, transferências, alterações, sniffing).
+    | Toast messages (propostas e aceites/declínios).
