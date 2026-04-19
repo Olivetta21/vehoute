@@ -1,0 +1,14 @@
+[|Ação|Versao|DataInicio|DataConclusao|Descrição|Status|]
+[|UPDT|0001|20251020|20251022|Ajustes no DER|concluido|]:
+     * No diagrama de entidade e relacionamento, o Rastreador está sem o PK do Usuario. Isso é necessário,
+    pois na hora que o dono for fazer a transferência, a ligação Usuario_Rastreador ficará com o status
+    de "em transferência", e assim que o Ouvinte aceitar, o status ira voltar e o PK do Rastreador será alterado
+    para o novo dono, deixando ou não os atuais Ouvinte (e/ou antigo dono).
+     * Alterar nova tabela de instancia:
+        Usuario_Rastreador:
+            5+ O atual dono está tentando passar a propriedade deste rastreador para este ouvinte, se o
+                ouvinte aceitar, o status volta para o normal, e o registro do Rastreador é alterado para
+                o novo dono (este).
+     * O Usuario precisa ter um token aleatório (uma tabela só para tokens, que se deletam após X tempo)
+    para comunicação com o sistema, para impedir que outros usuarios façam alteração em nome de outra
+    pessoa.
