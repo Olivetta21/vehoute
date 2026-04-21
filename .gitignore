@@ -2,8 +2,14 @@
 node_modules
 /dist
 
+# User
 _*
+
+# Arduino
 .theia
+
+# PHP
+vendor/
 
 # local env files
 .env.*
