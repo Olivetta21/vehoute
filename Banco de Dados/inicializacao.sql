@@ -16,6 +16,14 @@ create table legal_ident (
     identidade varchar(100) not null
 );
 
+create table usuario_cadastrando (
+    id serial primary key,
+    nome varchar(100) not null,
+    email varchar(100),
+    otp varchar(256),
+    expires_at timestamp with time zone not null
+);
+
 create table usuario (
     id serial primary key,
     nome varchar(100) not null,
@@ -24,20 +32,15 @@ create table usuario (
     legal_ident_id integer not null references legal_ident(id),
     ativo boolean not null default true,
     email varchar(100),
-    telefone varchar(15),
-    token varchar(16)
+    telefone varchar(15)
 );
 
-create view vw_usuario as
-    select * from usuario
-    where ativo = true;
-
-create view vw_usuario_completo as
-    select
-        u.id, u.nome, u.login, u.email, u.telefone,
-        li.tipo_id, li.identidade
-    from vw_usuario as u
-    join legal_ident as li on li.id = u.legal_ident_id;
+create table usuario_access_token(
+    token varchar(256) not null primary key,
+    usuario_id integer not null references usuario(id),
+    created_at timestamp with time zone default now(),
+    expires_at timestamp with time zone not null
+);
 
 create table administrador (
     id integer primary key references usuario(id)
@@ -50,45 +53,21 @@ create table rastreador (
     token_publico varchar(100) not null,
     senha varchar(100), --sem criptografia por enquanto
     obs varchar(200),
-    status integer not null,
+    status integer not null,--
     ativo boolean not null default true,
     dono_id integer not null references usuario(id)
 );
-
-create view vw_rastreador as
-    select *
-    from rastreador
-    where ativo = true;
 
 create table usuario_rastreador (
     id serial primary key,
     usuario_id integer not null references usuario(id),
     rastreador_id integer not null references rastreador(id),
     nome varchar(100) not null,
-    status integer not null,
+    status integer not null,--
     ativo boolean not null default true,
     loc_temporeal boolean not null default true,
     loc_salvos boolean not null default true
 );
-
-create view vw_usuario_rastreador as
-    select *
-    from usuario_rastreador
-    where ativo = true;
-
--- Mostra todos os rastreadores e seus ouvintes
-create view vw_vinculo_rastreadores as
-    select 
-        ur.id as ur_id, ur.nome as ur_nome, ur.status as ur_status, ur.loc_temporeal, ur.loc_salvos,
-        r.id as r_id, r.hardware, r.token_publico, r.status as r_status,
-		d.id as d_id, d.nome as d_nome,
-        coalesce (u.id, d.id) as u_id, u.nome as u_nome, u.email, u.telefone
-        from vw_rastreador r
-        join vw_usuario d on r.dono_id = d.id
-        left join vw_usuario_rastreador ur on r.id = ur.rastreador_id
-        left join vw_usuario u on ur.usuario_id = u.id;
-
-select * from vw_vinculo_rastreadores where u_id = 1;
 
 create table localizacao (
     id serial primary key,
@@ -116,42 +95,6 @@ create table vinc_loc_oculta_usuario_rastreador (
     primary key (usuario_rastreador_id, intervalo_loc_oculta_id)
 );
 
--- Mostra quais ouvintes cada intervalo de localizacao oculta tem 
-create view vw_vinc_intervalo_loc_oculta_ouvintes as
-    select
-    vlour.intervalo_loc_oculta_id, ur.usuario_id, ur.rastreador_id
-    from vinc_loc_oculta_usuario_rastreador vlour
-    join vw_usuario_rastreador ur on vlour.usuario_rastreador_id = ur.id;
-
--- Mostra o filtro de localizacao oculta de cada ouvinte para qual rastreador
-create view vw_intervalo_loc_oculta_ouvintes as
-    select
-    viloo.intervalo_loc_oculta_id, viloo.rastreador_id, viloo.usuario_id,
-	ilo.id_inicial, ilo.id_final, ilo.data_inicial, ilo.data_final
-    from vw_vinc_intervalo_loc_oculta_ouvintes viloo
-    join intervalo_loc_oculta ilo on viloo.intervalo_loc_oculta_id = ilo.id;
-
-select * from vw_intervalo_loc_oculta_ouvintes;
-
--- Temporario, usar function posteriormente.
--- Mostra todas as localizacoes de cada ouvinte e se a localizacao esta oculta para ele
-create view vw_vinc_localizacao_ouvintes as
-    select l.*, ur.usuario_id,
-    case when exists (
-        select 1 from vw_intervalo_loc_oculta_ouvintes iloo --filtro
-        where iloo.rastreador_id = l.rastreador_id
-        and iloo.usuario_id = ur.usuario_id
-        and (
-            (l.data >= iloo.data_inicial and l.data <= iloo.data_final) or
-            (l.id >= iloo.id_inicial and l.id <= iloo.id_final)
-        )
-        limit 1
-    ) then true else false end as oculto	
-    from localizacao l
-    join vw_usuario_rastreador ur on l.rastreador_id = ur.rastreador_id;
-
-
-
 -- Permissões de usuario
 create table permissao_usuario (
     id serial primary key,
@@ -173,29 +116,6 @@ create table vinc_perm_usuario (
     perm_id integer not null references permissao_usuario(id),
     negado boolean not null default false
 );
--- Ver permissoes do grupo
-create view vw_permissoes_grupo_usuario as
-    select gu.id as grupo_id, vpu.perm_id, vpu.negado
-    from grupo_usuario gu
-    join vinc_perm_usuario vpu on vpu.grupo_id = gu.id;
--- Ver permissoes do usuario
-create view vw_permissoes_usuario as
-	select usuario_id, perm_id, CASE WHEN COUNT(*) > 1 THEN TRUE ELSE FALSE END AS negado
-	from (
-		select usuario_id, perm_id, negado from (
-		    select vpu.usuario_id, vpu.perm_id, vpu.negado
-		    from vinc_perm_usuario vpu
-			where usuario_id is not null
-		    union all
-		    select vgu.usuario_id, vpu.perm_id, vpu.negado
-			from vinc_grupo_usuario vgu
-			join vinc_perm_usuario vpu on vpu.grupo_id = vgu.grupo_id
-		) group by usuario_id, perm_id, negado
-	)
-	group by usuario_id, perm_id;
-
-
-
 
 -- Permisões de rastreador
 create table permissao_rastreador (
@@ -218,27 +138,177 @@ create table vinc_perm_rastreador (
     perm_id integer not null references permissao_rastreador(id),
     negado boolean not null default false
 );
--- Permissoes do grupo rastreador
-create view vw_permissoes_grupo_rastreador as
-    select gr.id as grupo_id, vpr.perm_id, vpr.negado
-    from grupo_rastreador gr
-    join vinc_perm_rastreador vpr on vpr.grupo_id = gr.id;
--- Permissoes do rastreador
-create view vw_permissoes_rastreador as
+
+create table logs (
+    id serial primary key,
+    tipo varchar(50) not null,
+    descricao text not null
+)
+
+create table auditoria (
+    id serial primary key,
+    usuario_id integer not null references usuario(id),
+    tabela varchar(100) not null,
+    acao varchar(100) not null,
+    antes text,
+    depois text,
+    data timestamp with time zone default now()
+);
+
+
+--Pegar todos os rastreadores de um usuario, ignorar os inativos
+create function getRastreadoresDoUsuario(
+    var_usuarios_ids integer[]
+) returns table (
+    ur_id integer, ur_usuario_id integer, ur_nome varchar, ur_status integer, ur_loc_temporeal boolean, ur_loc_salvos boolean,
+    r_id integer, r_hardware varchar, r_token_publico varchar, r_status integer, r_dono_id integer
+) as $$
+    select ur.id as ur_id, ur.usuario_id as ur_usuario_id, ur.nome as ur_nome, ur.status as ur_status, ur.loc_temporeal as ur_loc_temporeal, ur.loc_salvos as ur_loc_salvos,
+    r.id as r_id, r.hardware as r_hardware, r.token_publico as r_token_publico, r.status as r_status, r.dono_id as r_dono_id
+    from rastreador r
+    join usuario_rastreador ur on ur.rastreador_id = r.id
+    where ur.usuario_id = any(var_usuarios_ids) and ur.ativo = true and r.ativo = true;
+$$ language sql;
+
+--Pegar todos os ouvintes de um rastreador, ignorar os inativos
+create function getOuvintesDoRastreador(
+    var_rastreadores_ids integer[]
+) returns table (
+    ur_id integer, ur_loc_temporeal boolean, ur_loc_salvos boolean,
+    u_id integer, u_nome varchar, u_email varchar, u_telefone varchar
+) as $$
+    select ur.id as ur_id, ur.loc_temporeal as ur_loc_temporeal, ur.loc_salvos as ur_loc_salvos,
+    u.id as u_id, u.nome as u_nome, u.email as u_email, u.telefone as u_telefone
+    from usuario_rastreador ur
+    join usuario u on u.id = ur.usuario_id
+    where ur.rastreador_id = any(var_rastreadores_ids) and u.ativo = true;
+$$ language sql;
+
+--Pegar todas localizações ocultas de um rastreador
+create function getLocOcultaDoRastreador(
+    var_rastreadores_ids integer[]
+) returns table (
+    id integer, 
+    id_inicial integer, id_final integer, data_inicial timestamp, data_final timestamp,
+    rastreador_id integer, identificacao varchar, novos_ouvintes boolean
+) as $$
+    select id, id_inicial, id_final, data_inicial, data_final, rastreador_id, identificacao, novos_ouvintes
+    from intervalo_loc_oculta
+    where rastreador_id = any(var_rastreadores_ids);
+$$ language sql;
+
+--Pegar todos os usuarios de uma localizacao oculta
+create function getUsuariosDaLocOculta(
+    var_intervalo_loc_oculta_ids integer[]
+) returns table (
+    ilo_id integer, u_id integer, u_nome varchar
+) as $$
+    select vlour.intervalo_loc_oculta_id as ilo_id, u.id as u_id, u.nome as u_nome
+    from vinc_loc_oculta_usuario_rastreador vlour
+    join usuario_rastreador ur on ur.id = vlour.usuario_rastreador_id
+    join usuario u on u.id = ur.usuario_id
+    where vlour.intervalo_loc_oculta_id = any(var_intervalo_loc_oculta_ids) and ur.ativo = true and u.ativo = true;
+$$ language sql;
+
+
+--Pegar localizações do rastreador para um ouvinte, marcar as localizações ocultas para ele
+create function getLocDoRastreadorParaOuvinte(
+    var_rastreador_id integer,
+    var_usuario_id integer
+) returns table (
+    l_id integer, l_rastreador_id integer, l_lat double precision, l_lng double precision, l_data timestamp, is_oculto boolean
+) as $$
+    select l.id as l_id, l.rastreador_id as l_rastreador_id, l.lat as l_lat, l.lng as l_lng, l.data as l_data,
+    case when exists (
+        select 1 from vinc_loc_oculta_usuario_rastreador vlour --filtro
+        join intervalo_loc_oculta ilo on vlour.intervalo_loc_oculta_id = ilo.id
+        where ilo.rastreador_id = var_rastreador_id
+        and vlour.usuario_rastreador_id = (
+            select id from usuario_rastreador where usuario_id = var_usuario_id and rastreador_id = var_rastreador_id limit 1
+        )
+        and (
+            (l.data >= ilo.data_inicial and l.data <= ilo.data_final) or
+            (l.id >= ilo.id_inicial and l.id <= ilo.id_final)
+        )
+        limit 1
+    ) then true else false end as is_oculto	
+    from localizacao l
+    where l.rastreador_id = var_rastreador_id and l.invalida = false;
+$$ language sql;
+
+
+
+--Mostra todas as permissões do usuario, eliminando as duplicadas
+create function getPermissoesDoUsuario(
+    var_usuarios_ids integer[]
+) returns table (
+    usuario_id integer, perm_id integer, negado boolean
+) as $$
+	select usuario_id, perm_id, CASE WHEN COUNT(*) > 1 THEN TRUE ELSE FALSE END AS negado
+	from (
+		select usuario_id, perm_id, negado from (
+		    select vpu.usuario_id, vpu.perm_id, vpu.negado
+		    from vinc_perm_usuario vpu
+			where usuario_id = any(var_usuarios_ids)
+		    union all
+		    select vgu.usuario_id, vpu.perm_id, vpu.negado
+			from vinc_grupo_usuario vgu
+			join vinc_perm_usuario vpu on vpu.grupo_id = vgu.grupo_id
+            where vgu.usuario_id = any(var_usuarios_ids)
+		) group by usuario_id, perm_id, negado
+	)
+	group by usuario_id, perm_id;
+$$ language sql;
+
+
+--Mostra todas as permissões do grupo de Usuario
+create function getPermissoesDoGrupoUsuario(
+    var_grupos_ids integer[]
+) returns table (
+    gu_id integer, perm_id integer, negado boolean
+) as $$
+    select gu.id as gu_id, vpu.perm_id as perm_id, vpu.negado as negado
+    from grupo_usuario gu
+    join vinc_perm_usuario vpu on vpu.grupo_id = gu.id
+    where gu.id = any(var_grupos_ids);
+$$ language sql;
+
+
+
+--Mostra todas as permissões do rastreador, eliminando as duplicadas
+create function getPermissoesDoRastreador(
+    var_rastreadores_ids integer[]
+) returns table (
+    rastreador_id integer, perm_id integer, negado boolean
+) as $$
     select rastreador_id, perm_id, CASE WHEN COUNT(*) > 1 THEN TRUE ELSE FALSE END AS negado
     from (
         select rastreador_id, perm_id, negado from (
-            select vpr.rastreador_id, vpr.perm_id, vpr.negado
-            from vinc_perm_rastreador vpr
-            where rastreador_id is not null
+            select rastreador_id, perm_id, negado
+            from vinc_perm_rastreador
+            where rastreador_id = any(var_rastreadores_ids)
             union all
             select vgr.rastreador_id, vpr.perm_id, vpr.negado
             from vinc_grupo_rastreador vgr
             join vinc_perm_rastreador vpr on vpr.grupo_id = vgr.grupo_id
+            where vgr.rastreador_id = any(var_rastreadores_ids)
         ) group by rastreador_id, perm_id, negado
     )
     group by rastreador_id, perm_id;
+$$ language sql;
 
+
+--Mostra todas as permissões do grupo de Rastreador
+create function getPermissoesDoGrupoRastreador(
+    var_grupos_ids integer[]
+) returns table (
+    grupo_id integer, perm_id integer, negado boolean
+) as $$
+    select gr.id as grupo_id, vpr.perm_id as perm_id, vpr.negado as negado
+    from grupo_rastreador gr
+    join vinc_perm_rastreador vpr on vpr.grupo_id = gr.id
+    where gr.id = any(var_grupos_ids);
+$$ language sql;
 
 
 
