@@ -156,6 +156,21 @@ create table auditoria (
 );
 
 
+--Pegar o usuario por um token de acesso valido
+create function getUsuarioByToken(
+    var_token varchar
+) returns table (
+    id integer, nome varchar
+) as $$
+    select u.id, u.nome
+    from usuario u
+    where u.id = (
+        select usuario_id from usuario_access_token where token = var_token and expires_at > now() limit 1
+    )
+    and u.ativo = true;
+$$ language sql;
+
+
 --Pegar todos os rastreadores de um usuario, ignorar os inativos
 create function getRastreadoresDoUsuario(
     var_usuarios_ids integer[]
@@ -326,6 +341,9 @@ insert into usuario (nome, login, senha, legal_ident_id) values ('Matheus', 'mat
 insert into usuario (nome, login, senha, legal_ident_id) values ('Guilherme', 'guilherme', 'senha321', 1);
 insert into usuario (nome, login, senha, legal_ident_id) values ('Rafael', 'rafael', 'senha321', 1);
 insert into usuario (nome, login, senha, legal_ident_id) values ('Caio Durks', 'caiodurks', 'senha321', 1);
+
+insert into usuario_access_token (token, usuario_id, expires_at) values ('tk1', 1, now() + interval '10 years');
+insert into usuario_access_token (token, usuario_id, expires_at) values ('tk2', 2, now() + interval '5 seconds');
 
 insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Exemplo', 'token123', 'token_publico123', 'senha123', 'Observações sobre o rastreador', 55, 1);
 insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Alpha', 'tokenAlpha123', 'tokenPublicoAlpha123', 'senhaAlpha123', 'Rastreador de teste', 1, 2);
