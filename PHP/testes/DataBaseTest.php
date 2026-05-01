@@ -1,6 +1,6 @@
 <?php
 use PHPUnit\Framework\TestCase;
-require __DIR__ . '/../backend/include_me.php';
+require_once __DIR__ . '/../backend/include_me.php';
 
 class DataBaseTest extends TestCase {
     public function test_pegar_usuario_por_token() {

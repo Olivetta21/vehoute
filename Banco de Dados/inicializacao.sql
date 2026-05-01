@@ -19,7 +19,8 @@ create table legal_ident (
 create table usuario_cadastrando (
     id serial primary key,
     nome varchar(100) not null,
-    email varchar(100),
+    email varchar(100) unique not null,
+    verificado boolean not null default false,
     otp varchar(256),
     expires_at timestamp with time zone not null
 );
@@ -27,11 +28,11 @@ create table usuario_cadastrando (
 create table usuario (
     id serial primary key,
     nome varchar(100) not null,
-    login varchar(100),
-    senha varchar(100), --sem criptografia por enquanto
+    login varchar(100) unique not null,
+    senha varchar(100) not null, --sem criptografia por enquanto
     legal_ident_id integer not null references legal_ident(id),
     ativo boolean not null default true,
-    email varchar(100),
+    email varchar(100) unique not null,
     telefone varchar(15)
 );
 
@@ -154,6 +155,137 @@ create table auditoria (
     depois text,
     data timestamp with time zone default now()
 );
+
+create function inserirUsuarioCadastrando(
+    p_nome varchar, p_email varchar, p_otp varchar
+)
+RETURNS TABLE (
+    sucesso BOOLEAN,
+    mensagem TEXT,
+    detalhes TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    var_usuario_cadastrando_id INT;
+BEGIN
+    -- Verifica cadastro prévio
+    PERFORM 1 
+    FROM usuario 
+    WHERE email = p_email;
+    
+    IF FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Este email já está cadastrado', p_email::TEXT;
+        RETURN;
+    END IF;
+
+    -- Insere ou atualiza cadastro prévio
+    INSERT INTO usuario_cadastrando (nome, email, otp, expires_at)
+    VALUES (p_nome, p_email, p_otp, now() + interval '4 minutes')
+    ON CONFLICT (email) DO UPDATE SET nome = p_nome, otp = p_otp, expires_at = now() + interval '4 minutes'
+    RETURNING id INTO var_usuario_cadastrando_id;
+
+    IF var_usuario_cadastrando_id IS NOT NULL THEN
+        RETURN QUERY SELECT true, 'Cadastro previo realizado com sucesso', p_email::TEXT;
+    ELSE
+        RETURN QUERY SELECT false, 'Falha ao cadastrar usuário', p_email::TEXT;
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN QUERY SELECT false, 'Erro ao cadastrar usuário', SQLERRM;
+END;
+$$;
+
+
+CREATE FUNCTION finalizarCadastroUsuario(
+    p_nome varchar, p_email varchar, p_telefone varchar, p_login varchar, p_senha varchar, p_otp varchar
+)
+RETURNS TABLE (
+    sucesso BOOLEAN,
+    mensagem TEXT,
+    detalhes TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    var_usuario_id INT;
+    var_ja_cadastrado_info TEXT;
+    var_ja_cadastrado_tipo TEXT;
+BEGIN
+    -- Verifica cadastro prévio
+    PERFORM 1 
+    FROM usuario_cadastrando 
+    WHERE otp = p_otp 
+      AND nome = p_nome 
+      AND email = p_email
+      AND verificado = true;
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'OTP inválido ou cadastro não encontrado', p_otp::TEXT;
+        RETURN;
+    END IF;
+
+    -- Verifica se o email ou login já está cadastrado
+    select (email = p_email)::TEXT, (login = p_login)::TEXT
+    FROM usuario
+    WHERE email = p_email OR login = p_login limit 1 into var_ja_cadastrado_info, var_ja_cadastrado_tipo;
+    -- Reutiliza variaveis
+    IF var_ja_cadastrado_tipo = 'true' THEN
+        var_ja_cadastrado_info := p_login;
+        var_ja_cadastrado_tipo := 'Login';
+    ELSIF var_ja_cadastrado_info = 'true' THEN
+        var_ja_cadastrado_info := p_email;
+        var_ja_cadastrado_tipo := 'Email';
+    END IF;
+    -- Se já cadastrado, retorna erro com o dado
+    IF var_ja_cadastrado_info is not null THEN
+        RETURN QUERY SELECT FALSE, concat(var_ja_cadastrado_tipo, ' já está sendo utilizado'), var_ja_cadastrado_info::TEXT;
+        RETURN;
+    END IF;
+
+    -- Insere usuário
+    INSERT INTO usuario (legal_ident_id, nome, email, telefone, login, senha)
+    VALUES (1, p_nome, p_email, p_telefone, p_login, p_senha)
+    RETURNING id INTO var_usuario_id;
+
+    IF var_usuario_id IS NULL THEN
+        RETURN QUERY SELECT FALSE, 'Falha ao inserir usuário', p_nome::TEXT;
+        RETURN;
+    END IF;
+
+    -- Deleta cadastro prévio
+    DELETE FROM usuario_cadastrando
+    WHERE otp = p_otp 
+      AND nome = p_nome 
+      AND email = p_email
+      AND verificado = true;
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Falha ao remover cadastro prévio', p_otp::TEXT;
+        RETURN;
+    END IF;
+
+    -- Insere permissão
+    INSERT INTO vinc_perm_usuario (usuario_id, perm_id, negado)
+    VALUES (var_usuario_id, 1, false);
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Falha ao inserir permissão', p_email::TEXT;
+        RETURN;
+    END IF;
+
+    RETURN QUERY SELECT TRUE, 'OK', ''::TEXT;
+EXCEPTION
+    WHEN unique_violation THEN
+        RETURN QUERY SELECT FALSE, 'Registro duplicado', SQLERRM;
+
+    WHEN foreign_key_violation THEN
+        RETURN QUERY SELECT FALSE, 'Erro de integridade referencial', SQLERRM;
+
+    WHEN OTHERS THEN
+        RETURN QUERY SELECT FALSE, 'Erro inesperado', SQLERRM;
+END;
+$$;
 
 
 --Pegar o usuario por um token de acesso valido

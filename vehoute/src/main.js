@@ -1,27 +1,31 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import Login from './scripts/LoginPage/Login'
 
 const app = createApp(App)
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, from) => {
     console.log('Rota atual:', to.path);
     console.log('Rota anterior:', from.path);
-    const fromMeta = from.matched.at(-1)?.meta;
-    const toMeta   = to.matched.at(-1)?.meta;
-    
-    if (typeof fromMeta?.class?.before_leave === 'function') fromMeta.class.before_leave();
+    const fromMeta = from.matched.at(-1)?.meta
+    const toMeta   = to.matched.at(-1)?.meta
 
-    if (to.meta?.requiresAuth) {
-        next('/login');
-    } else {
-        if (typeof toMeta?.class?.before_enter === 'function') toMeta.class.before_enter();
-        next();
-        if (typeof toMeta?.class?.after_enter === 'function') toMeta.class.after_enter();
+    fromMeta?.class?.before_leave?.()
+
+    if (to.meta?.requiresAuth && !(await Login.isAuthenticated())) {
+        return { name: 'login' }
     }
-    
-    if (typeof fromMeta?.class?.after_leave === 'function') fromMeta.class.after_leave();
-    
+
+    toMeta?.class?.before_enter?.()
+})
+
+router.afterEach((to, from) => {
+    const fromMeta = from.matched.at(-1)?.meta
+    const toMeta   = to.matched.at(-1)?.meta
+
+    fromMeta?.class?.after_leave?.()
+    toMeta?.class?.after_enter?.()
 })
 
 app.use(router).mount('#app')

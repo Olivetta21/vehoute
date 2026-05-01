@@ -1,0 +1,82 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --colorA1: #ffffff;
+    --colorA2: #8d8d8d;
+    --colorA3: #161616;
+    --colorB1: #ffe32e;
+    --colorB2: #E6B910;
+    --colorB3: #E68310;
+    --colorB4: #70604C;
+    --colorC1: #1ED3E6;
+    --colorC2: #3498db;
+    --colorC3: #1162E6;
+    --colorC4: #0935f7;
+    --colorD1: #3A4B66;
+}
+
+
+
+.blue-card {
+    background-color: var(--colorA1);
+    color: var(--colorC3);
+    border: 1px solid var(--colorC3);
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.33);
+}
+
+.blue-formulary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.blue-formulary input {
+    padding: 10px;
+}
+
+.blue-formulary .option-button {
+    border: 1px solid transparent;
+    background: none;
+    color:  var(--colorC3);
+    text-decoration: underline;
+}
+.blue-formulary .option-button:hover {
+    border: 1px solid var(--colorC3);
+    color: var(--colorC4);
+}
+
+.blue-formulary input:disabled {
+    border: 1px solid var(--colorC3);
+    color: var(--colorC3);
+    cursor: not-allowed;
+}
+
+
+
+button {
+    background-color: var(--colorC3);
+    color: var(--colorA1);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover {
+    background-color: var(--colorC4);
+}
+
+input {
+    padding: 5px;
+    border: 1px solid var(--colorA2);
+    border-radius: 4px;
+}

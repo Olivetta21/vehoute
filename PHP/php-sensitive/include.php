@@ -8,11 +8,48 @@
     require ENVDIR . '/vendor/autoload.php';        
     Dotenv\Dotenv::createImmutable(ENVDIR)->load();
     //DOTENV CONFIG #
+
+    define("DEVELOPMENT_ENV", $_ENV['DEVELOPMENT_ENV'] === 'true');
     
     function getClientIp() {
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) return $_SERVER['HTTP_CLIENT_IP'];
         elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) return explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
         else return $_SERVER['REMOTE_ADDR'];
+    }
+
+    function errorMessage($error_title, $error_message) {
+        $message = '' . $error_title . '' . (DEVELOPMENT_ENV ?  ':' . $error_message . '': '');
+        return $message;
+    }
+
+
+    function validarSenha($senha) {
+        if (strlen($senha) < 8) return 0;
+        if (!preg_match('/[A-Z]/', $senha)) return 0;
+        if (!preg_match('/[a-z]/', $senha)) return 0;
+        if (!preg_match('/\d/', $senha)) return 0;
+        if (!preg_match('/[#@$!%*?&]/', $senha)) return 0;
+        return 1;
+    }
+    
+    function validarNomeUsuario($nome) {
+        return preg_match('/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ]+)+$/', $nome);
+    }
+
+    function validarTelefone($telefone) {
+        return preg_match('/^\+?[1-9]\d{7,14}$/', $telefone);
+    }
+
+    function validarEmail($email) {
+        return preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email);
+    }
+
+    function validarLoginUsuario($login) {
+        return preg_match('/^[A-Za-zÀ-ÖØ-öø-ÿ0-9 ._%+-]{8,}$/', $login);
+    }
+
+    function validarOTP($otp) {
+        return preg_match('/^[A-Za-z0-9]{8,8}$/', $otp);
     }
 
 	function returnJson($data, $type = null) {
@@ -38,8 +75,9 @@
         exit;
 	}
 
-    function getRandomBytes(){
-        return bin2hex(random_bytes(256));
+    function getRandomHex($length = 256){
+        $length = $length / 2;
+        return bin2hex(random_bytes($length));
     }
 
     function getDataBase() {
