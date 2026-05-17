@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import LeftArrow from '../LeftArrow.vue';
+import LeftArrow from '../utils/LeftArrow.vue';
 
 export default {
     name: 'AuthCont',
