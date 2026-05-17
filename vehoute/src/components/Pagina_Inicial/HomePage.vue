@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import HomePage from '../scripts/HomePage/HomePage.js';
+import HomePage from '../../scripts/HomePage/HomePage.js';
 
 export default {
   name: 'HomePage',
@@ -17,3 +17,13 @@ export default {
   }
 }
 </script>
+
+
+<style scoped>
+.home {
+  height: 100%;
+  width: 100%;
+  border: 1px solid red;
+}
+
+</style>
