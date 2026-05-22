@@ -44,7 +44,8 @@ export default {
         return {
             isCollapsed: false,
             menuItems: [
-                { id: 1, name: 'Página inicial', icon: '/api/imagens/icon_blackhome64.png', routeName: 'home'}
+                { id: 1, name: 'Página inicial', icon: '/api/imagens/icon_blackhome64.png', routeName: 'home'},
+                { id: 2, name: 'Administrativo', icon: '/api/imagens/icon_blackadminhome64.png', routeName: 'adminhome'}
             ]
         }
     },

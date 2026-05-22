@@ -5,6 +5,7 @@ import CadastroUsuarioPage from './components/Login_Cadastro/CadastroUsuario.vue
 import FinalizarCadastroUsuarioPage from './components/Login_Cadastro/FinalizarCadastroUsuarioPage.vue'
 import LoginPage from './components/Login_Cadastro/LoginPage.vue'
 import PagesFrame from './components/PagesFrame.vue'
+import AdminHomePage from './components/Pagina_Inicial/AdminHomePage.vue'
 
 import Login from './scripts/LoginPage/Login'
 
@@ -23,7 +24,8 @@ const routes = [
     redirect: { name: 'home' },
     component: PagesFrame,
     children: [
-      { path: 'inicio', name: 'home', component: HomePage }
+      { path: 'inicio', name: 'home', component: HomePage },
+      { path: 'adminstrativo', name: 'adminhome', component: AdminHomePage },
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: { name: 'home', params: {} } }
