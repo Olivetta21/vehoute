@@ -1,0 +1,1 @@
+cd "../vehoute" && npm run serve
