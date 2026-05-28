@@ -40,6 +40,7 @@ export default {
 .home-card {
   width: calc(100% / 4);
   max-width: 200px;
+  max-height: 200px;
   aspect-ratio: 1;
   border-radius: 30px;
   overflow: hidden;
@@ -48,6 +49,7 @@ export default {
   box-shadow: 4px 4px 8px 5px rgb(0 0 0 / 18%);
   transition: all 0.3s ease;
 
+  background-color: white;
   background-size: 75%;
   background-repeat: no-repeat;
   background-position: top;
@@ -62,8 +64,8 @@ export default {
 
 @media (orientation: portrait) {
   .home-card {
-    width: auto;
-    height: calc(100% / 4);
+    width: calc((100% / 2) - 14px);
+    min-width: 130px;
   }
 }
 

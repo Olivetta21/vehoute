@@ -78,7 +78,7 @@ export default {
         background-color: var(--colorD1);
         color: var(--colorA1);
         width: 260px;
-        height: 100%;
+        height: 100vh;
         display: flex;
         flex-direction: column;
         transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
