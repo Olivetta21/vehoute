@@ -18,9 +18,9 @@
                         :class="{ 'active': isActive(item) }"
                         @click="navigateTo(item)">
                         <div class="icon-wrapper">
-                            <img :src="item.icon" :alt="item.name" />
+                            <img :src="item.sidebarIcon" :alt="item.pageName" />
                         </div>
-                        <span class="link-text" v-if="!isCollapsed">{{ item.name }}</span>
+                        <span class="link-text" v-if="!isCollapsed">{{ item.pageName }}</span>
                     </li>
                 </ul>
             </div>
@@ -33,6 +33,7 @@
 </template>
 
 <script>
+import PagesRoutes from '@/scripts/PagesRoutes.js';
 import LeftArrow from './utils/LeftArrow.vue';
 
 export default {
@@ -43,10 +44,7 @@ export default {
     data() {
         return {
             isCollapsed: false,
-            menuItems: [
-                { id: 1, name: 'Página inicial', icon: '/api/imagens/icon_blackhome64.png', routeName: 'home'},
-                { id: 2, name: 'Administrativo', icon: '/api/imagens/icon_blackadminhome64.png', routeName: 'adminhome'}
-            ]
+            menuItems: PagesRoutes.filter(route => route.sidebarIcon)
         }
     },
     methods: {
@@ -54,10 +52,10 @@ export default {
             this.isCollapsed = !this.isCollapsed;
         },
         navigateTo(item) {
-            this.$router.push({ name: item.routeName});
+            this.$router.push({ name: item.name});
         },
         isActive(item) {
-            return this.$route.name === item.routeName;
+            return this.$route.name === item.name;
         }
     }
 }
@@ -230,5 +228,7 @@ export default {
         overflow-y: auto;
         margin-left: 40px;
         background-color: #f7f9fc;
+        display: flex;
+        flex-direction: column;
     }
 </style>

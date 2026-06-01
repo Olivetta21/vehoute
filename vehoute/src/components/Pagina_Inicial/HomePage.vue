@@ -1,27 +1,26 @@
 <template>
+  <HeaderTelas
+      titulo="Página Inicial"
+  />
   <LayouteHomePage :items="homeItens" />
 </template>
 
 <script>
+import PagesRoutes from '@/scripts/PagesRoutes.js';
 import HomePage from '../../scripts/HomePage/HomePage.js';
+import HeaderTelas from '../utils/HeaderTelas.vue';
 import LayouteHomePage from './LayouteHomePage.vue';
 
 export default {
   name: 'HomePage',
   components: {
+    HeaderTelas,
     LayouteHomePage
   },
   data() {
     return {
       HomePage,
-      homeItens: [
-        { id: 1, name: 'Mapa', icon: '/api/imagens/card_map.png', routeName: 'map'},
-        { id: 2, name: 'Seus Rastreadores', icon: '/api/imagens/card_seus_rastreadores.png', routeName: 'owntracker'},
-        { id: 3, name: 'Perfil', icon: '/api/imagens/card_perfil.png', routeName: 'perfil'},
-        { id: 4, name: 'Configurações', icon: '/api/imagens/card_engrenagem.png', routeName: 'settings'},
-        { id: 5, name: 'Notificações', icon: '/api/imagens/card_sino.png', routeName: 'notifications'},
-        { id: 6, name: 'Administrativo', icon: '/api/imagens/card_admin.png', routeName: 'adminhome'}
-      ]
+      homeItens: PagesRoutes.filter(r => r.home_cardIcon)
     };
   }
 }

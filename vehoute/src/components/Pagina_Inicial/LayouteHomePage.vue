@@ -1,9 +1,9 @@
 <template>
   <div class="home">
-    <div class="home-card" v-for="value in items" :key="value.id"
-    @click="$router.push({name: value.routeName})"
-    :style="{'background-image': 'url(' + value.icon + ')'}">
-      <p class="card-nome">{{value.name}}</p>
+    <div class="home-card" v-for="(page, index) in items" :key="index"
+    @click="$router.push({name: page.name})"
+    :style="{'background-image': 'url(' + (page.home_cardIcon || page.admin_cardIcon) + ')'}">
+      <p class="card-nome">{{page.pageName}}</p>
     </div>
   </div>
 </template>
@@ -25,7 +25,6 @@ export default {
   padding: 5px;
   height: 100%;
   width: 100%;
-  border: 1px solid red;
 
   display: flex;
   flex-direction: row;
