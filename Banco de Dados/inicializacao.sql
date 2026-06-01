@@ -459,6 +459,20 @@ $$ language sql;
 
 
 
+create view vw_usuarios_do_sistema as
+	select u.id, adm.id is not null as adm, u.nome, u.ativo, u.email, u.telefone, u.legal_ident_id,
+		lit.id as tipo_ident, li.identidade, lit.descricao as descricao_ident,
+		coalesce(qpr.count,0) as qnt_posse_rastr, coalesce(oqr.count,0) as ouvinte_qnt_rastr
+	from usuario u
+	left join administrador adm on adm.id = u.id
+	join legal_ident li on li.id = u.legal_ident_id
+	join legal_ident_tipo lit on lit.id = li.tipo_id
+	left join (select dono_id, count(id) from rastreador group by dono_id) qpr on qpr.dono_id = u.id
+	left join (select ur.usuario_id, count(ur.id)
+			from usuario_rastreador ur
+			join rastreador r on r.id = ur.rastreador_id and r.dono_id <> ur.usuario_id
+			group by ur.usuario_id) oqr on oqr.usuario_id = u.id;
+
 
 insert into legal_ident_tipo (descricao, regex) values ('Geral', '.+');
 insert into legal_ident (tipo_id, identidade) values (1, '123456789');

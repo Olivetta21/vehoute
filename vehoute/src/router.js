@@ -6,8 +6,21 @@ import FinalizarCadastroUsuarioPage from './components/Login_Cadastro/FinalizarC
 import LoginPage from './components/Login_Cadastro/LoginPage.vue'
 import PagesFrame from './components/PagesFrame.vue'
 import AdminHomePage from './components/Pagina_Inicial/AdminHomePage.vue'
+import SystemUsersPage from './components/SystemUsers/SystemUsersPage.vue'
 
 import Login from './scripts/LoginPage/Login'
+import PagesRoutes from './scripts/PagesRoutes.js'
+
+function constructRoute(name, aditional) {
+  //Para reutilizar o mesmo vetor
+  const route = PagesRoutes.find(r => r.name === name);
+  if (!route) {
+    console.error("constructRoute", "Nenhuma rota encontrada com o nome: " + name);
+    return null;
+  }
+  const mergedRoute = { ...route, ...aditional };
+  return mergedRoute;  
+}
 
 const routes = [
   { path: '/login', name: 'login', component: LoginPage, meta: { class: Login } },
@@ -24,8 +37,9 @@ const routes = [
     redirect: { name: 'home' },
     component: PagesFrame,
     children: [
-      { path: 'inicio', name: 'home', component: HomePage },
-      { path: 'adminstrativo', name: 'adminhome', component: AdminHomePage },
+      constructRoute('home', {component: HomePage }),
+      constructRoute('adminhome', {component: AdminHomePage }),
+      constructRoute('sysusers', {component: SystemUsersPage })
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: { name: 'home', params: {} } }

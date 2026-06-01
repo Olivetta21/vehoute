@@ -127,8 +127,7 @@
         }
 
         usleep(rand(1000, 10000) * 1000);
-        http_response_code(500);
-        exit;
+        returnJson(["error" => errorMessage("internal error", "invalid access_token")]);
     }
 
 ?>

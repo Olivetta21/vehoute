@@ -1,3 +1,4 @@
+import Usuario from "./LoginPage/Usuario";
 import { getBaseOfDestApi } from "./utils";
 
 async function fetch_with_form_data(endereco, arrayValores) {
@@ -56,7 +57,11 @@ export async function fetch_(endereco, arrayValores, rawResponse = false) {
 
     try {        
         const dest_api = getBaseOfDestApi() + endereco;
-        
+
+        if (Usuario.access_token) {
+            arrayValores.push({ access_token: Usuario.access_token });
+        }
+
         const response = rawResponse ?
                 await fetch_with_form_data(dest_api, arrayValores) :
                 await fetch_with_json_only(dest_api, arrayValores);
