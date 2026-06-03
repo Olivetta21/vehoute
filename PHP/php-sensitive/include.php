@@ -74,6 +74,20 @@
 		echo json_encode($result);
         exit;
 	}
+    
+    function getRequestValue($key, $check_type = null) {
+        try {
+            if (isset($_POST[$key])) {
+                $value = json_decode($_POST[$key], true);
+                
+                return $check_type ? ($check_type($value) ? $value : null) : $value;
+            }
+        } catch (Exception) {
+
+        }
+
+        return null;
+    }
 
     function getRandomHex($length = 256){
         $length = $length / 2;

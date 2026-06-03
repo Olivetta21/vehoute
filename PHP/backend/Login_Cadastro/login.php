@@ -3,14 +3,13 @@ require __DIR__ . "/../include_me.php";
 require __DIR__ . "/f_login.php";
 
 
-if (isset($_POST["logoff"])) {
+if (getRequestValue("logoff")) {
     resetAccessToken();
     returnJson(["logoff" => true]);
 }
-else if (isset($_POST["login"])) {
-    $infos = json_decode($_POST["login"], true);
-    $login = $infos["login"];
-    $senha = $infos["senha"];
+else if ($login_data = getRequestValue("login", "is_array")) {
+    $login = $login_data["login"];
+    $senha = $login_data["senha"];
 
     $result = fazerLogin($login, $senha);
     if (isset($result['usuario']) && isset($result['usuario']['access_token'])) {
@@ -22,9 +21,7 @@ else if (isset($_POST["login"])) {
 
     returnJson($result);
 }
-else if (isset($_POST["access_token"])) {
-    $access_token = json_decode($_POST["access_token"], true);
-    
+else if ($access_token = getRequestValue("access_token", "is_string")) {
     returnJson(testAccessToken($access_token));
 }
 else {

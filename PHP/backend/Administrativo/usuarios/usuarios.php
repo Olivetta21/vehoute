@@ -3,28 +3,19 @@ require __DIR__ . "/../../include_me.php";
 require __DIR__ . "/f_usuarios.php";
 $credenciais = getCredentials();
 
-function getRequestValue($key) {
-    return isset($_POST[$key]) ? json_decode($_POST[$key], true) : null;
+if ($name_filter = getRequestValue("get", "is_string")) {    
+    returnJson(getUsuarios($credenciais["pdo"], $name_filter));
 }
 
-
-if (isset($_POST["get"])) {    
-    returnJson(getUsuarios($credenciais["pdo"], getRequestValue("get")));
+if ($id = getRequestValue("toggle_ativo", "is_int")) {
+    returnJson(toggleUsuarioAtivo($credenciais["pdo"], $id));
 }
 
-if (isset($_POST["toggle_ativo"])) {
-    returnJson(toggleUsuarioAtivo($credenciais["pdo"], getRequestValue("toggle_ativo")));
+if ($id = getRequestValue("toggle_adm", "is_int")) {
+    returnJson(toggleUsuarioAdm($credenciais["pdo"], $id));
 }
 
-if (isset($_POST["toggle_adm"])) {
-    returnJson(toggleUsuarioAdm($credenciais["pdo"], getRequestValue("toggle_adm")));
-}
-
-if (isset($_POST["add_usuario"])) {
-    $dados = getRequestValue("add_usuario");
-    if (!is_array($dados)) {
-        returnJson(["error" => errorMessage("Dados de cadastro inválidos", json_encode($dados))]);
-    }
+if ($dados = getRequestValue("add_usuario", "is_array")) {
 
     returnJson(adicionarUsuario(
         $credenciais["pdo"],
