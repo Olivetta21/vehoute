@@ -7,6 +7,7 @@ import LoginPage from './components/Login_Cadastro/LoginPage.vue'
 import PagesFrame from './components/PagesFrame.vue'
 import AdminHomePage from './components/Pagina_Inicial/AdminHomePage.vue'
 import SystemUsersPage from './components/SystemUsers/SystemUsersPage.vue'
+import SystemTrackersPage from './components/SystemTrackers/SystemTrackersPage.vue'
 
 import Login from './scripts/LoginPage/Login'
 import PagesRoutes from './scripts/PagesRoutes.js'
@@ -39,7 +40,8 @@ const routes = [
     children: [
       constructRoute('home', {component: HomePage }),
       constructRoute('adminhome', {component: AdminHomePage }),
-      constructRoute('sysusers', {component: SystemUsersPage })
+      constructRoute('sysusers', {component: SystemUsersPage }),
+      constructRoute('systrackers', {component: SystemTrackersPage })
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: { name: 'home', params: {} } }

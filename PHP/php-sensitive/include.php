@@ -52,6 +52,23 @@
         return preg_match('/^[A-Za-z0-9]{8,8}$/', $otp);
     }
 
+    function normalizarFiltroTexto($valor) {
+        if ($valor === null || is_array($valor) || is_object($valor)) {
+            return null;
+        }
+
+        $valor = trim((string) $valor);
+        if ($valor === '' || strtolower($valor) === 'undefined' || strtolower($valor) === 'null') {
+            return null;
+        }
+
+        return $valor;
+    }
+
+    function validarIdPositivo($valor) {
+        return filter_var($valor, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]) !== false;
+    }
+
 	function returnJson($data, $type = null) {
 		$result = [];
         if (is_array($data) && count($data) > 0) {

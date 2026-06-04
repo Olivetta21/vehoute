@@ -474,6 +474,15 @@ create view vw_usuarios_do_sistema as
 			group by ur.usuario_id) oqr on oqr.usuario_id = u.id;
 
 
+create view vw_rastreadores_do_sistema as
+select r.id, r.hardware, r.token, r.token_publico, r.obs, r.status, r.ativo,
+	u.id as u_id, u.nome,
+	coalesce(qnto.count, 0) as qnto
+	from rastreador r
+	left join usuario u on u.id = r.dono_id
+	left join (select rastreador_id, count(rastreador_id) from usuario_rastreador group by rastreador_id) qnto on qnto.rastreador_id = r.id;
+    
+
 insert into legal_ident_tipo (descricao, regex) values ('Geral', '.+');
 insert into legal_ident (tipo_id, identidade) values (1, '123456789');
 

@@ -27,26 +27,26 @@ export default [
     // Subpáginas do Administrativo
     { pageName: 'Usuários do Sistema', name: 'sysusers', path: 'usuariosdosistema',
         admin_cardIcon: '/api/imagens/card_users.png',
-        sidebarIcon: null
+        sidebarIcon: '/api/imagens/icon_blackusers64.png'
     },
     { pageName: 'Rastreadores do Sistema', name: 'systrackers', path: 'rastreadoresdosistema',
         admin_cardIcon: '/api/imagens/card_systracker.png',
-        sidebarIcon: null
+        sidebarIcon: '/api/imagens/icon_blacktrackers64.png'
     },
     { pageName: 'Permissões de Usuário', name: 'userperms', path: 'permissoesdeusuario',
         admin_cardIcon: '/api/imagens/card_userspermissions.png',
-        sidebarIcon: null
+        sidebarIcon: '/api/imagens/icon_blackuserperms64.png'
     },
     { pageName: 'Permissões de Rastreador', name: 'trackerperms', path: 'permissoesderastreador',
         admin_cardIcon: '/api/imagens/card_trackerpermissions.png',
-        sidebarIcon: null
+        sidebarIcon: '/api/imagens/icon_blacktrackerperms64.png'
     },
     { pageName: 'Auditoria', name: 'audit', path: 'auditoria',
         admin_cardIcon: '/api/imagens/card_sysaudit.png',
-        sidebarIcon: null
+        sidebarIcon: '/api/imagens/icon_blackaudit64.png'
     },
     { pageName: 'Logs', name: 'logs', path: 'logs',
         admin_cardIcon: '/api/imagens/card_syslogs.png',
-        sidebarIcon: null
+        sidebarIcon: '/api/imagens/icon_blacklogs64.png'
     }
 ]
