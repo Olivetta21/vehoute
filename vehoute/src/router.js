@@ -8,9 +8,12 @@ import PagesFrame from './components/PagesFrame.vue'
 import AdminHomePage from './components/Pagina_Inicial/AdminHomePage.vue'
 import SystemUsersPage from './components/SystemUsers/SystemUsersPage.vue'
 import SystemTrackersPage from './components/SystemTrackers/SystemTrackersPage.vue'
+import UserTrackersPage from './components/UserTrackers/UserTrackersPage.vue'
+import TrackerOuvintesPage from './components/UserTrackers/TrackerOuvintesPage.vue'
 
 import Login from './scripts/LoginPage/Login'
 import PagesRoutes from './scripts/PagesRoutes.js'
+import TrackerOuvintes from './scripts/UserTracker/TrackerOuvintes.js'
 
 function constructRoute(name, aditional) {
   //Para reutilizar o mesmo vetor
@@ -41,7 +44,9 @@ const routes = [
       constructRoute('home', {component: HomePage }),
       constructRoute('adminhome', {component: AdminHomePage }),
       constructRoute('sysusers', {component: SystemUsersPage }),
-      constructRoute('systrackers', {component: SystemTrackersPage })
+      constructRoute('systrackers', {component: SystemTrackersPage }),
+      constructRoute('owntracker', {component : UserTrackersPage }),
+        constructRoute('trackerouvintes', {component: TrackerOuvintesPage, meta: { class: TrackerOuvintes } }),
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: { name: 'home', params: {} } }

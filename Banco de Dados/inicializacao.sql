@@ -49,14 +49,14 @@ create table administrador (
 
 create table rastreador (
     id serial primary key,
-    hardware varchar(100),
+    hardware varchar(100) not null,
     token varchar(100) not null,
     token_publico varchar(100) not null,
-    senha varchar(100), --sem criptografia por enquanto
+    senha varchar(100) not null, --sem criptografia por enquanto
     obs varchar(200),
     status integer not null,--
     ativo boolean not null default true,
-    dono_id integer not null references usuario(id)
+    dono_id integer references usuario(id)
 );
 
 create table usuario_rastreador (
@@ -481,7 +481,33 @@ select r.id, r.hardware, r.token, r.token_publico, r.obs, r.status, r.ativo,
 	from rastreador r
 	left join usuario u on u.id = r.dono_id
 	left join (select rastreador_id, count(rastreador_id) from usuario_rastreador group by rastreador_id) qnto on qnto.rastreador_id = r.id;
-    
+
+
+
+create view vw_rastreadores_dos_usuarios as
+	select distinct on (rastreador_id, usuario_id) * from (
+		select
+			ur.id, ur.rastreador_id, ur.nome as rastreador_nome, ur.usuario_id, ur.status as ur_status, ur.ativo as ur_ativo, ur.loc_temporeal, ur.loc_salvos,
+			r.token_publico, r.status as r_status, r.ativo as r_ativo, r.dono_id,
+			u.nome as dono_nome
+			from usuario_rastreador ur
+			join rastreador r on r.id = ur.rastreador_id
+			left join usuario u on u.id = r.dono_id
+		union all
+		select
+			null as id, r.id as rastreador_id, 'Sem vínculo' as rastreador_nome, r.dono_id as usuario_id, -999 as ur_status, false as ur_ativo, false as loc_temporeal, false as loc_salvos,
+			token_publico, status as r_status, r.ativo as r_ativo, dono_id,
+			u.nome as dono_nome
+			from rastreador r
+			left join usuario u on u.id = dono_id
+	) order by rastreador_id, usuario_id, id nulls last;
+
+create view vw_ouvintes_dos_rastreadores as
+select ur.id, ur.usuario_id, ur.rastreador_id, ur.status as ur_status, ur.loc_temporeal, ur.loc_salvos,
+	u.nome as u_nome, u.email, u.telefone
+	from usuario_rastreador ur
+	join usuario u on u.id = ur.usuario_id;
+
 
 insert into legal_ident_tipo (descricao, regex) values ('Geral', '.+');
 insert into legal_ident (tipo_id, identidade) values (1, '123456789');

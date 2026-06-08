@@ -10,6 +10,8 @@ export default [
     { pageName: 'Seus Rastreadores', name: 'owntracker', path: 'seus-rastreadores',
         home_cardIcon: '/api/imagens/card_seus_rastreadores.png', 
     },
+        { pageName: 'Ouvintes do Rastreador', name: 'trackerouvintes', path: 'ouvintes-do-rastreador'},
+
     { pageName: 'Perfil', name: 'perfil', path: 'perfil',
         home_cardIcon: '/api/imagens/card_perfil.png',
     }, 
