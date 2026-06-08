@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . "/../../include_me.php";
-require __DIR__ . "/f_rastreadoresusuarios.php";
+require_once __DIR__ . "/f_rastreadoresusuarios.php";
 $credenciais = getCredentials();
 
 try {

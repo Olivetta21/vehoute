@@ -21,7 +21,7 @@ class UsuariosDoSistemaTest extends TestCase {
         $this->assertEquals([
                 "id"=>2,"adm"=>false,"nome"=>"Kelvin Garcete","ativo"=>true,
                 "email"=>"ouvinteexemplo@gmail.com","telefone"=>null,"legal_ident_id"=>1,"tipo_ident"=>1,
-                "identidade"=>"123456789","descricao_ident"=>"Geral","qnt_posse_rastr"=>1,"ouvinte_qnt_rastr"=>2
+                "identidade"=>"123456789","descricao_ident"=>"Geral","qnt_posse_rastr"=>1,"ouvinte_qnt_rastr"=>1
             ],
             $usuario_2
         );

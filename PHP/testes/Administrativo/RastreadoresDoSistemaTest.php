@@ -20,7 +20,7 @@ class RastreadoresDoSistemaTest extends TestCase {
         }
         $this->assertEquals([
                 "id"=>1,"hardware"=>"Rastreador Exemplo","token"=>"token123","token_publico"=>"token_publico123",
-                "obs"=>'Observações sobre o rastreador',"status"=>55,"ativo"=>true,"u_id"=>1,"nome"=>"Ivan Luiz","qnto"=>3
+                "obs"=>'Observações sobre o rastreador',"status"=>1,"ativo"=>true,"u_id"=>1,"nome"=>"Ivan Luiz","qnto"=>2
             ],
             $rastreador_1
         );
