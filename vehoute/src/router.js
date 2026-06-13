@@ -5,6 +5,7 @@ import CadastroUsuarioPage from './components/Login_Cadastro/CadastroUsuario.vue
 import FinalizarCadastroUsuarioPage from './components/Login_Cadastro/FinalizarCadastroUsuarioPage.vue'
 import LoginPage from './components/Login_Cadastro/LoginPage.vue'
 import PagesFrame from './components/PagesFrame.vue'
+import MapPage from './components/MapaRastreamento/MapPage.vue'
 import AdminHomePage from './components/Pagina_Inicial/AdminHomePage.vue'
 import SystemUsersPage from './components/SystemUsers/SystemUsersPage.vue'
 import SystemTrackersPage from './components/SystemTrackers/SystemTrackersPage.vue'
@@ -42,6 +43,7 @@ const routes = [
     component: PagesFrame,
     children: [
       constructRoute('home', {component: HomePage }),
+      constructRoute('map', {component: MapPage }),
       constructRoute('adminhome', {component: AdminHomePage }),
       constructRoute('sysusers', {component: SystemUsersPage }),
       constructRoute('systrackers', {component: SystemTrackersPage }),
