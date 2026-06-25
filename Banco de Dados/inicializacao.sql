@@ -379,8 +379,9 @@ create function getLocDoRastreadorParaOuvinte(
         )
         limit 1
     ) then true else false end as is_oculto	
-    from localizacao l
-    where l.rastreador_id = var_rastreador_id and l.invalida = false;
+    from usuario_rastreador ur
+    join localizacao l on l.rastreador_id = ur.rastreador_id
+    where ur.rastreador_id = var_rastreador_id and ur.usuario_id = var_usuario_id and l.invalida = false;
 $$ language sql;
 
 

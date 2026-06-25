@@ -15,6 +15,7 @@ import TrackerOuvintesPage from './components/UserTrackers/TrackerOuvintesPage.v
 import Login from './scripts/LoginPage/Login'
 import PagesRoutes from './scripts/PagesRoutes.js'
 import TrackerOuvintes from './scripts/UserTracker/TrackerOuvintes.js'
+import MapPagina from './scripts/MapPage/Map.js'
 
 function constructRoute(name, aditional) {
   //Para reutilizar o mesmo vetor
@@ -43,7 +44,7 @@ const routes = [
     component: PagesFrame,
     children: [
       constructRoute('home', {component: HomePage }),
-      constructRoute('map', {component: MapPage }),
+      constructRoute('map', {component: MapPage, meta: { class: MapPagina } }),
       constructRoute('adminhome', {component: AdminHomePage }),
       constructRoute('sysusers', {component: SystemUsersPage }),
       constructRoute('systrackers', {component: SystemTrackersPage }),

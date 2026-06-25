@@ -96,7 +96,7 @@ export default class MapApi_OpenStreet extends MapApi_Interface {
                 iconAnchor: [6, 6]
             });
 
-            MapApi_OpenStreet.marker = window.L.marker([0, 0], {
+            MapApi_OpenStreet.marker = window.L.marker([9999, 9999], {
                 icon: blueIcon
             }).addTo(MapApi_OpenStreet.map);
 

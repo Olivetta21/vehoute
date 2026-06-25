@@ -26,6 +26,7 @@
         <div :class="{'tracker-detailed': true, 'hide': !this.detailed}">
             <div class="tracker-detailed-actions">
                 <button @click="$emit('ouvintes')"> Ouvintes </button>
+                <button @click="$emit('rastrear')"> Rastrear </button>
             </div>
             <div class="tracker-ouvinte-actions">
                 <template v-if="tracker.ur_status === 4">
@@ -48,7 +49,7 @@
 <script>
 export default {
     name: 'TrackerCard',    
-    emits: ['ouvintes', 'accept', 'decline', 'accept-transfer', 'decline-transfer', 'delete'],
+    emits: ['ouvintes', 'rastrear', 'accept', 'decline', 'accept-transfer', 'decline-transfer', 'delete'],
     data() {
         return {
             detailed: false,

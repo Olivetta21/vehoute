@@ -30,6 +30,7 @@
             <div class="trackers-container">
             <TrackerCard v-for="(tracker, index) in trackers" :key="index" :tracker="tracker"
                 @ouvintes="TrackerOuvintes.openPage(tracker)"
+                @rastrear="MapPagina.enterWithTracker(tracker.id)"
                 @accept="handleAcceptProposal"
                 @decline="handleDeclineProposal"
                 @accept-transfer="handleAcceptTransfer"
@@ -46,6 +47,7 @@ import PagesRoutes from '@/scripts/PagesRoutes.js';
 import TrackerOuvintes from '@/scripts/UserTracker/TrackerOuvintes.js';
 import TrackerCard from './TrackerCard.vue';
 import GenericModalWindow from '../utils/GenericModalWindow.vue';
+import MapPagina from '@/scripts/MapPage/Map.js';
 
 export default {
     name: 'UserTrackersPage',
@@ -53,6 +55,7 @@ export default {
         return {
             PagesRoutes,
             TrackerOuvintes,
+            MapPagina,
             trackers: [],
             showAddTrackerForm: false,
 

@@ -80,7 +80,7 @@ export default {
         display: flex;
         flex-direction: column;
         transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05);
+        box-shadow: -10px 0px 20px 0px black;
         z-index: 10;
         overflow: hidden;
     }
