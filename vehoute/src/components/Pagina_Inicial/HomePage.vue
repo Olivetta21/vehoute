@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import PagesRoutes from '@/scripts/PagesRoutes.js';
+import PagesRoutes from '../../scripts/PagesRoutes.js';
 import HomePage from '../../scripts/HomePage/HomePage.js';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import LayouteHomePage from './LayouteHomePage.vue';

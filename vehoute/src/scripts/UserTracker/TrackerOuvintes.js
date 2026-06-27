@@ -1,4 +1,4 @@
-import router from "@/router";
+import router from "../../router";
 import { fetch_ } from "../fetcher";
 
 export default class TrackerOuvintes {

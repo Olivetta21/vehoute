@@ -19,9 +19,9 @@
 
 
 <script>
-import CadastroUsuario from '@/scripts/CadastroPage/CadastroUsuario';
+import CadastroUsuario from '../../scripts/CadastroPage/CadastroUsuario';
 import AuthCont from './AuthCont.vue';
-import router from '@/router';
+import router from '../../router';
 
 export default {
     name: 'FinalizarCadastroUsuarioPage',

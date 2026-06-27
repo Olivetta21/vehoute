@@ -58,9 +58,9 @@
 </template>
 
 <script>
-import TrackerPage from '@/scripts/SystemTrackerPage/TrackerPage';
+import TrackerPage from '../../scripts/SystemTrackerPage/TrackerPage';
 import HeaderTelas from '../utils/HeaderTelas.vue';
-import PagesRoutes from '@/scripts/PagesRoutes.js';
+import PagesRoutes from '../../scripts/PagesRoutes.js';
 import LeftArrow from '../utils/LeftArrow.vue';
 
 export default {

@@ -10,9 +10,9 @@
 
 
 <script>
-import router from '@/router';
+import router from '../../router';
 import AuthCont from './AuthCont.vue';
-import CadastroUsuario from '@/scripts/CadastroPage/CadastroUsuario';
+import CadastroUsuario from '../../scripts/CadastroPage/CadastroUsuario';
 
 export default {
     name: 'CadastroUsuarioPage',

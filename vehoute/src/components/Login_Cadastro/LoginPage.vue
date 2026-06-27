@@ -14,8 +14,8 @@
 
 
 <script>
-import router from '@/router';
-import Login from '@/scripts/LoginPage/Login';
+import router from '../../router';
+import Login from '../../scripts/LoginPage/Login';
 import AuthCont from './AuthCont.vue';
 
 export default {

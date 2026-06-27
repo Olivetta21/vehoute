@@ -50,9 +50,9 @@
 </template>
 
 <script>
-import SystemUser from '@/scripts/SystemUserPage/SystemUser';
+import SystemUser from '../../scripts/SystemUserPage/SystemUser';
 import HeaderTelas from '../utils/HeaderTelas.vue';
-import PagesRoutes from '@/scripts/PagesRoutes.js';
+import PagesRoutes from '../../scripts/PagesRoutes.js';
 
 export default {
     name: 'SystemUsersPage',

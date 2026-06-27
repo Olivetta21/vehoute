@@ -40,7 +40,7 @@
 </template>
 
 <script>
-import Usuario from '@/scripts/LoginPage/Usuario';
+import Usuario from '../../scripts/LoginPage/Usuario';
 
 export default {
     name: 'OuvinteCard',

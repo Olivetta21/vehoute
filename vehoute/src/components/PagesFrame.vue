@@ -33,7 +33,7 @@
 </template>
 
 <script>
-import PagesRoutes from '@/scripts/PagesRoutes.js';
+import PagesRoutes from '../scripts/PagesRoutes.js';
 import LeftArrow from './utils/LeftArrow.vue';
 
 export default {

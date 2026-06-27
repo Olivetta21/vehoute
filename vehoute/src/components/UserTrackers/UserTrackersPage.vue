@@ -41,13 +41,13 @@
 </template>
 
 <script>
-import UserTrackers from '@/scripts/UserTracker/UserTrackers';
+import UserTrackers from '../../scripts/UserTracker/UserTrackers';
 import HeaderTelas from '../utils/HeaderTelas.vue';
-import PagesRoutes from '@/scripts/PagesRoutes.js';
-import TrackerOuvintes from '@/scripts/UserTracker/TrackerOuvintes.js';
+import PagesRoutes from '../../scripts/PagesRoutes.js';
+import TrackerOuvintes from '../../scripts/UserTracker/TrackerOuvintes.js';
 import TrackerCard from './TrackerCard.vue';
 import GenericModalWindow from '../utils/GenericModalWindow.vue';
-import MapPagina from '@/scripts/MapPage/Map.js';
+import MapPagina from '../../scripts/MapPage/Map.js';
 
 export default {
     name: 'UserTrackersPage',
