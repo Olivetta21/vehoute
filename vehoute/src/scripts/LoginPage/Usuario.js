@@ -1,3 +1,4 @@
+import MainWS from "../Websockets/Main_Websocket";
 
 export default class Usuario {
     static id = null;
@@ -29,5 +30,18 @@ export default class Usuario {
         this.telefone = null;
         this.access_token = null;
         this.permissoes = null;
+    }
+
+    static disconnectWebSockets() {
+        console.log("Desconectando WebSockets do usuário:", this.nome);
+    }
+
+    static connectWebSockets(ws_name) {
+        
+        if (ws_name === "main") {
+            console.log("Conectando WebSocket principal para o usuário:", this.nome);
+            MainWS.connect(this.access_token);
+        }
+
     }
 }

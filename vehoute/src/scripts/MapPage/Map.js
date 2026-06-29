@@ -1,13 +1,16 @@
 import { ref } from "vue";
 import { fetch_ } from "../fetcher";
 import MapController from "./MapController";
-import router from "@/router";
+import router from "../../router";
 import { getDateWithOffset } from "../utils";
+import Gatekeeper from "../GateKeeper";
+import MainWS from "../Websockets/Main_Websocket";
 
 export default class Map {
 
     static _tracker_id_to_start_viewing = null;
     static _tracker_selected_id = ref(null);
+    static _tracker_watching_id = ref(null);
     static _date_filter = ref({ start: getDateWithOffset(-30), end: getDateWithOffset(0) });
 
     static async before_enter() {
@@ -16,6 +19,7 @@ export default class Map {
     }
 
     static after_leave() {
+        Map.unsetWatchForTracker();
         Map._tracker_id_to_start_viewing = null;
         Map.trackers = [];
         Map._actual_locs_reference.value = null;
@@ -84,14 +88,21 @@ export default class Map {
                 id: t.id,
                 name: t.rastreador_nome,
                 rastreador_id: t.rastreador_id,
+                token_publico: t.token_publico,
                 localizacoes: [],
             }));
-            console.log("Trackers loaded:", Map.trackers);
+            
             return true;
         } catch (error) {
             console.error("Error loading trackers:", error);
         }
         return false;
+    }
+
+    static insertLocationWithPublicToken(token_publico, location) {
+        const tracker_id = Map.trackers.find(t => t.token_publico === token_publico)?.id;
+        
+        Map.insertLocation(tracker_id, location);
     }
 
     static insertLocation(tracker_id, location) {
@@ -107,10 +118,14 @@ export default class Map {
                 }
             }
 
-            if (nextTo !== -1) {
-                tracker.localizacoes.splice(nextTo, 0, location);
-            } else {
-                tracker.localizacoes.push(location);
+            try {
+                if (nextTo !== -1) {
+                    tracker.localizacoes.splice(nextTo, 0, location);
+                } else {
+                    tracker.localizacoes.push(location);
+                }
+            } catch (error) {
+                console.error("Error inserting location:", error);
             }
 
             //ordena apenas se necessario
@@ -160,7 +175,6 @@ export default class Map {
                     }
                 }
 
-                console.log("Locations loaded:", tracker.localizacoes);
                 return true;
             }
             console.error("Tracker not found for ID:", ur_id);
@@ -169,4 +183,47 @@ export default class Map {
         }
         return false;
     }
+
+    static async setWatchForTracker(tracker_id) {
+        const tracker = Map.trackers.find(t => t.id === tracker_id);
+        if (tracker) {
+            setTimeout(() => {
+                MainWS.message(`wvu:${tracker.token_publico}`);
+            }, 10);
+            const res = await Gatekeeper.openFor(`watch_tracker_add_${tracker.token_publico}`, 2000);
+
+            if (res !== true) {
+                console.warn("Failed to open gate for tracker ID:", tracker_id);
+                return;
+            }
+
+            Map._tracker_watching_id.value = tracker_id;
+            console.log("Watching for tracker ID:", tracker_id);
+        } else {
+            Map.unsetWatchForTracker();
+            console.error("Tracker not found for ID:", tracker_id);
+        }
+    }
+
+    static async unsetWatchForTracker() {
+        const tracker_id = Map._tracker_watching_id.value;
+        const tracker = Map.trackers.find(t => t.id === tracker_id);
+        if (tracker) {
+            setTimeout(() => {
+                MainWS.message(`wvr:${tracker.token_publico}`);
+            }, 10);
+            const res = await Gatekeeper.openFor(`watch_tracker_del_${tracker.token_publico}`, 2000);
+
+            if (res !== true) {
+                console.warn("Failed to open gate for tracker ID:", tracker_id);
+                return;
+            }
+
+            Map._tracker_watching_id.value = null;
+            console.log("Stopped watching for tracker ID:", tracker_id);
+        } else {
+            console.error("Tracker not found for ID:", tracker_id);
+        }
+    }
+
 }

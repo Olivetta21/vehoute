@@ -19,7 +19,7 @@
                         <select v-model="tracker_selected_id" >
                             <option value=null>Selecione um rastreador</option>
                             <option v-for="tracker in MapPagina.trackers" :key="tracker.id" :value="tracker.id">
-                                {{ tracker.name }}
+                                {{ MapPagina._tracker_watching_id.value === tracker.id ? '🟢' : '' }} {{ tracker.name }}
                             </option>
                         </select>
                     </div>
@@ -47,9 +47,9 @@
 </template>
 
 <script>
-import MapPagina from '@/scripts/MapPage/Map';
-import MapController from '@/scripts/MapPage/MapController';
-import { getDateWithOffset } from '@/scripts/utils';
+import MapPagina from '../../scripts/MapPage/Map';
+import MapController from '../../scripts/MapPage/MapController';
+import { getDateWithOffset } from '../../scripts/utils';
 
 export default {
     name: 'MapPage',
@@ -161,6 +161,7 @@ export default {
                 this.filtrarLocalizacoes();
                 MapPagina.setActualLocsReference(this.tracker_selected_id);
                 MapPagina.loadLocations(this.tracker_selected_id);
+                MapPagina.setWatchForTracker(this.tracker_selected_id);
             }
         },
         loc_object_reference: {

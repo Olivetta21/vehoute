@@ -34,16 +34,19 @@ export default class Login {
             const access_token = Cookies.get('access_token');
             if (!access_token) return false;
 
-            console.log("access_token do cookie:", access_token);
-
-            const resp = await fetch_("/login_cadastro/login.php", [{"access_token": access_token}]);
-            return this.setLogged(resp);
+            return await this.fazerLogin(null, null, access_token);
         }
     }
 
-    static async fazerLogin(login, senha) {
-        const resp = await fetch_("/login_cadastro/login.php", [{"login":{"login": login, "senha": senha}}]);
-        return this.setLogged(resp);
+    static async fazerLogin(login, senha, access_token) {
+        const resp = await fetch_("/login_cadastro/login.php", access_token ? [{access_token}] : [{"login":{login, senha}}]);
+        const success = this.setLogged(resp);
+
+        if (success) {
+            Usuario.connectWebSockets("main");
+        }
+
+        return success;
     }
 
 }

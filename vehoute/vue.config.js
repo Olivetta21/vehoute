@@ -11,6 +11,13 @@ module.exports = defineConfig({
         pathRewrite: {
           '^/api': ''
         }
+      },
+      '/ws/': {
+        target: 'ws://vehoute.serv:12344',
+        changeOrigin: true,
+        pathRewrite: {
+          '^/ws/': ''
+        }
       }
     }
   }
