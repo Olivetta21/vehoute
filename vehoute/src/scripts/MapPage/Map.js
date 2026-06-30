@@ -28,7 +28,7 @@ export default class Map {
     }
 
 
-    static enterWithTracker(tracker_id) {   
+    static enterWithTracker(tracker_id) {
         Map._tracker_id_to_start_viewing = tracker_id;
         router.push({ name: 'map' });
     }
@@ -66,7 +66,7 @@ export default class Map {
             console.error("Tracker not found for ID:", tracker_id);
         }
     }
-    
+
     static get_localizacoes(id) {
         const tracker = Map.trackers.find(t => t.id === id);
         return tracker ? tracker.localizacoes : [];
@@ -91,7 +91,7 @@ export default class Map {
                 token_publico: t.token_publico,
                 localizacoes: [],
             }));
-            
+
             return true;
         } catch (error) {
             console.error("Error loading trackers:", error);
@@ -101,7 +101,7 @@ export default class Map {
 
     static insertLocationWithPublicToken(token_publico, location) {
         const tracker_id = Map.trackers.find(t => t.token_publico === token_publico)?.id;
-        
+
         Map.insertLocation(tracker_id, location);
     }
 
@@ -141,7 +141,7 @@ export default class Map {
         }
     }
 
-    
+
     static async fetchLocations(rastreador_id) {
         const response = await fetch_('/usuario/rastreadores/localizacoes/localizacoesdosrastreadores.php', [{ rastreador_id }]);
         if (response.success) {
@@ -151,7 +151,7 @@ export default class Map {
         return [];
     }
 
-     static async loadLocations(ur_id) {
+    static async loadLocations(ur_id) {
         try {
             const tracker = Map.trackers.find(t => t.id === ur_id);
             if (tracker) {
@@ -188,7 +188,7 @@ export default class Map {
         const tracker = Map.trackers.find(t => t.id === tracker_id);
         if (tracker) {
             setTimeout(() => {
-                MainWS.message(`wvu:${tracker.token_publico}`);
+                MainWS.message(`wtu:${tracker.token_publico}`);
             }, 10);
             const res = await Gatekeeper.openFor(`watch_tracker_add_${tracker.token_publico}`, 2000);
 
@@ -210,7 +210,7 @@ export default class Map {
         const tracker = Map.trackers.find(t => t.id === tracker_id);
         if (tracker) {
             setTimeout(() => {
-                MainWS.message(`wvr:${tracker.token_publico}`);
+                MainWS.message(`wtr:${tracker.token_publico}`);
             }, 10);
             const res = await Gatekeeper.openFor(`watch_tracker_del_${tracker.token_publico}`, 2000);
 

@@ -6,7 +6,7 @@ import { getDateWithOffset } from "../utils";
 export default class MainWS {
     static _ws = null;
 
-    static genWS(){
+    static genWS() {
         const ws_url = "/ws/";
         MainWS._ws = new WebSocket(ws_url);
         MainWS._ws.onopen = () => MainWS.on_open();
@@ -28,22 +28,22 @@ export default class MainWS {
 
     static on_open() {
         // ENVIA IDENTIFICAÇÃO EM JSON:
-        MainWS._ws.send("ident:"+Usuario.access_token);
+        MainWS._ws.send("ident:" + Usuario.access_token);
         console.log("WebSocket conectado com sucesso.");
     }
 
     static on_message(evento) {
         console.log("Mensagem recebida do WebSocket:", evento.data);
 
-         //{"t": "wVeh", "tk": "23", "a": true, "r": true}
+        //{"t": "wTrk", "tk": "23", "a": true, "r": true}
         const message = JSON.parse(evento.data);
-        if (message.t === "wVeh" && message.r === true) {
+        if (message.t === "wTrk" && message.r === true) {
             const gate_token = `watch_tracker_${message.a ? 'add' : 'del'}_${message.tk}`;
             Gatekeeper.openGate(gate_token, true);
         }
         //{"t": "loc", "tk": "token_publico123", "lat": -22.81020736694336, "lng": -51.085899353027344}
         else if (message.t === "loc") {
-            MapPagina.insertLocationWithPublicToken(message.tk, {id: new Date().getTime(), lat: message.lat, lng: message.lng, l_data: getDateWithOffset(-4) + ' 15:00:00'});
+            MapPagina.insertLocationWithPublicToken(message.tk, { id: new Date().getTime(), lat: message.lat, lng: message.lng, l_data: getDateWithOffset(-4) + ' 15:00:00' });
         }
     }
 
