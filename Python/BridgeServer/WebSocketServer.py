@@ -1,3 +1,4 @@
+from DataBase import DataBase
 from ProgramStop import ProgramStop
 from FormatMessage import FormatMessage
 from LogService import LogService
@@ -77,6 +78,26 @@ class WebSocketServer:
                     WebSocketServer.log(f"[-] O rastreador {tracker} sem clientes foi removido.")
             
             return result
+    
+    @staticmethod
+    async def db_execute(query, params):
+        try:
+            with DataBase.get() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query, params)
+                    if cur.rowcount > 0:
+                        return cur.fetchall()
+                    return None
+        except:
+            return None
+
+    @staticmethod
+    async def checkClientHasTracker(identidade, tracker_id):
+        res = await WebSocketServer.db_execute(
+            "SELECT 1 from usuario_rastreador where rastreador_id = %s and usuario_id = %s",
+            (tracker_id, identidade)
+        )
+        return res and res[0][0] == 1
 
     class ConnClient:
         serial_id = 0
@@ -93,9 +114,17 @@ class WebSocketServer:
                 WebSocketServer.log(f"[@] Mensagem recebida de {ws.remote_address}: {message}")
                 if message.startswith("ident:"):
                     user_token = message[6:].strip()
-                    #todo: verifica se é um cliente válido
-                    if user_token:
-                        return user_token
+                    
+                    
+                    res = await WebSocketServer.db_execute(
+                        "select id from getUsuarioByToken(%s)",
+                        (user_token,)
+                    )
+
+                    WebSocketServer.log(f"[$][Ident from db] {res}")
+
+                    if res:
+                        return res[0][0]
                     else:
                         await ws.send(FormatMessage.ident(False))
                         return None
@@ -135,25 +164,37 @@ class WebSocketServer:
                 # Requisições do cliente
                 async for message in cli.ws:
                     if message.startswith("wta:"): # Adiciona Watch desse rastreador pro cliente
-                        #todo: verificar se o rastreador existe no banco antes, (e se ele pode ser rastreado)
-                        tracker_id = message[4:].strip()
-                        if WebSocketServer.addWatchToTracker(cli.CID, tracker_id):
-                            await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, True))
+                        tracker_id = int(message[4:].strip())                        
+                        if WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
+                            if WebSocketServer.addWatchToTracker(cli.CID, tracker_id):
+                                await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, True))
+                            else:
+                                await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, False))
                         else:
                             await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, False))
+
+
                     elif message.startswith("wtr:"): # Remove Watch desse rastreador pro cliente
-                        tracker_id = message[4:].strip()
-                        if WebSocketServer.removeWatchFromTracker(cli.CID, tracker_id):
-                            await cli.ws.send(FormatMessage.watchTracker(tracker_id, False, True))
+                        tracker_id = int(message[4:].strip())                        
+                        if WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
+                            if WebSocketServer.removeWatchFromTracker(cli.CID, tracker_id):
+                                await cli.ws.send(FormatMessage.watchTracker(tracker_id, False, True))
+                            else:
+                                await cli.ws.send(FormatMessage.watchTracker(tracker_id, False, False))
                         else:
                             await cli.ws.send(FormatMessage.watchTracker(tracker_id, False, False))
+
+
                     elif message.startswith("wtu:"): # Definir Watch apenas para esse rastreador pro cliente
-                        #todo: verificar se o rastreador existe no banco antes, (e se ele pode ser rastreado)
-                        tracker_id = message[4:].strip()
-                        WebSocketServer.removeWatchFromTracker(cli.CID, None)
-                        if WebSocketServer.addWatchToTracker(cli.CID, tracker_id):
-                            await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, True))
+                        tracker_id = int(message[4:].strip())                        
+                        if WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
+                            WebSocketServer.removeWatchFromTracker(cli.CID, None)
+                            if WebSocketServer.addWatchToTracker(cli.CID, tracker_id):
+                                await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, True))
+                            else:
+                                await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, False))
                         else:
+                            WebSocketServer.log(f"[$][Watch] {cli.identidade}: {tracker_id} - não autorizado")
                             await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, False))
                     else:
                         WebSocketServer.log(f"[$][client] {cli.identidade}: {message}")

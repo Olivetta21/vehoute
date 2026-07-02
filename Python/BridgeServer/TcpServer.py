@@ -3,6 +3,7 @@ from TrackerLocation import TrackerLocation
 from NewLocProcessing import NewLocProcessing
 from CryptLib.Crypt import Crypt
 from LogService import LogService
+from DataBase import DataBase
 import socket
 import struct
 import threading
@@ -25,25 +26,39 @@ class TcpServer:
     def log(msg):
         LogService.log(f"[TCP]{msg}")
 
+    @staticmethod
+    def converter(valor):
+        if isinstance(valor, str):
+            #recebe string de HEX retorna um bytearray
+            return bytearray.fromhex(valor)
+        elif isinstance(valor, (bytearray)):
+            #recebe bytearray retorna string em hex
+            return bytes(valor).hex()
+        else:
+            raise TypeError("O valor deve ser uma string, bytes ou bytearray")
+
 
     class ConnTracker:
-        TEMP_TABLE_KEYS = {
-            "arduino001": bytearray([0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01]),            
-            "token_publico123": bytearray([0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01]),
-            "tokenPublicoAlpha123": bytearray([0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01]),
-            "teste2": bytearray([0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01]),
-            "paiapublictoken": bytearray([0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01]),
-            "teste": bytearray([0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01])
-        }
 
         def recTrackerPlainToken(self, conn):
             try:
-                self.token = conn.recv(32).decode(errors='ignore').rstrip('\x00')
-                if self.token not in TcpServer.ConnTracker.TEMP_TABLE_KEYS:
-                    TcpServer.log(f"[!] Plain Token não encontrado na tabela")
-                    return False
+                public_token = conn.recv(32).decode(errors='ignore').rstrip('\x00')
+
+                result = None
+                with DataBase.get() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "SELECT id, token from rastreador where token_publico = %s",
+                            (public_token,)
+                        )
+                        result = cur.fetchone()
+
+                self.tracker_id = result[0]
+                result_byte = TcpServer.converter(result[1])
+                TcpServer.log(f"[$][Pub_Priv_Token] {self.tracker_id}: {result[1]} - {public_token}")
+
                 self.Crypt = Crypt()
-                self.Crypt.setKeys(bytearray(TcpServer.ConnTracker.TEMP_TABLE_KEYS[self.token]))
+                self.Crypt.setKeys(result_byte)
                 return True
             except Exception as e:
                 TcpServer.log(f"[!] Erro ao receber plain token do rastreador: {e}")
@@ -60,7 +75,7 @@ class TcpServer:
         def __init__(self, conn, addr):
             self.conn = conn
             self.addr = addr
-            self.token = None
+            self.tracker_id = None
             self.Crypt = None
 
         def __enter__(self):
@@ -81,19 +96,19 @@ class TcpServer:
             return self
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            TcpServer.log(f"[-] Desligando rastreador {self.token or "não identificado"}...")
+            TcpServer.log(f"[-] Desligando rastreador {self.tracker_id or "não identificado"}...")
             self.conn.close()
 
     def handleTracker(self, connection, address):
         try:
             with TcpServer.ConnTracker(connection, address) as tracker:
-                TcpServer.log(f"[$] Token recebido de {tracker.addr}: '{tracker.token}'")
+                TcpServer.log(f"[$] ID recebido de {tracker.addr}: '{tracker.tracker_id}'")
 
                 while True:
                     # Espera por latitude e longitude
                     DATA = tracker.conn.recv(1024)
                     if not DATA:
-                        TcpServer.log(f"[!] {tracker.token} nenhuma resposta obtida.")
+                        TcpServer.log(f"[!] {tracker.tracker_id} nenhuma resposta obtida.")
                         return
                     
                     lat, lng = None, None
@@ -111,10 +126,10 @@ class TcpServer:
                         break
 
                     tracker.conn.sendall(TcpServer.R_OK)
-                    TcpServer.log(f"[v] {tracker.token} {len(DATA)}bytes LAT:{lat:.6f} LNG:{lng:.6f}")
+                    TcpServer.log(f"[v] {tracker.tracker_id} {len(DATA)}bytes LAT:{lat:.6f} LNG:{lng:.6f}")
+                    
                     # Envia nova localização para o WebSocket
-
-                    NewLocProcessing.FILA_NEW_LOC.put(TrackerLocation(tracker.token, lat, lng))
+                    NewLocProcessing.FILA_NEW_LOC.put(TrackerLocation(tracker.tracker_id, lat, lng))
 
         except AuthError as e:
             TcpServer.log(f"[!] Erro de autenticação: {e}")

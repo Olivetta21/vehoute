@@ -1,17 +1,12 @@
+from DataBase import DataBase
 from TcpServer import TcpServer
 from WebSocketServer import WebSocketServer
 from NewLocProcessing import NewLocProcessing
-from time import sleep
 from LogService import LogService
 from ProgramStop import ProgramStop
 import threading
 import os
 from datetime import datetime
-
-def closeProgram():
-    LogService.log("closing")
-    sleep(3)
-    ProgramStop.set("Program closed")
 
 def adminActions():
     try:
@@ -26,6 +21,7 @@ def adminActions():
 
 if __name__ == "__main__":
     threading.Thread(target=LogService.service, daemon=True).start()
+    DataBase.setup()
     threading.Thread(target=NewLocProcessing.processNewLocation, daemon=True).start()
     threading.Thread(target=WebSocketServer().start, daemon=True).start()
     threading.Thread(target=TcpServer().start, daemon=True).start()

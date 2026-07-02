@@ -22,6 +22,10 @@ class NewLocProcessing:
             NewLocProcessing.log(f"[!] Tentou se comunicar com {cli_ws.remote_address} mas a conexão estava encerrada.")
 
     @staticmethod
+    def trackerCanSendLoc(tracker_id):
+        return True
+
+    @staticmethod
     def processNewLocation():
         NewLocProcessing.log("[O] Iniciando processamento de novas localizações...")
         
@@ -36,6 +40,12 @@ class NewLocProcessing:
                 if new_loc is None or not isinstance(new_loc, TrackerLocation):
                     NewLocProcessing.log("[!] Localização inválida recebida. Ignorando...")
                     continue
+
+                NewLocProcessing.log(f"[<] Recebido loc do {new_loc.tracker} LAT:{new_loc.lat} LNG:{new_loc.lng}")
+                
+                if not NewLocProcessing.trackerCanSendLoc(new_loc.tracker):
+                    NewLocProcessing.log("[!] Tracker não pode enviar loc. Ignorando...")
+                    continue
                             
                 tracker_copy = None
                 with WebSocketServer.TRACKERS_LOCK:
@@ -46,16 +56,16 @@ class NewLocProcessing:
                 loc_message = FormatMessage.loc(new_loc.tracker, new_loc.lat, new_loc.lng)
 
                 for cid in tracker_copy:
-                    c_ws = None
+                    client = None
                     with WebSocketServer.CLIENTS_LOCK:
                         if cid not in WebSocketServer.CLIENTS:
                             continue
-                        c_ws = WebSocketServer.CLIENTS[cid].ws
+                        client = WebSocketServer.CLIENTS[cid]
                     
-                    NewLocProcessing.log(f"[+] Enviando {new_loc.tracker} para cliente {cid}")
+                    NewLocProcessing.log(f"[>] Enviando loc do {new_loc.tracker} para o cliente({client.CID}) {client.identidade}")
                     loop.call_soon_threadsafe(
                         asyncio.create_task,
-                        NewLocProcessing.sendNewLocToCLients(loc_message, c_ws)
+                        NewLocProcessing.sendNewLocToCLients(loc_message, client.ws)
                     )
-            except:
-                ProgramStop.set("Process new location")
+            except Exception as e:
+                ProgramStop.set("Process new location error: " + str(e))

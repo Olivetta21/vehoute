@@ -43,7 +43,7 @@ export default class MainWS {
         }
         //{"t": "loc", "tk": "token_publico123", "lat": -22.81020736694336, "lng": -51.085899353027344}
         else if (message.t === "loc") {
-            MapPagina.insertLocationWithPublicToken(message.tk, { id: new Date().getTime(), lat: message.lat, lng: message.lng, l_data: getDateWithOffset(-4) + ' 15:00:00' });
+            MapPagina.insertLocationWithRealTrackerID(message.tk, { id: new Date().getTime(), lat: message.lat, lng: message.lng, l_data: getDateWithOffset(-4) + ' 15:00:00' });
         }
     }
 

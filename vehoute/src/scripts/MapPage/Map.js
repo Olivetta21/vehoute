@@ -99,8 +99,8 @@ export default class Map {
         return false;
     }
 
-    static insertLocationWithPublicToken(token_publico, location) {
-        const tracker_id = Map.trackers.find(t => t.token_publico === token_publico)?.id;
+    static insertLocationWithRealTrackerID(id, location) {
+        const tracker_id = Map.trackers.find(t => t.rastreador_id === id)?.id;
 
         Map.insertLocation(tracker_id, location);
     }
@@ -188,9 +188,9 @@ export default class Map {
         const tracker = Map.trackers.find(t => t.id === tracker_id);
         if (tracker) {
             setTimeout(() => {
-                MainWS.message(`wtu:${tracker.token_publico}`);
+                MainWS.message(`wtu:${tracker.rastreador_id}`);
             }, 10);
-            const res = await Gatekeeper.openFor(`watch_tracker_add_${tracker.token_publico}`, 2000);
+            const res = await Gatekeeper.openFor(`watch_tracker_add_${tracker.rastreador_id}`, 2000);
 
             if (res !== true) {
                 console.warn("Failed to open gate for tracker ID:", tracker_id);
@@ -210,9 +210,9 @@ export default class Map {
         const tracker = Map.trackers.find(t => t.id === tracker_id);
         if (tracker) {
             setTimeout(() => {
-                MainWS.message(`wtr:${tracker.token_publico}`);
+                MainWS.message(`wtr:${tracker.rastreador_id}`);
             }, 10);
-            const res = await Gatekeeper.openFor(`watch_tracker_del_${tracker.token_publico}`, 2000);
+            const res = await Gatekeeper.openFor(`watch_tracker_del_${tracker.rastreador_id}`, 2000);
 
             if (res !== true) {
                 console.warn("Failed to open gate for tracker ID:", tracker_id);
