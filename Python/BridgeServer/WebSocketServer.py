@@ -28,7 +28,7 @@ class WebSocketServer:
     def addClient(cli):
         with WebSocketServer.CLIENTS_LOCK:
             WebSocketServer.CLIENTS[cli.CID] = cli
-            WebSocketServer.log(f"[+] Cliente {cli.CID} adicionado.")
+            WebSocketServer.log(f"[+] Cliente({cli.CID}) {cli.identidade} adicionado.")
 
     @staticmethod
     def removeClient(cli):
@@ -36,7 +36,7 @@ class WebSocketServer:
         with WebSocketServer.CLIENTS_LOCK:
             if cli.CID in WebSocketServer.CLIENTS:
                 del WebSocketServer.CLIENTS[cli.CID]
-                WebSocketServer.log(f"[-] Cliente {cli.CID} removido.")
+                WebSocketServer.log(f"[-] Cliente({cli.CID}) {cli.identidade} removido.")
 
     @staticmethod
     def addWatchToTracker(cid, tracker_id):
@@ -45,7 +45,7 @@ class WebSocketServer:
                 WebSocketServer.TRACKERS[tracker_id] = set()
             if cid not in WebSocketServer.TRACKERS[tracker_id]:
                 WebSocketServer.TRACKERS[tracker_id].add(cid)
-                WebSocketServer.log(f"[+] Cliente {cid} observando o rastreador {tracker_id}")
+                WebSocketServer.log(f"[+] Cliente({cid}) observando o rastreador {tracker_id}")
                 return True
         return False
 
@@ -57,7 +57,7 @@ class WebSocketServer:
 
             def remove(tracker):
                 if cid in WebSocketServer.TRACKERS[tracker]:
-                    WebSocketServer.log(f"[-] Cliente {cid} parou de observar o rastreador {tracker}")
+                    WebSocketServer.log(f"[-] Cliente({cid}) parou de observar o rastreador {tracker}")
                     WebSocketServer.TRACKERS[tracker].discard(cid)
                     if not WebSocketServer.TRACKERS[tracker]:  # Deletar se ficar vazio
                         to_delete.append(tracker)
@@ -75,7 +75,7 @@ class WebSocketServer:
             if to_delete:
                 for tracker in to_delete:
                     del WebSocketServer.TRACKERS[tracker]
-                    WebSocketServer.log(f"[-] O rastreador {tracker} sem clientes foi removido.")
+                    WebSocketServer.log(f"[-] O rastreador {tracker} foi removido pois ficou sem clientes.")
             
             return result
     
@@ -111,17 +111,16 @@ class WebSocketServer:
 
         async def getClientIdent(self, ws):
             async for message in ws:
-                WebSocketServer.log(f"[@] Mensagem recebida de {ws.remote_address}: {message}")
+                WebSocketServer.log(f"[@] Mensagem do cliente({self.CID}): {message}")
                 if message.startswith("ident:"):
                     user_token = message[6:].strip()
-                    
                     
                     res = await WebSocketServer.db_execute(
                         "select id from getUsuarioByToken(%s)",
                         (user_token,)
                     )
 
-                    WebSocketServer.log(f"[$][Ident from db] {res}")
+                    WebSocketServer.log(f"[$][Ident] cliente({self.CID}): {res}")
 
                     if res:
                         return res[0][0]
@@ -136,7 +135,7 @@ class WebSocketServer:
             self.CID = WebSocketServer.ConnClient.getNextID()
 
         async def __aenter__(self):
-            WebSocketServer.log(f"[@] Cliente fazendo conexão: {self.ws.remote_address}")
+            WebSocketServer.log(f"[@] Cliente({self.CID}) fazendo conexão: {self.ws.remote_address}")
             clientIdent_task = asyncio.create_task(self.getClientIdent(self.ws))
             try:
                 self.identidade = await asyncio.wait_for(clientIdent_task, timeout=5.0)
@@ -146,8 +145,8 @@ class WebSocketServer:
             #todo: verifica no banco
 
             if not self.identidade:
-                WebSocketServer.log(f"[!] Cliente {self.CID} falhou na autenticação.")
-                raise AuthError("Cliente não autenticado.")
+                WebSocketServer.log(f"[!] Cliente({self.CID}) falhou na autenticação.")
+                raise AuthError(f"Cliente({self.CID}) não autenticado.")
 
             await self.ws.send(FormatMessage.ident(True))
             WebSocketServer.addClient(self)
@@ -165,7 +164,7 @@ class WebSocketServer:
                 async for message in cli.ws:
                     if message.startswith("wta:"): # Adiciona Watch desse rastreador pro cliente
                         tracker_id = int(message[4:].strip())                        
-                        if WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
+                        if await WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
                             if WebSocketServer.addWatchToTracker(cli.CID, tracker_id):
                                 await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, True))
                             else:
@@ -176,7 +175,7 @@ class WebSocketServer:
 
                     elif message.startswith("wtr:"): # Remove Watch desse rastreador pro cliente
                         tracker_id = int(message[4:].strip())                        
-                        if WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
+                        if await WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
                             if WebSocketServer.removeWatchFromTracker(cli.CID, tracker_id):
                                 await cli.ws.send(FormatMessage.watchTracker(tracker_id, False, True))
                             else:
@@ -187,17 +186,17 @@ class WebSocketServer:
 
                     elif message.startswith("wtu:"): # Definir Watch apenas para esse rastreador pro cliente
                         tracker_id = int(message[4:].strip())                        
-                        if WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
+                        if await WebSocketServer.checkClientHasTracker(cli.identidade, tracker_id):
                             WebSocketServer.removeWatchFromTracker(cli.CID, None)
                             if WebSocketServer.addWatchToTracker(cli.CID, tracker_id):
                                 await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, True))
                             else:
                                 await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, False))
                         else:
-                            WebSocketServer.log(f"[$][Watch] {cli.identidade}: {tracker_id} - não autorizado")
+                            WebSocketServer.log(f"[$][Watch] cliente({cli.CID}) {cli.identidade}: {tracker_id} - não autorizado")
                             await cli.ws.send(FormatMessage.watchTracker(tracker_id, True, False))
                     else:
-                        WebSocketServer.log(f"[$][client] {cli.identidade}: {message}")
+                        WebSocketServer.log(f"[!][message] cliente({cli.CID}) {cli.identidade}: {message}")
         except AuthError as e:
             WebSocketServer.log(f"[!] {e}")
         except websockets.ConnectionClosed:

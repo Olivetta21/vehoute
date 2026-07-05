@@ -39,6 +39,14 @@ class TcpServer:
 
 
     class ConnTracker:
+        serial_id = 0
+        serial_id_lock = threading.Lock()
+        
+        @staticmethod
+        def getNextID():
+            with TcpServer.ConnTracker.serial_id_lock:
+                TcpServer.ConnTracker.serial_id += 1
+                return TcpServer.ConnTracker.serial_id
 
         def recTrackerPlainToken(self, conn):
             try:
@@ -55,13 +63,13 @@ class TcpServer:
 
                 self.tracker_id = result[0]
                 result_byte = TcpServer.converter(result[1])
-                TcpServer.log(f"[$][Pub_Priv_Token] {self.tracker_id}: {result[1]} - {public_token}")
+                TcpServer.log(f"[$][Pub_Priv_Token] Rastreador({self.CID}): {result} - {public_token}")
 
                 self.Crypt = Crypt()
                 self.Crypt.setKeys(result_byte)
                 return True
             except Exception as e:
-                TcpServer.log(f"[!] Erro ao receber plain token do rastreador: {e}")
+                TcpServer.log(f"[!] Rastreador({self.CID}) Erro ao receber plain token: {e}")
             return False
 
         def recValidateTracker(self, conn):
@@ -73,42 +81,43 @@ class TcpServer:
             return False
 
         def __init__(self, conn, addr):
+            self.CID = TcpServer.ConnTracker.getNextID()
             self.conn = conn
             self.addr = addr
             self.tracker_id = None
             self.Crypt = None
 
         def __enter__(self):
-            TcpServer.log(f"[+] Rastreador fazendo conexão por {self.addr}")
+            TcpServer.log(f"[+] Rastreador({self.CID}) fazendo conexão por {self.addr}")
 
             # Pegar plain token do rastreador            
             if not self.recTrackerPlainToken(self.conn):
-                TcpServer.log(f"[!] Plain Token inválido de {self.addr}. Desconectando...")
-                raise AuthError("Plain Token inválido.")
+                TcpServer.log(f"[!] Plain Token do rastreador({self.CID}) inválido. Desconectando...")
+                raise AuthError(f"Plain Token do rastreador({self.CID}) inválido.")
             self.conn.sendall(TcpServer.R_PLAIN_TOKEN_OK)
 
             # Espera validação do rastreador
             if not self.recValidateTracker(self.conn):
-                TcpServer.log(f"[!] O rastreador {self.addr} não foi validado. Desconectando...")
-                raise AuthError("Não validado.")
+                TcpServer.log(f"[!] O rastreador({self.CID}) não foi validado. Desconectando...")
+                raise AuthError(f"O rastreador({self.CID}) não foi validado.")
             self.conn.sendall(TcpServer.R_TOKEN_OK)
 
             return self
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            TcpServer.log(f"[-] Desligando rastreador {self.tracker_id or "não identificado"}...")
+            TcpServer.log(f"[-] Desligando rastreador({self.CID}) {self.tracker_id or 'não identificado'}...")
             self.conn.close()
 
     def handleTracker(self, connection, address):
         try:
             with TcpServer.ConnTracker(connection, address) as tracker:
-                TcpServer.log(f"[$] ID recebido de {tracker.addr}: '{tracker.tracker_id}'")
+                TcpServer.log(f"[$] ID recebido do rastreador({tracker.CID}): '{tracker.tracker_id}'")
 
                 while True:
                     # Espera por latitude e longitude
                     DATA = tracker.conn.recv(1024)
                     if not DATA:
-                        TcpServer.log(f"[!] {tracker.tracker_id} nenhuma resposta obtida.")
+                        TcpServer.log(f"[!] rastreador({tracker.CID}) {tracker.tracker_id} nenhuma resposta obtida.")
                         return
                     
                     lat, lng = None, None
@@ -117,16 +126,16 @@ class TcpServer:
                         DATA_DECRYPTED = bytearray(DATA)
                         tracker.Crypt.decrypt(DATA_DECRYPTED)
                         if len(DATA_DECRYPTED) != 8:
-                            TcpServer.log(f"[!] Pacote decifrado inválido ({len(DATA_DECRYPTED)} bytes)")
+                            TcpServer.log(f"[!] Rastreador({tracker.CID}) Pacote decifrado inválido ({len(DATA_DECRYPTED)} bytes)")
                             continue
                         lat, lng = struct.unpack('<ff', DATA_DECRYPTED)
                     except Exception as e:
-                        TcpServer.log(f"[!] Erro ao decifrar pacote: {e}")
-                        TcpServer.log(f"[?] Pacote: {DATA.hex()}")
+                        TcpServer.log(f"[!] Rastreador({tracker.CID}) Erro ao decifrar pacote: {e}")
+                        TcpServer.log(f"[?] Rastreador({tracker.CID}) Pacote: {DATA.hex()}")
                         break
 
                     tracker.conn.sendall(TcpServer.R_OK)
-                    TcpServer.log(f"[v] {tracker.tracker_id} {len(DATA)}bytes LAT:{lat:.6f} LNG:{lng:.6f}")
+                    TcpServer.log(f"[Loc] Rastreador({tracker.CID}) {tracker.tracker_id} {len(DATA)}b Lat:{lat:.6f} Lng:{lng:.6f}")
                     
                     # Envia nova localização para o WebSocket
                     NewLocProcessing.FILA_NEW_LOC.put(TrackerLocation(tracker.tracker_id, lat, lng))
