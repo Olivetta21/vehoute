@@ -1,3 +1,4 @@
+from DataBase import DataBase
 from FormatMessage import FormatMessage
 from TrackerLocation import TrackerLocation
 from WebSocketServer import WebSocketServer
@@ -46,7 +47,20 @@ class NewLocProcessing:
                 if not NewLocProcessing.trackerCanSendLoc(new_loc.tracker):
                     NewLocProcessing.log("[!] Tracker não pode enviar loc. Ignorando...")
                     continue
-                            
+
+                result = None
+                with DataBase.get() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "select insereLocalizacao(%s, %s, %s)",
+                            (new_loc.tracker, new_loc.lat, new_loc.lng)
+                        )
+                        result = cur.fetchone()
+                
+                if not result or result[0] is None or result[0] < 1:
+                    NewLocProcessing.log(f"[!] Localização ignorada: {new_loc.tracker} Lat: {new_loc.lat} Lng: {new_loc.lng}")
+                    continue
+                
                 tracker_copy = None
                 with WebSocketServer.TRACKERS_LOCK:
                     if new_loc.tracker not in WebSocketServer.TRACKERS:

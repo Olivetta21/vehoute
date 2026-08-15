@@ -16,6 +16,14 @@ def adminActions():
                 ProgramStop.set("Admin action: exit")
             elif msg == "clear":
                 os.system("cls")
+            elif msg.startswith("list "):
+                msg = msg[5:]
+                if msg == "tcpclients":
+                    TcpServer.logTrackersAtivos()
+            elif msg.startswith("send "):
+                msg = msg[5:]
+                if msg.startswith("tcp "):
+                    TcpServer.sendToAllClients(msg[4:])
     except:
         ProgramStop.set("Admin action error")
 

@@ -510,6 +510,58 @@ select ur.id, ur.usuario_id, ur.rastreador_id, ur.status as ur_status, ur.loc_te
 	join usuario u on u.id = ur.usuario_id;
 
 
+CREATE FUNCTION insereLocalizacao(p_rastreador_id INTEGER, p_lat DOUBLE PRECISION, p_lng DOUBLE PRECISION)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_ultima RECORD;
+    v_distancia DOUBLE PRECISION;
+    v_id INTEGER;
+    raio_terra CONSTANT DOUBLE PRECISION := 6371000;
+BEGIN
+    -- Busca a última localização válida do rastreador
+    SELECT id, lat, lng
+    INTO v_ultima
+    FROM localizacao
+    WHERE rastreador_id = p_rastreador_id AND invalida = false
+    ORDER BY data DESC
+    LIMIT 1;
+
+    IF FOUND THEN
+        -- Distancia (Haversine)
+        v_distancia :=
+            raio_terra * 2 * ASIN(
+                SQRT(
+                    POWER(SIN(RADIANS(p_lat - v_ultima.lat) / 2), 2) +
+                    COS(RADIANS(v_ultima.lat)) *
+                    COS(RADIANS(p_lat)) *
+                    POWER(SIN(RADIANS(p_lng - v_ultima.lng) / 2), 2)
+                )
+            );
+
+        IF v_distancia <= 3 THEN
+            INSERT INTO localizacao (rastreador_id, lat, lng, data, invalida)
+            VALUES (p_rastreador_id, p_lat, p_lng, NOW(), true);
+            RETURN 0;
+        END IF;
+    END IF;
+
+    -- Insere localização válida
+    INSERT INTO localizacao (rastreador_id, lat, lng, data, invalida)
+    VALUES (p_rastreador_id, p_lat, p_lng, NOW(), false)
+    RETURNING id INTO v_id;
+    RETURN v_id;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Retorna um código negativo em caso de erro
+        RETURN -1;
+END;
+$$;
+
+
+
 insert into legal_ident_tipo (descricao, regex) values ('Geral', '.+');
 insert into legal_ident (tipo_id, identidade) values (1, '123456789');
 

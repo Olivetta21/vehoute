@@ -15,6 +15,22 @@ void setup() {
   Serial.println("Digite: send:mensagem");
 }
 
+void sendMensByte(String textoHex) {
+  Serial.println("EnviandoB: " + textoHex);
+  int tamanho = textoHex.length() / 2;
+  sim800.print("AT+CIPSEND=");
+  sim800.println(tamanho);
+  delay(100);
+
+  for (unsigned int i = 0; i < textoHex.length(); i += 2) {
+    String byteString = textoHex.substring(i, i + 2); // Converte o par de letras hexa para um número de 0 a 255
+    byte valorByte = strtol(byteString.c_str(), NULL, 16);
+    sim800.write(valorByte); // Envia o byte puro
+  }
+  sim800.write(0x1A);
+}
+
+
 void loop() {
   // Captura entrada do Serial do PC
   if (Serial.available()) {
@@ -29,7 +45,12 @@ void loop() {
         String msg = buffer.substring(5); // pega só a mensagem após "send:"
         sendMessage(msg);
       }
+      else if (buffer.startsWith("byte:")) {
+        String msg = buffer.substring(5); // pega só a mensagem após "send:"
+        sendMensByte(msg);
+      }
       else {
+        Serial.println("Comando: " + buffer);
         sim800.println(buffer);
       }
 
