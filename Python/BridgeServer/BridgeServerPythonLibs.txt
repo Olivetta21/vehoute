@@ -1,0 +1,4 @@
+dotenv;python-dotenv
+psycopg;psycopg[binary]
+psycopg_pool;psycopg-pool
+websockets;websockets

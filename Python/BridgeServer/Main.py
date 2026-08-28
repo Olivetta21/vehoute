@@ -1,3 +1,6 @@
+from PackagesInstaller import testar_bibliotecas
+testar_bibliotecas("./BridgeServerPythonLibs.txt")
+
 from DataBase import DataBase
 from TcpServer import TcpServer
 from WebSocketServer import WebSocketServer
