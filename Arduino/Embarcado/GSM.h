@@ -232,6 +232,7 @@ private:
 
 	GSM_STAGES gsm_stage = GSM_STAGE_INITIALIZATION;
 
+	static int tmp = 0;
 
 	int getEvent() {
 		GSMEvent event;
@@ -245,6 +246,7 @@ private:
 
 		switch (event) {
 			case GSM_EVENT_OK: {
+				Serial.print(tmp++);
 				gsm_println("GET EVENT: OK");
 				if (gsm_stage == GSM_STAGE_WAIT_AT_OK) {
 					gsm_stage = GSM_STAGE_SEND_CGATT;
@@ -398,42 +400,43 @@ public:
 	}
 
 	void poll() {
-		
 		// Fazer o arduino trocar para esse software serial:
 		GsmSerial.listen();
-		delay(20);
+		
+		unsigned long time_limit = millis() + 100;
+		while (millis() < time_limit) {
+			int qnt = GsmSerial.available();
+			while (qnt--) {
+				char c = static_cast<char>(GsmSerial.read());
 
-		int qnt = GsmSerial.available();
-		while (qnt--) {
-			char c = static_cast<char>(GsmSerial.read());
-
-			if (c == '\r') {
-				continue;
-			}
-
-			if (c == '>') {
-				pushLineEvent(true);
-				continue;
-			}
-
-			if (c == '\n') {
-				if (line_length < 2) {
-					resetLine();
+				if (c == '\r') {
 					continue;
-				};
-				pushLineEvent(false);
-				continue;
-			}
+				}
 
-			if (c < 32 || c > 126) {
-				continue;
-			}
+				if (c == '>') {
+					pushLineEvent(true);
+					continue;
+				}
 
-			if (line_length < kLineBufferSize - 1) {
-				line_buffer[line_length++] = c;
-				line_buffer[line_length] = '\0';
-			} else {
-				line_overflow = true;
+				if (c == '\n') {
+					if (line_length < 2) {
+						resetLine();
+						continue;
+					};
+					pushLineEvent(false);
+					continue;
+				}
+
+				if (c < 32 || c > 126) {
+					continue;
+				}
+
+				if (line_length < kLineBufferSize - 1) {
+					line_buffer[line_length++] = c;
+					line_buffer[line_length] = '\0';
+				} else {
+					line_overflow = true;
+				}
 			}
 		}
 	}
@@ -570,6 +573,13 @@ public:
 		return true;
 	}
 
+	bool isStage(GSM_STAGES stage) {
+		return gsm_stage == stage;
+	}
+
+	void setListen() {
+		GsmSerial.listen();
+	}
 };
 
 GSM GSM;
