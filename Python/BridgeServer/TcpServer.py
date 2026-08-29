@@ -166,7 +166,7 @@ class TcpServer:
                     DATA = tracker.conn.recv(1024)
                     if not DATA:
                         TcpServer.log(f"[!] rastreador({tracker.CID}) {tracker.tracker_id} nenhuma resposta obtida.")
-                        return
+                        break
                     
                     lat, lng = None, None
 

@@ -10,6 +10,7 @@ SoftwareSerial GpsSerial(4, 3);
 
 class GPS {
 private:
+	bool has_location = false;
 	double latitude = 0.0;
 	double longitude = 0.0;
 
@@ -25,6 +26,7 @@ public:
 				if (GpsProcessor.location.isUpdated()) {
 					latitude = GpsProcessor.location.lat();
 					longitude = GpsProcessor.location.lng();
+					has_location = true;
 					return;
 				}
 			}
@@ -32,14 +34,17 @@ public:
 	}
 
 	bool hasLocation() {
-		return latitude != 0.0 || longitude != 0.0;
+		return has_location;
 	}
 
-	void getLocation(double &lat, double &lon) {
+	bool getLocation(double &lat, double &lon) {
+		if (!hasLocation()) {
+			return false;
+		}
 		lat = latitude;
 		lon = longitude;
-		latitude = 0.0;
-		longitude = 0.0;
+		has_location = false;
+		return true;
 	}
 };
 

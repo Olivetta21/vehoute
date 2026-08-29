@@ -21,7 +21,9 @@ enum GSMEvent {
 	GSM_EVENT_CLOSED,
 
 	GSM_EVENT_TCP_SERVER_RECEIVED_PLAIN_TOKEN,
-	GSM_EVENT_TCP_SERVER_RECEIVED_PRIVATE_TOKEN
+	GSM_EVENT_TCP_SERVER_RECEIVED_PRIVATE_TOKEN,
+
+	GSM_EVENT_NEW_LOCATION_AVAILABLE
 };
 
 enum GSM_STAGES {
@@ -50,7 +52,11 @@ enum GSM_STAGES {
 	GSM_STAGE_WAIT_PRIVATE_TOKEN_OK,
 	GSM_STAGE_PRIVATE_TOKEN_ACCEPTED,
 
-	GSM_STAGE_READY_FOR_LOCATION
+	GSM_STAGE_READY_FOR_LOCATION,
+	GSM_STAGE_LOC_WAITING_FOR_SEND,
+	GSM_STAGE_PREPARE_SEND_LOCATION,
+	GSM_STAGE_SEND_LOCATION,
+	GSM_STAGE_WAIT_LOCATION_OK
 };
 
 // Fila fixa de eventos: evita String, alocacao dinamica e fragmentacao de heap.
@@ -74,10 +80,50 @@ private:
 
 	uint8_t identify_stage = 0;
 
-	uint8_t send_location_stage = 0;
-	struct {
-		double lat;
-		double lon;
+	class LocationData {
+	private:
+		bool pendente = false;
+		bool sending = false;
+		double lat = 0.0;
+		double lon = 0.0;
+
+	public:
+		void startSending() {
+			sending = true;
+		}
+
+		bool isSending() {
+			return sending;
+		}
+
+		void setLocation(double lat_, double lon_) {
+			lat = lat_;
+			lon = lon_;
+			pendente = true;
+		}
+
+		bool getLocation(double &lat_, double &lon_) {
+			if (!pendente) {
+				return false;
+			}
+			lat_ = lat;
+			lon_ = lon;
+			return true;
+		}
+
+		void sucessfullySent() {
+			pendente = false;
+			sending = false;
+		}
+
+		void setNotSending() {
+			sending = false;
+		}
+
+		bool isPendente() {
+			return pendente;
+		}
+
 	} Location;
 
 	void gsm_print(const char* msg, bool newline = false) {
@@ -126,9 +172,8 @@ private:
 	}
 
 	GSMEvent classifyLine() {
-		gsm_print("line received: (");
-		gsm_print(line_buffer);
-		gsm_println(")");
+		gsm_print("LR");
+		gsm_println(line_buffer);
 
 		if (line_overflow) {
 			return GSM_EVENT_UNKNOWN;
@@ -232,22 +277,18 @@ private:
 
 	GSM_STAGES gsm_stage = GSM_STAGE_INITIALIZATION;
 
-	static int tmp = 0;
-
 	int getEvent() {
 		GSMEvent event;
 		if (!nextEvent(event) || event == GSM_EVENT_NONE) return 0;
-		gsm_print("event received: (");
+		gsm_print("ER");
 		char evt_cstr[12];
 		itoa(event, evt_cstr, 10);
-		gsm_print(evt_cstr);
-		gsm_println(")");
+		gsm_println(evt_cstr);
 		
 
 		switch (event) {
 			case GSM_EVENT_OK: {
-				Serial.print(tmp++);
-				gsm_println("GET EVENT: OK");
+				gsm_println("eOK");
 				if (gsm_stage == GSM_STAGE_WAIT_AT_OK) {
 					gsm_stage = GSM_STAGE_SEND_CGATT;
 				}
@@ -264,15 +305,15 @@ private:
 				return 1;
 			}
 			case GSM_EVENT_TCP_SERVER_CLOSED: {
-				gsm_println("GET EVENT: TCP SERVER CLOSED");
-				if (gsm_stage == GSM_STAGE_WAIT_CIPSTART_OK) {
-					gsm_stage = GSM_STAGE_SEND_CIPSTART;
+				gsm_println("eTSC");
+				if (gsm_stage >= GSM_STAGE_WAIT_CIPSTART_OK) {
+					gsm_stage = GSM_STAGE_SEND_CIFSR;
 				}
 				else return -1;
 				return 1;
 			}
 			case GSM_EVENT_CONNECT_OK: {
-				gsm_println("GET EVENT: CONNECT OK");
+				gsm_println("eCOK");
 				if (gsm_stage == GSM_STAGE_WAIT_CIPSTART_OK) {
 					gsm_stage = GSM_STAGE_CONNECTED;
 				}
@@ -280,7 +321,7 @@ private:
 				return 1;
 			}
 			case GSM_EVENT_SHUT_OK: {
-				gsm_println("GET EVENT: SHUT OK");
+				gsm_println("eSOK");
 				if (gsm_stage == GSM_STAGE_WAIT_CIPSHUT_OK) {
 					gsm_stage = GSM_STAGE_INITIALIZATION;
 				}
@@ -288,7 +329,7 @@ private:
 				return 1;
 			}
 			case GSM_EVENT_IP:{
-				gsm_println("GET EVENT: IP");
+				gsm_println("eIP");
 				if (gsm_stage == GSM_STAGE_WAIT_CIFSR_OK) {
 					gsm_stage = GSM_STAGE_SEND_CIPSTART;
 				}
@@ -297,11 +338,10 @@ private:
 
 			}
 			case GSM_EVENT_ERROR: {
-				gsm_print("GET EVENT: ERROR at stage (");
+				gsm_print("eERR");
 				char stage_cstr[12];
 				itoa(gsm_stage, stage_cstr, 10);
-				gsm_print(stage_cstr);
-				gsm_println(")");
+				gsm_println(stage_cstr);
 				if (gsm_stage == GSM_STAGE_WAIT_CGATT_OK) {
 					gsm_stage = GSM_STAGE_INITIALIZATION;
 				}
@@ -320,11 +360,14 @@ private:
 				else if (gsm_stage == GSM_STAGE_CONNECTED) {
 					gsm_stage = GSM_STAGE_REINITIALIZATION;
 				}
+				else if (gsm_stage == GSM_STAGE_PREPARE_SEND_LOCATION) {
+					gsm_stage = GSM_STAGE_SEND_CIFSR;
+				}
 				else return -1;
 				return 1;
 			}
 			case GSM_EVENT_CLOSED: {
-				gsm_println("GET EVENT: CLOSED");			
+				gsm_println("eC");			
 				if (gsm_stage >= GSM_STAGE_CONNECTED) {
 					gsm_stage = GSM_STAGE_SEND_CIPSTART;
 				}
@@ -334,18 +377,21 @@ private:
 
 			
 			case GSM_EVENT_PROMPT: {
-				gsm_println("GET EVENT: PROMPT");			
+				gsm_println("eP");			
 				if (gsm_stage == GSM_STAGE_PREPARE_SEND_PLAIN_TOKEN) {
 					gsm_stage = GSM_STAGE_SEND_PLAIN_TOKEN;
 				}
 				else if (gsm_stage == GSM_STAGE_PREPARE_SEND_PRIVATE_TOKEN) {
 					gsm_stage = GSM_STAGE_SEND_PRIVATE_TOKEN;
 				}
+				else if (gsm_stage == GSM_STAGE_PREPARE_SEND_LOCATION) {
+					gsm_stage = GSM_STAGE_SEND_LOCATION;
+				}
 				else return -1;
 				return 1;
 			}
 			case GSM_EVENT_TCP_SERVER_RECEIVED_PLAIN_TOKEN: {
-				gsm_println("GET EVENT: TCP SERVER RECEIVED PLAIN TOKEN");
+				gsm_println("eTSRPT");
 				if (gsm_stage == GSM_STAGE_WAIT_PLAIN_TOKEN_OK) {
 					gsm_stage = GSM_STAGE_PLAIN_TOKEN_ACCEPTED;
 				}
@@ -353,13 +399,31 @@ private:
 				return 1;
 			}
 			case GSM_EVENT_TCP_SERVER_RECEIVED_PRIVATE_TOKEN: {
-				gsm_println("GET EVENT: TCP SERVER RECEIVED PRIVATE TOKEN");
+				gsm_println("eTSRPRT");
 				if (gsm_stage == GSM_STAGE_WAIT_PRIVATE_TOKEN_OK) {
 					gsm_stage = GSM_STAGE_PRIVATE_TOKEN_ACCEPTED;
 				}
 				else return -1;
 				return 1;
 			}
+			case GSM_EVENT_NEW_LOCATION_AVAILABLE: {
+				gsm_println("eL");
+				if (gsm_stage == GSM_STAGE_READY_FOR_LOCATION) {
+					gsm_stage = GSM_STAGE_LOC_WAITING_FOR_SEND;
+				}
+				else return -1;
+				return 1;
+			}
+			case GSM_EVENT_SEND_OK: {
+				gsm_println("eS");
+				if (gsm_stage == GSM_STAGE_WAIT_LOCATION_OK) {
+					Location.sucessfullySent();
+					gsm_stage = GSM_STAGE_PRIVATE_TOKEN_ACCEPTED;
+				}
+				else return -1;
+				return 1;
+			}
+			
 		}
 		
 		return -2;
@@ -372,10 +436,12 @@ private:
 		inline static int retries = 0;
 		inline static unsigned long wait_timeout = 0;
 	public:
-		static GSM_STAGES setStage(GSM_STAGES stage_, unsigned long wait_timeout_, GSM_STAGES stageIfTimedOut_, int retries_){
+		static void setStage(GSM_STAGES stage_, unsigned long wait_timeout_, GSM_STAGES stageIfTimedOut_, int retries_) {
+			if (stage_ == stage) return;
 			stage = stage_;
 			wait_timeout = wait_timeout_;
-			return stage;
+			stageIfTimedOut = stageIfTimedOut_;
+			retries = retries_;
 		}
 
 		static unsigned long getWaitTimeout() {
@@ -392,9 +458,6 @@ private:
 
 
 public:
-	bool identificated = false;
-	bool isSendingLocation = false;
-
 	GSM() {
 		resetLine();
 	}
@@ -439,6 +502,11 @@ public:
 				}
 			}
 		}
+		
+		if (hasLocationToSend() && !Location.isSending()) {
+			Location.startSending();
+			pushEvent(GSM_EVENT_NEW_LOCATION_AVAILABLE);
+		}
 	}
 
 	bool nextEvent(GSMEvent &event) {
@@ -449,7 +517,7 @@ public:
 		int evt = getEvent();
 		if (evt <= 0) {
 			if (passBy(LastStage::getWaitTimeout())) {
-				gsm_println("GET EVENT: timed out");
+				gsm_println("geTO");
 				gsm_stage = LastStage::getTimedOutStage();
 			} else if (gsm_stage != GSM_STAGE_INITIALIZATION) return evt;
 		}
@@ -457,49 +525,49 @@ public:
 
 		switch (gsm_stage) {
 			case GSM_STAGE_INITIALIZATION: {
-				gsm_println("trying to connect TCP");
+				gsm_println("sCT");
 				GsmSerial.println("ATE0");
 				LastStage::setStage(gsm_stage, 2000UL, GSM_STAGE_INITIALIZATION, 0);
 				gsm_stage = GSM_STAGE_WAIT_AT_OK;
 				return GSM_STAGE_INITIALIZATION;
 			}
 			case GSM_STAGE_REINITIALIZATION: {
-				gsm_println("trying to reconnect TCP");
+				gsm_println("sRCT");
 				GsmSerial.println("AT+CIPSHUT");
 				LastStage::setStage(gsm_stage, 10000UL, GSM_STAGE_INITIALIZATION, 0);
 				gsm_stage = GSM_STAGE_WAIT_CIPSHUT_OK;
 				return GSM_STAGE_REINITIALIZATION;
 			}
 			case GSM_STAGE_SEND_CGATT: {
-				gsm_println("OK received, sending CGATT");
+				gsm_println("CGATT");
 				GsmSerial.println("AT+CGATT=1");
 				LastStage::setStage(gsm_stage, 10000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_WAIT_CGATT_OK;
 				return GSM_STAGE_SEND_CGATT;
 			}
 			case GSM_STAGE_SEND_CSTT: {
-				gsm_println("CGATT received, sending CSTT");
+				gsm_println("CSTT");
 				GsmSerial.println("AT+CSTT=\"agnc.algar.br\",\"algar\",\"1212\"");
 				LastStage::setStage(gsm_stage, 10000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_WAIT_CSTT_OK;
 				return GSM_STAGE_SEND_CSTT;
 			}
 			case GSM_STAGE_SEND_CIICR: {
-				gsm_println("CSTT is ok, sending CIICR");
+				gsm_println("CIICR");
 				GsmSerial.println("AT+CIICR");
 				LastStage::setStage(gsm_stage, 10000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_WAIT_CIICR_OK;
 				return GSM_STAGE_SEND_CIICR;
 			}
 			case GSM_STAGE_SEND_CIFSR: {
-				gsm_println("CIICR is ok, sending CIFSR");
+				gsm_println("CIFSR");
 				GsmSerial.println("AT+CIFSR");
 				LastStage::setStage(gsm_stage, 10000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_WAIT_CIFSR_OK;
 				return GSM_STAGE_SEND_CIFSR;
 			}
 			case GSM_STAGE_SEND_CIPSTART: {
-				gsm_println("CIFSR is ok, sending CIPSTART");
+				gsm_println("CIPSTART");
 				GsmSerial.println("AT+CIPSTART=\"TCP\",\"138.97.218.44\",\"12346\"");
 				LastStage::setStage(gsm_stage, 65000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_WAIT_CIPSTART_OK;
@@ -508,15 +576,14 @@ public:
 
 
 			case GSM_STAGE_CONNECTED: {
-				gsm_println("TCP task finished");
-				gsm_println("Preparing to send plain token to server");
+				gsm_println("sPSPT");
 				GsmSerial.println("AT+CIPSEND=5");
 				LastStage::setStage(gsm_stage, 2000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_PREPARE_SEND_PLAIN_TOKEN;
 				return GSM_STAGE_CONNECTED;
 			}
 			case GSM_STAGE_SEND_PLAIN_TOKEN: {
-				gsm_println("Sending plain token");
+				gsm_println("sSPT");
 				GsmSerial.write("teste");
 				GsmSerial.write(0x1A);
 				LastStage::setStage(gsm_stage, 65000UL, GSM_STAGE_CONNECTED, 0);
@@ -524,15 +591,14 @@ public:
 				return GSM_STAGE_SEND_PLAIN_TOKEN;
 			}
 			case GSM_STAGE_PLAIN_TOKEN_ACCEPTED: {
-				gsm_println("Plain token accepted");
-				gsm_println("Preparing to send private token to server");
+				gsm_println("sPSPRT");
 				GsmSerial.println("AT+CIPSEND=26");
 				LastStage::setStage(gsm_stage, 2000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_PREPARE_SEND_PRIVATE_TOKEN;
 				return GSM_STAGE_PLAIN_TOKEN_ACCEPTED;
 			}
 			case GSM_STAGE_SEND_PRIVATE_TOKEN: {
-				gsm_println("Sending private token");
+				gsm_println("sSPRT");
 				uint8_t private_token[] = {
 					0x6D, 0x7E, 0x4C, 0xB9,
 					0x71, 0xF2, 0x6D, 0x51,
@@ -549,37 +615,47 @@ public:
 				return GSM_STAGE_SEND_PRIVATE_TOKEN;
 			}
 			case GSM_STAGE_PRIVATE_TOKEN_ACCEPTED: {
-				gsm_println("Private token accepted");
-				LastStage::setStage(gsm_stage, 0, GSM_STAGE_REINITIALIZATION, 1);
+				gsm_println("sRL");
+				Location.setNotSending();
+				LastStage::setStage(gsm_stage, 0, GSM_STAGE_REINITIALIZATION, 0);
 				gsm_stage = GSM_STAGE_READY_FOR_LOCATION;
 				return GSM_STAGE_PRIVATE_TOKEN_ACCEPTED;
+			}
+			case GSM_STAGE_LOC_WAITING_FOR_SEND: {
+				gsm_println("sPSL");
+				GsmSerial.println("AT+CIPSEND=3");
+				LastStage::setStage(gsm_stage, 2000UL, GSM_STAGE_SEND_CIFSR, 1);
+				gsm_stage = GSM_STAGE_PREPARE_SEND_LOCATION;
+				return GSM_STAGE_LOC_WAITING_FOR_SEND;
+			}
+			case GSM_STAGE_SEND_LOCATION: {
+				gsm_println("sSL");
+				double lat, lon;
+				Location.getLocation(lat, lon);
+
+				GsmSerial.write("Loc");
+				GsmSerial.write(0x1A);
+				LastStage::setStage(gsm_stage, 3000UL, GSM_STAGE_PRIVATE_TOKEN_ACCEPTED, 1);
+				gsm_stage = GSM_STAGE_WAIT_LOCATION_OK;
+				return GSM_STAGE_SEND_LOCATION;
 			}
 
 		}
 		return -3;
 	}
 
-	bool setLocationToSend(double lat, double lon) {
-		if (isSendingLocation || send_location_stage != 0) {
-			return false;
-		}
+	bool hasLocationToSend() {
+		return Location.isPendente();
+	}
 
-		Location.lat = lat;
-		Location.lon = lon;
-		
-		isSendingLocation = true;
-		send_location_stage = 0;
-		
-		return true;
+	void setLocationToSend(double lat, double lon) {
+		Location.setLocation(lat, lon);
 	}
 
 	bool isStage(GSM_STAGES stage) {
 		return gsm_stage == stage;
 	}
 
-	void setListen() {
-		GsmSerial.listen();
-	}
 };
 
 GSM GSM;
