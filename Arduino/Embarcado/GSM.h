@@ -23,7 +23,8 @@ enum GSMEvent {
 	GSM_EVENT_TCP_SERVER_RECEIVED_PLAIN_TOKEN,
 	GSM_EVENT_TCP_SERVER_RECEIVED_PRIVATE_TOKEN,
 
-	GSM_EVENT_NEW_LOCATION_AVAILABLE
+	GSM_EVENT_NEW_LOCATION_AVAILABLE,
+	GSM_EVENT_LOCATION_RECEIVED
 };
 
 enum GSM_STAGES {
@@ -84,8 +85,8 @@ private:
 	private:
 		bool pendente = false;
 		bool sending = false;
-		double lat = 0.0;
-		double lon = 0.0;
+		float lat = 0.0;
+		float lon = 0.0;
 
 	public:
 		void startSending() {
@@ -96,13 +97,13 @@ private:
 			return sending;
 		}
 
-		void setLocation(double lat_, double lon_) {
+		void setLocation(float lat_, float lon_) {
 			lat = lat_;
 			lon = lon_;
 			pendente = true;
 		}
 
-		bool getLocation(double &lat_, double &lon_) {
+		bool getLocation(float &lat_, float &lon_) {
 			if (!pendente) {
 				return false;
 			}
@@ -216,6 +217,10 @@ private:
 		}
 		if (strcmp(line_buffer, "+PDP: DEACT") == 0) {
 			return GSM_EVENT_TCP_SERVER_CLOSED;
+		}
+
+		if (strcmp(line_buffer, "receb") == 0) {
+			return GSM_EVENT_LOCATION_RECEIVED;
 		}
 
 		if (strcmp(line_buffer, "plain") == 0) {
@@ -414,8 +419,8 @@ private:
 				else return -1;
 				return 1;
 			}
-			case GSM_EVENT_SEND_OK: {
-				gsm_println("eS");
+			case GSM_EVENT_LOCATION_RECEIVED: {
+				gsm_println("eLR");
 				if (gsm_stage == GSM_STAGE_WAIT_LOCATION_OK) {
 					Location.sucessfullySent();
 					gsm_stage = GSM_STAGE_PRIVATE_TOKEN_ACCEPTED;
@@ -599,15 +604,12 @@ public:
 			}
 			case GSM_STAGE_SEND_PRIVATE_TOKEN: {
 				gsm_println("sSPRT");
-				uint8_t private_token[] = {
-					0x6D, 0x7E, 0x4C, 0xB9,
-					0x71, 0xF2, 0x6D, 0x51,
-					0x8F, 0x71, 0x1F, 0x3B,
-					0xF7, 0xF7, 0x96, 0xD9,
-					0xE6, 0x6F, 0x88, 0x72,
-					0x81, 0x7A, 0x40, 0x54,
-					0x97, 0xDB
-				};
+				
+				double randomic = RANDOM_INTEGER_FUNCTION;
+				byte private_token[BUFFER_SIZE] = {0};
+				memcpy(private_token, &randomic, 8);
+				Crypt::encrypt(private_token, 8);
+
 				GsmSerial.write(private_token, sizeof(private_token));
 				GsmSerial.write(0x1A);
 				LastStage::setStage(gsm_stage, 65000UL, GSM_STAGE_PLAIN_TOKEN_ACCEPTED, 0);
@@ -623,19 +625,28 @@ public:
 			}
 			case GSM_STAGE_LOC_WAITING_FOR_SEND: {
 				gsm_println("sPSL");
-				GsmSerial.println("AT+CIPSEND=3");
+				GsmSerial.println("AT+CIPSEND=26");
 				LastStage::setStage(gsm_stage, 2000UL, GSM_STAGE_SEND_CIFSR, 1);
 				gsm_stage = GSM_STAGE_PREPARE_SEND_LOCATION;
 				return GSM_STAGE_LOC_WAITING_FOR_SEND;
 			}
 			case GSM_STAGE_SEND_LOCATION: {
 				gsm_println("sSL");
-				double lat, lon;
+				float lat, lon;
 				Location.getLocation(lat, lon);
+				Serial.print("Sending location: ");
+				Serial.print(lat, 6);
+				Serial.print(", ");
+				Serial.println(lon, 6);
 
-				GsmSerial.write("Loc");
+				byte localizacao_compactada[BUFFER_SIZE] = {0};
+				memcpy(localizacao_compactada, &lat, 4);
+				memcpy(localizacao_compactada + 4, &lon, 4);
+				Crypt::encrypt(localizacao_compactada, 8);
+
+				GsmSerial.write(localizacao_compactada, 26);
 				GsmSerial.write(0x1A);
-				LastStage::setStage(gsm_stage, 3000UL, GSM_STAGE_PRIVATE_TOKEN_ACCEPTED, 1);
+				LastStage::setStage(gsm_stage, 65000UL, GSM_STAGE_PRIVATE_TOKEN_ACCEPTED, 0);
 				gsm_stage = GSM_STAGE_WAIT_LOCATION_OK;
 				return GSM_STAGE_SEND_LOCATION;
 			}
@@ -648,7 +659,7 @@ public:
 		return Location.isPendente();
 	}
 
-	void setLocationToSend(double lat, double lon) {
+	void setLocationToSend(float lat, float lon) {
 		Location.setLocation(lat, lon);
 	}
 

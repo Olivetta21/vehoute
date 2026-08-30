@@ -12,6 +12,12 @@ function getLocalizacoesDoRastreador($credentials, $rastreador_id) {
         ]);
         if ($stmt->rowCount() > 0) {
             $localizacoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($localizacoes as &$localizacao) {
+                $localizacao["l_lat"] = floatval($localizacao["l_lat"]);
+                $localizacao["l_lng"] = floatval($localizacao["l_lng"]);
+            }
+
             return ["success" => true, "localizacoes" => $localizacoes];
         } else {
             return ["success" => true, "localizacoes" => [], "message" => errorMessage("Nenhuma localização encontrada", $rastreador_id . '-' . $credentials["id"])];

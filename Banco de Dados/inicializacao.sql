@@ -73,8 +73,8 @@ create table usuario_rastreador (
 create table localizacao (
     id serial primary key,
     rastreador_id integer not null references rastreador(id),
-    lat double precision not null,
-    lng double precision not null,
+    lat numeric(9,6) not null,
+    lng numeric(9,6) not null,
     data timestamp not null,
     invalida boolean not null default false
 );
@@ -363,7 +363,7 @@ create function getLocDoRastreadorParaOuvinte(
     var_rastreador_id integer,
     var_usuario_id integer
 ) returns table (
-    l_id integer, l_rastreador_id integer, l_lat double precision, l_lng double precision, l_data timestamp, is_oculto boolean
+    l_id integer, l_rastreador_id integer, l_lat numeric(9,6), l_lng numeric(9,6), l_data timestamp, is_oculto boolean
 ) as $$
     select l.id as l_id, l.rastreador_id as l_rastreador_id, l.lat as l_lat, l.lng as l_lng, l.data as l_data,
     case when exists (
@@ -510,7 +510,7 @@ select ur.id, ur.usuario_id, ur.rastreador_id, ur.status as ur_status, ur.loc_te
 	join usuario u on u.id = ur.usuario_id;
 
 
-CREATE FUNCTION insereLocalizacao(p_rastreador_id INTEGER, p_lat DOUBLE PRECISION, p_lng DOUBLE PRECISION)
+CREATE FUNCTION insereLocalizacao(p_rastreador_id INTEGER, p_lat numeric(9,6), p_lng numeric(9,6))
 RETURNS INTEGER
 LANGUAGE plpgsql
 AS $$

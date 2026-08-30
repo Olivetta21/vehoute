@@ -1,4 +1,4 @@
-import MapApi from "./MapApis/MapApi_OpenStreet";
+import MapApi from "./MapApis/MapApi_Google";
 
 export default class MapController {
 
@@ -32,6 +32,12 @@ export default class MapController {
             console.error("No coordinates provided for tracking");
             return false;
         }
+
+        coords.forEach(coord => {
+            coord.lat = Number(coord.lat);
+            coord.lng = Number(coord.lng);
+        });
+
         if (!MapApi.isMapInitialized()) {
             console.error("Map not initialized. Call initMap() first.");
             return false;
@@ -59,6 +65,8 @@ export default class MapController {
     }
     
     static setMarkerPosition(lat, lng) {
+        lat = Number(lat);
+        lng = Number(lng);
         return MapApi.setMarkerPosition(lat, lng);
     }
 
@@ -67,6 +75,8 @@ export default class MapController {
     }
     
     static centerOn(lat, lng) {
+        lat = Number(lat);
+        lng = Number(lng);
         if (MapApi.isMapInitialized()) {
             if (!MapApi.panTo(lat, lng)) {
                 console.error("Failed to pan to the specified location");
@@ -86,6 +96,9 @@ export default class MapController {
     }
 
     static flyTo(lat, lng) {
+        lat = Number(lat);
+        lng = Number(lng);
+
         if (MapApi.isMapInitialized()) {
             if (MapApi.haveMarker()) {
                 if (!MapApi.setMarkerPosition(lat, lng)) {

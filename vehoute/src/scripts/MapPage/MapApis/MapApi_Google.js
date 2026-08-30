@@ -79,7 +79,7 @@ export default class MapApi_Google extends MapApi_Interface {
                 return true;
             }
             MapApi_Google.map = new window.google.maps.Map(map_el_div, {
-                zoom: 2,
+                zoom: 20,
                 center: { lat: -34, lng: 150 },
             });
             return true;

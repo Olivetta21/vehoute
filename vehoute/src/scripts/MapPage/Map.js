@@ -108,6 +108,8 @@ export default class Map {
     static insertLocation(tracker_id, location) {
         const tracker = Map.trackers.find(t => t.id === tracker_id);
         if (tracker) {
+            location.lat = Number(location.lat);
+            location.lng = Number(location.lng);
 
             const size = tracker.localizacoes.length;
             let nextTo = -1;
@@ -158,8 +160,8 @@ export default class Map {
                 const locations = await Map.fetchLocations(tracker.rastreador_id);
                 const converted = locations.map(l => ({
                     id: l.l_id,
-                    lat: l.l_lat,
-                    lng: l.l_lng,
+                    lat: Number(l.l_lat),
+                    lng: Number(l.l_lng),
                     l_data: l.l_data,
                 }));
 

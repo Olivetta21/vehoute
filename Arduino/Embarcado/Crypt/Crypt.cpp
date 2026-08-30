@@ -1,77 +1,45 @@
 #include "Crypt.h"
-#include <iomanip>
-#include <iostream>
-#include <stdint.h>
 
-
-using namespace std;
-
-void printArray(const uint8_t *buffer, uint8_t length) {
-  cout << "[";
-
-  for (uint8_t i = 0; i < length; i++) {
-    cout << (int)buffer[i];
-
-    if (i + 1 != length)
-      cout << ", ";
-  }
-
-  cout << "]" << endl;
+void printBytes(const byte* data, byte size) {
+    for (byte i = 0; i < size; i++) {
+        Serial.print(static_cast<int>(data[i]));
+        Serial.print(" ");
+    }
+    Serial.println(" ");
 }
 
-int main() {
-  srand(time(nullptr));
-  Crypt cr;
+const byte masterKey[] PROGMEM = {0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01};
 
-  uint8_t key[Crypt::KEY_SIZE] = {0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
-                                  0xEF, 0x01, 0x23, 0x45, 0x67, 0x89,
-                                  0xAB, 0xCD, 0xEF, 0x01};
-
-  cr.setKeys(key);
-
-  //------------------------------------------------------
-  // Mesmo teste do Python
-  //------------------------------------------------------
-
-  uint8_t arr[Crypt::BUFFER_SIZE] = {1, 2, 3, 4, 10, 5, 6, 7, 8, 9};
-
-  uint8_t length = 10;
-
-  cout << "Before: ";
-  printArray(arr, length);
-
-  if (cr.encrypt(arr, length)) {
-    cout << "Encrypted: ";
-    printArray(arr, length);
-  } else {
-    cout << "Encryption failed." << endl;
+void setup() {
+  Serial.begin(9600);
+  delay(2000);
+  Serial.print("\ninit:");
+  randomSeed(analogRead(0));
+  Serial.println("");
+  {
+    byte tmp[KEY_SIZE] = {0};
+    for (byte i = 0; i < KEY_SIZE; i++) {
+      tmp[i] = pgm_read_byte(&masterKey[i]);
+    }
+    Crypt::setKeys(tmp);
   }
+}
 
-  if (cr.decrypt(arr, length)) {
-    cout << "Decrypted: ";
-    printArray(arr, length);
-  } else {
-    cout << "Decrypt failed." << endl;
-  }
+void loop() {
+  // put your main code here, to run repeatedly:
+  
+  byte data[BUFFER_SIZE] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+  byte dataSize = 9;
+  Serial.println(F("Original data: "));
+  printBytes(data, dataSize);
 
-  //------------------------------------------------------
-  // Teste com pacote criptografado vindo do Python
-  //------------------------------------------------------
+  byte encryptedSize = Crypt::encrypt(data, dataSize);
+  Serial.println(F("Encrypted data: "));
+  printBytes(data, encryptedSize);
 
-  uint8_t encr[Crypt::BUFFER_SIZE] = {
-      104, 141, 136, 254, 253, 128, 196, 9,   14,  27,  1,   153, 92, 230,
-      172, 178, 166, 28,  235, 173, 93,  155, 232, 121, 175, 5,   188};
+  byte decryptedSize = Crypt::decrypt(data, encryptedSize);
+  Serial.println(F("Decrypted data: "));
+  printBytes(data, decryptedSize);
+  delay(10000);
 
-  uint8_t encrLength = 27;
-
-  bool res = cr.decrypt(encr, encrLength);
-
-  cout << "Other Decrypted: ";
-
-  if (res)
-    printArray(encr, encrLength);
-  else
-    cout << "Failed" << endl;
-
-  return 0;
 }

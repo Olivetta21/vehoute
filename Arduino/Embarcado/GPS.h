@@ -11,8 +11,8 @@ SoftwareSerial GpsSerial(4, 3);
 class GPS {
 private:
 	bool has_location = false;
-	double latitude = 0.0;
-	double longitude = 0.0;
+	float latitude = 0.0;
+	float longitude = 0.0;
 
 public:
 	void poll() {
@@ -37,7 +37,7 @@ public:
 		return has_location;
 	}
 
-	bool getLocation(double &lat, double &lon) {
+	bool getLocation(float &lat, float &lon) {
 		if (!hasLocation()) {
 			return false;
 		}

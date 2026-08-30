@@ -1,3 +1,4 @@
+#include "Crypt.h"
 #include "GSM.h"
 #include "GPS.h"
 
@@ -9,8 +10,8 @@ unsigned long time = 0;
 class Localizacoes {
 private:
 	typedef struct {
-		double latitude;
-		double longitude;
+		float latitude;
+		float longitude;
 	} Loc_XY;
 	
 	Loc_XY fila_envio[MAX_LOC] = {0};
@@ -18,7 +19,7 @@ private:
 	short atual_envio = 0;
 
 public:
-	void add(double lat, double lon) {
+	void add(float lat, float lon) {
 		fila_envio[atual_envio].latitude = lat;
 		fila_envio[atual_envio].longitude = lon;
 		
@@ -31,7 +32,7 @@ public:
 		}
 	}
 
-	bool get(double &lat, double &lon) {
+	bool get(float &lat, float &lon) {
 		if (older == atual_envio) {
 			lat = 0.0;
 			lon = 0.0;
@@ -47,11 +48,19 @@ public:
 	}
 } Loc;
 
+const byte masterKey[] PROGMEM = {0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01};
 
 void setup() {
 	Serial.begin(9600);
 	GsmSerial.begin(9600);
 	GpsSerial.begin(9600);
+	randomSeed(analogRead(0));
+	
+	byte tmp_memKey[KEY_SIZE] = {0};
+	for (byte i = 0; i < KEY_SIZE; i++) {
+		tmp_memKey[i] = pgm_read_byte(&masterKey[i]);
+	}
+	Crypt::setKeys(tmp_memKey);
 
 	Serial.println("Setup done");
 	while(!Serial.available()) {
@@ -65,7 +74,7 @@ void loop() {
 	//delay(1000);
 	time = millis();
 
-	if (GSM.isStage(GSM_STAGE_READY_FOR_LOCATION) && !GPS.hasLocation() && time - time_last_loc > 10000) {
+	if (GSM.isStage(GSM_STAGE_READY_FOR_LOCATION) && !GPS.hasLocation() && time - time_last_loc > 90000) {
 		GPS.poll();
 		time_last_loc = time;
 	}
@@ -82,9 +91,9 @@ void loop() {
 	}
 
 	{ // GET LOCATION IF AVAILABLE
-		double lat, lon;
+		float lat, lon;
 		if (GPS.getLocation(lat, lon)) {
-			Serial.print("LR:");
+			Serial.print("LADD");
 			Serial.print(lat, 6);
 			Serial.print(", ");
 			Serial.println(lon, 6);

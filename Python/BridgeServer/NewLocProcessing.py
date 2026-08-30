@@ -37,6 +37,9 @@ class NewLocProcessing:
         while True:
             try:
                 new_loc = NewLocProcessing.FILA_NEW_LOC.get()
+
+                new_loc.lat = float(round(new_loc.lat, 6))
+                new_loc.lng = float(round(new_loc.lng, 6))
                 
                 if new_loc is None or not isinstance(new_loc, TrackerLocation):
                     NewLocProcessing.log("[!] Localização inválida recebida. Ignorando...")
@@ -52,7 +55,7 @@ class NewLocProcessing:
                 with DataBase.get() as conn:
                     with conn.cursor() as cur:
                         cur.execute(
-                            "select insereLocalizacao(%s, %s, %s)",
+                            "select insereLocalizacao(%s, %s::numeric, %s::numeric)",
                             (new_loc.tracker, new_loc.lat, new_loc.lng)
                         )
                         result = cur.fetchone()
