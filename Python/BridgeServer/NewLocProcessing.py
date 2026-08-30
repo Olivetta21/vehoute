@@ -70,8 +70,8 @@ class NewLocProcessing:
                         continue
                     tracker_copy = WebSocketServer.TRACKERS[new_loc.tracker].copy()
 
-                loc_message = FormatMessage.loc(new_loc.tracker, new_loc.lat, new_loc.lng)
-
+                loc_recuperada = None
+                formatted_loc = None
                 for cid in tracker_copy:
                     client = None
                     with WebSocketServer.CLIENTS_LOCK:
@@ -79,10 +79,23 @@ class NewLocProcessing:
                             continue
                         client = WebSocketServer.CLIENTS[cid]
                     
+                    with DataBase.get() as conn:
+                        with conn.cursor() as cur:
+                            cur.execute(
+                                "select l_id, l_data from getLocDoRastreadorParaOuvinte(%s, %s) where is_oculto = false and l_id = %s",
+                                (new_loc.tracker, client.identidade, result[0],)
+                            )
+                            loc_recuperada = cur.fetchone()
+                    if not loc_recuperada:
+                        NewLocProcessing.log(f"[!] Não foi possível recuperar a localização para o cliente({client.CID}) {client.identidade}. Ignorando...")
+                        continue
+                    if not formatted_loc:
+                        formatted_loc = FormatMessage.loc(new_loc.tracker, new_loc.lat, new_loc.lng, loc_recuperada[0], loc_recuperada[1])
+                        
                     NewLocProcessing.log(f"[>] Enviando loc do {new_loc.tracker} para o cliente({client.CID}) {client.identidade}")
                     loop.call_soon_threadsafe(
                         asyncio.create_task,
-                        NewLocProcessing.sendNewLocToCLients(loc_message, client.ws)
+                        NewLocProcessing.sendNewLocToCLients(formatted_loc, client.ws)
                     )
             except Exception as e:
                 ProgramStop.set("Process new location error: " + str(e))

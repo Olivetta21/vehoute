@@ -9,12 +9,14 @@ class FormatMessage:
         })
     
     @staticmethod
-    def loc(tk, lat, lng):
+    def loc(tk, lat, lng, id, date):
         return json.dumps({
             "t": "loc",
             "tk": tk,
             "lat": lat,
-            "lng": lng
+            "lng": lng,
+            "id": id,
+            "date": str(date)
         })
     
     @staticmethod

@@ -1,7 +1,6 @@
 import Gatekeeper from "../GateKeeper";
 import Usuario from "../LoginPage/Usuario";
 import MapPagina from "../MapPage/Map";
-import { getDateWithOffset } from "../utils";
 
 export default class MainWS {
     static _ws = null;
@@ -41,9 +40,9 @@ export default class MainWS {
             const gate_token = `watch_tracker_${message.a ? 'add' : 'del'}_${message.tk}`;
             Gatekeeper.openGate(gate_token, true);
         }
-        //{"t": "loc", "tk": "token_publico123", "lat": -22.81020736694336, "lng": -51.085899353027344}
+        //{"t": "loc", "tk": 18, "lat": -22.25346, "lng": -54.813145, "id": 777, "date": "2026-08-29 22:56:57.929631"}	
         else if (message.t === "loc") {
-            MapPagina.insertLocationWithRealTrackerID(message.tk, { id: new Date().getTime(), lat: message.lat, lng: message.lng, l_data: getDateWithOffset(-4) + ' 15:00:00' });
+            MapPagina.insertLocationWithRealTrackerID(message.tk, { id: message.id, lat: message.lat, lng: message.lng, l_data: message.date });
         }
     }
 
