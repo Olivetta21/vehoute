@@ -28,7 +28,9 @@ enum GSMEvent {
 };
 
 enum GSM_STAGES {
-	GSM_STAGE_INITIALIZATION = 0,
+	GSM_STAGE_RESTART_RADIO_OFF = 0,
+	GSM_STAGE_RESTART_RADIO_ON,
+	GSM_STAGE_INITIALIZATION,
 	GSM_STAGE_REINITIALIZATION,
 	GSM_STAGE_WAIT_CIPSHUT_OK,
 	GSM_STAGE_WAIT_AT_OK,
@@ -69,6 +71,7 @@ private:
 	static const uint8_t kEventQueueSize = 8;
 
 	uint8_t tcp_conn_stage = 0;
+	uint8_t cgatt_error_count = 0;
 	unsigned long time = 0;
 	char line_buffer[kLineBufferSize];
 	uint8_t line_length = 0;
@@ -348,7 +351,9 @@ private:
 				itoa(gsm_stage, stage_cstr, 10);
 				gsm_println(stage_cstr);
 				if (gsm_stage == GSM_STAGE_WAIT_CGATT_OK) {
-					gsm_stage = GSM_STAGE_INITIALIZATION;
+					cgatt_error_count++;
+					if (cgatt_error_count >= 10) gsm_stage = GSM_STAGE_RESTART_RADIO_OFF;
+					else gsm_stage = GSM_STAGE_INITIALIZATION;
 				}
 				else if (gsm_stage == GSM_STAGE_WAIT_CSTT_OK) {
 					gsm_stage = GSM_STAGE_SEND_CIFSR;
@@ -529,6 +534,19 @@ public:
 		updtTime();
 
 		switch (gsm_stage) {
+			case GSM_STAGE_RESTART_RADIO_OFF: {
+				gsm_println("sRR0");
+				GsmSerial.println("AT+CFUN=0");
+				cgatt_error_count = 0;
+				LastStage::setStage(gsm_stage, 60000UL, GSM_STAGE_RESTART_RADIO_ON, 0);
+				return GSM_STAGE_RESTART_RADIO_OFF;
+			}
+			case GSM_STAGE_RESTART_RADIO_ON: {
+				gsm_println("sRR1");
+				GsmSerial.println("AT+CFUN=1");
+				LastStage::setStage(gsm_stage, 60000UL, GSM_STAGE_INITIALIZATION, 0);
+				return GSM_STAGE_RESTART_RADIO_ON;
+			}
 			case GSM_STAGE_INITIALIZATION: {
 				gsm_println("sCT");
 				GsmSerial.println("ATE0");
@@ -553,6 +571,7 @@ public:
 			case GSM_STAGE_SEND_CSTT: {
 				gsm_println("CSTT");
 				GsmSerial.println("AT+CSTT=\"agnc.algar.br\",\"algar\",\"1212\"");
+				cgatt_error_count = 0;
 				LastStage::setStage(gsm_stage, 10000UL, GSM_STAGE_REINITIALIZATION, 1);
 				gsm_stage = GSM_STAGE_WAIT_CSTT_OK;
 				return GSM_STAGE_SEND_CSTT;

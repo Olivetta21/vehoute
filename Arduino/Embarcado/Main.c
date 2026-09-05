@@ -62,16 +62,15 @@ void setup() {
 	}
 	Crypt::setKeys(tmp_memKey);
 
-	Serial.println("Setup done");
-	while(!Serial.available()) {
-		delay(100);
-	}
+	//while(!Serial.available()) {
+	//	delay(100);
+	//}
 
 	Serial.println("Started");
 }
 
 void loop() {
-	//delay(1000);
+	delay(200);
 	time = millis();
 
 	if (GSM.isStage(GSM_STAGE_READY_FOR_LOCATION) && !GPS.hasLocation() && time - time_last_loc > 90000) {
