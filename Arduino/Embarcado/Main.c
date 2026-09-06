@@ -70,17 +70,20 @@ void setup() {
 }
 
 void loop() {
-	delay(200);
+	delay(400);
 	time = millis();
 
-	if (GSM.isStage(GSM_STAGE_READY_FOR_LOCATION) && !GPS.hasLocation() && time - time_last_loc > 90000) {
-		GPS.poll();
-		time_last_loc = time;
-	}
 	GSM.poll();
+	int res = GSM.getEvent();
+
+	if ((time - time_last_loc > 120000) && !GSM.isWaitingCriticalEvent() && !GPS.hasLocation()) {
+		GPS.poll();
+		GSM.setListen();
+		if (GPS.hasLocation()) time_last_loc = time;
+	}
 
 	{ // STAGES MACHINE
-		int res = GSM.runStagesMachine();
+		res = GSM.runStagesMachine(res);
 		if (res != 0) {
 			Serial.print("!");
 			if (res == -1) Serial.println("SNWE");

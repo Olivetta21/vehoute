@@ -27,10 +27,12 @@ public:
 					latitude = GpsProcessor.location.lat();
 					longitude = GpsProcessor.location.lng();
 					has_location = true;
+					Serial.println("g1");
 					return;
 				}
 			}
 		}
+		Serial.println("g0");
 	}
 
 	bool hasLocation() {

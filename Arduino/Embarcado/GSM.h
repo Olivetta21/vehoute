@@ -30,6 +30,7 @@ enum GSMEvent {
 enum GSM_STAGES {
 	GSM_STAGE_RESTART_RADIO_OFF = 0,
 	GSM_STAGE_RESTART_RADIO_ON,
+	GSM_STAGE_WAIT_RESTART_RADIO_COOLDOWN,
 	GSM_STAGE_INITIALIZATION,
 	GSM_STAGE_REINITIALIZATION,
 	GSM_STAGE_WAIT_CIPSHUT_OK,
@@ -285,6 +286,39 @@ private:
 
 	GSM_STAGES gsm_stage = GSM_STAGE_INITIALIZATION;
 
+	
+	class LastStage {
+		inline static GSM_STAGES stage = GSM_STAGE_INITIALIZATION;
+		inline static GSM_STAGES stageIfTimedOut = GSM_STAGE_REINITIALIZATION;
+		inline static uint8_t retries = 0;
+		inline static unsigned long wait_timeout = 0;
+	public:
+		static void setStage(GSM_STAGES stage_, unsigned long wait_timeout_, GSM_STAGES stageIfTimedOut_, uint8_t retries_) {
+			if (stage_ == stage) return;
+			stage = stage_;
+			wait_timeout = wait_timeout_;
+			stageIfTimedOut = stageIfTimedOut_;
+			retries = retries_;
+		}
+
+		static unsigned long getWaitTimeout() {
+			return wait_timeout;
+		}
+
+		static GSM_STAGES getTimedOutStage() {
+			if (retries--) {
+				return stage;
+			}
+			return stageIfTimedOut;
+		}
+	};
+
+
+public:
+	GSM() {
+		resetLine();
+	}
+
 	int getEvent() {
 		GSMEvent event;
 		if (!nextEvent(event) || event == GSM_EVENT_NONE) return 0;
@@ -352,7 +386,7 @@ private:
 				gsm_println(stage_cstr);
 				if (gsm_stage == GSM_STAGE_WAIT_CGATT_OK) {
 					cgatt_error_count++;
-					if (cgatt_error_count >= 10) gsm_stage = GSM_STAGE_RESTART_RADIO_OFF;
+					if (cgatt_error_count >= 20) gsm_stage = GSM_STAGE_RESTART_RADIO_OFF;
 					else gsm_stage = GSM_STAGE_INITIALIZATION;
 				}
 				else if (gsm_stage == GSM_STAGE_WAIT_CSTT_OK) {
@@ -439,38 +473,6 @@ private:
 		return -2;
 	}
 
-	
-	class LastStage {
-		inline static GSM_STAGES stage = GSM_STAGE_INITIALIZATION;
-		inline static GSM_STAGES stageIfTimedOut = GSM_STAGE_REINITIALIZATION;
-		inline static int retries = 0;
-		inline static unsigned long wait_timeout = 0;
-	public:
-		static void setStage(GSM_STAGES stage_, unsigned long wait_timeout_, GSM_STAGES stageIfTimedOut_, int retries_) {
-			if (stage_ == stage) return;
-			stage = stage_;
-			wait_timeout = wait_timeout_;
-			stageIfTimedOut = stageIfTimedOut_;
-			retries = retries_;
-		}
-
-		static unsigned long getWaitTimeout() {
-			return wait_timeout;
-		}
-
-		static GSM_STAGES getTimedOutStage() {
-			if (retries--) {
-				return stage;
-			}
-			return stageIfTimedOut;
-		}
-	};
-
-
-public:
-	GSM() {
-		resetLine();
-	}
 
 	void poll() {
 		// Fazer o arduino trocar para esse software serial:
@@ -523,13 +525,12 @@ public:
 		return popEvent(event);
 	}
 
-	int runStagesMachine() {
-		int evt = getEvent();
-		if (evt <= 0) {
+	int runStagesMachine(int evt_result) {
+		if (evt_result <= 0) {
 			if (passBy(LastStage::getWaitTimeout())) {
 				gsm_println("geTO");
 				gsm_stage = LastStage::getTimedOutStage();
-			} else if (gsm_stage != GSM_STAGE_INITIALIZATION) return evt;
+			} else if (gsm_stage != GSM_STAGE_INITIALIZATION) return evt_result;
 		}
 		updtTime();
 
@@ -539,12 +540,14 @@ public:
 				GsmSerial.println("AT+CFUN=0");
 				cgatt_error_count = 0;
 				LastStage::setStage(gsm_stage, 60000UL, GSM_STAGE_RESTART_RADIO_ON, 0);
+				gsm_stage = GSM_STAGE_WAIT_RESTART_RADIO_COOLDOWN;
 				return GSM_STAGE_RESTART_RADIO_OFF;
 			}
 			case GSM_STAGE_RESTART_RADIO_ON: {
 				gsm_println("sRR1");
 				GsmSerial.println("AT+CFUN=1");
 				LastStage::setStage(gsm_stage, 60000UL, GSM_STAGE_INITIALIZATION, 0);
+				gsm_stage = GSM_STAGE_WAIT_RESTART_RADIO_COOLDOWN;
 				return GSM_STAGE_RESTART_RADIO_ON;
 			}
 			case GSM_STAGE_INITIALIZATION: {
@@ -682,8 +685,28 @@ public:
 		Location.setLocation(lat, lon);
 	}
 
-	bool isStage(GSM_STAGES stage) {
-		return gsm_stage == stage;
+	void setListen() {
+		GsmSerial.listen();
+	}
+
+	bool isWaitingCriticalEvent() {
+		switch (gsm_stage) {
+		case GSM_STAGE_WAIT_AT_OK:
+		case GSM_STAGE_WAIT_CIPSHUT_OK:
+		case GSM_STAGE_WAIT_CGATT_OK:
+		case GSM_STAGE_WAIT_CSTT_OK:
+		case GSM_STAGE_WAIT_CIICR_OK:
+		case GSM_STAGE_WAIT_CIFSR_OK:
+		case GSM_STAGE_WAIT_CIPSTART_OK:
+		case GSM_STAGE_PREPARE_SEND_PLAIN_TOKEN:
+		case GSM_STAGE_PREPARE_SEND_PRIVATE_TOKEN:
+		case GSM_STAGE_PREPARE_SEND_LOCATION:
+		case GSM_STAGE_WAIT_PLAIN_TOKEN_OK:
+		case GSM_STAGE_WAIT_PRIVATE_TOKEN_OK:
+		case GSM_STAGE_WAIT_LOCATION_OK:
+		return true;
+		}
+		return false;
 	}
 
 };
