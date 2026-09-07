@@ -2,7 +2,7 @@ from PackagesInstaller import testar_bibliotecas
 testar_bibliotecas("./BridgeServerPythonLibs.txt")
 
 from DataBase import DataBase
-from TcpServer import TcpServer
+from TcpServer import TcpServer, HeartBeat
 from WebSocketServer import WebSocketServer
 from NewLocProcessing import NewLocProcessing
 from LogService import LogService
@@ -36,6 +36,7 @@ if __name__ == "__main__":
     threading.Thread(target=NewLocProcessing.processNewLocation, daemon=True).start()
     threading.Thread(target=WebSocketServer().start, daemon=True).start()
     threading.Thread(target=TcpServer().start, daemon=True).start()
+    threading.Thread(target=HeartBeat().start, daemon=True).start()
     threading.Thread(target=adminActions, daemon=True).start()
     
     msg = None

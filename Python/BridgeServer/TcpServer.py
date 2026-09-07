@@ -1,3 +1,4 @@
+from random import randint
 from ProgramStop import ProgramStop
 from TrackerLocation import TrackerLocation
 from NewLocProcessing import NewLocProcessing
@@ -121,7 +122,7 @@ class TcpServer:
                 if self.Crypt.decrypt(validation):
                     return True
             except Exception as e:
-                TcpServer.log(f"[!] Erro ao validar rastreador: {e}")
+                TcpServer.log(f"[!] Rastreador({self.CID}) Erro ao validar rastreador: {e}")
             return False
 
         def __init__(self, conn, addr, cid_ref):
@@ -189,11 +190,11 @@ class TcpServer:
                     NewLocProcessing.FILA_NEW_LOC.put(TrackerLocation(tracker.tracker_id, lat, lng))
 
         except AuthError as e:
-            TcpServer.log(f"[!] Erro de autenticação: {e}")
+            TcpServer.log(f"[!] Rastreador({CID_ref[0]}) Erro de autenticação: {e}")
         except (ConnectionResetError, BrokenPipeError):
-            TcpServer.log(f"[!] Conexão perdida")
+            TcpServer.log(f"[!] Rastreador({CID_ref[0]}) Conexão perdida")
         except Exception as e:
-            TcpServer.log(f"[Erro] {e}")
+            TcpServer.log(f"[Erro] Rastreador({CID_ref[0]}){e}")
         #desconecta o cliente:
         connection.close()
         TcpServer.removeTrackerAtivo(CID_ref[0])
@@ -217,3 +218,34 @@ class TcpServer:
         TcpServer.log("\n[-] Servidor encerrado.")
         ProgramStop.set("Servidor TCP encerrado")
 
+class HeartBeat:
+    #envia um simples \n para todos os rastreadores
+
+    def __init__(self, interval=60, randMin=0, randMax=59):
+        self.interval = interval
+        self.randMin = randMin
+        self.randMax = randMax
+
+    def start(self):
+        TcpServer.log(f"[O] Heartbeat iniciado. Intervalo: {self.interval}s, Aleatório: {self.randMin}-{self.randMax}s")
+        while True:
+            time.sleep(self.interval)
+            TcpServer.log(f"[+] Heartbeat")
+            sockets = {}
+            
+            with TcpServer.TRACKERS_ATIVOS_LOCK:
+                for cid, info in TcpServer.TRACKERS_ATIVOS.items():
+                    randomTime = randint(self.randMin, self.randMax)
+
+                    if sockets.get(randomTime) is None:
+                        sockets[randomTime] = []
+
+                    sockets[randomTime].append((info['conn']))
+
+            for randomTime, conns in sockets.items():
+                time.sleep(randomTime)
+                for conn in conns:
+                    try:
+                        conn.sendall("\n".encode())
+                    except Exception as e:
+                        TcpServer.log(f"[!] Erro ao enviar heartbeat para rastreador: {e}")
