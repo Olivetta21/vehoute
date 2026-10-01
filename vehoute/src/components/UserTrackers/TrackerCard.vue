@@ -2,16 +2,16 @@
     <div class="tracker-card">        
         <div class="tracker-principal" @click="detailed = !detailed">
             <div class="tracker-header">
-                <p>{{ tracker.id ?? 'N/A' }}</p>
-                <p>{{ tracker.rastreador_nome }}</p>
+                <p>{{ tracker.ur_id ?? 'N/A' }}</p>
+                <p>{{ tracker.ur_nome }}</p>
                 <p :style="{ 'background-color': ur_statuses.find(s => s.id === tracker.ur_status)?.color || 'gray' }"
                     class="tracker-status"> </p>  
             </div>
             <div class="tracker-token">
-                {{ tracker.token_publico }}
+                {{ tracker.r_token_publico }}
             </div>
             <div class="tracker-image-container">
-                <div class="tracker-image" :style="'background-image: url(' + (tracker.imagem || '/api/imagens/card_systracker.png') + ');'"></div>
+                <div class="tracker-image" :style="'background-image: url(' + (tracker.r_imagem || '/api/imagens/card_systracker.png') + ');'"></div>
             </div>
             <div class="tracker-urstatus">
                 {{ ur_statuses.find(s => s.id === tracker.ur_status)?.for_ouvinte || tracker.ur_status || 'N/A' }}
@@ -30,15 +30,15 @@
             </div>
             <div class="tracker-ouvinte-actions">
                 <template v-if="tracker.ur_status === 4">
-                    <button @click="$emit('accept', tracker.id)"> ✅ </button>
-                    <button @click="$emit('decline', tracker.id)"> ❌ </button>
+                    <button @click="$emit('accept', tracker.ur_id)"> ✅ </button>
+                    <button @click="$emit('decline', tracker.ur_id)"> ❌ </button>
                 </template>
                 <template v-else-if="tracker.ur_status === 5">
-                    <button @click="$emit('accept-transfer', tracker.id)"> ✅ </button>
-                    <button @click="$emit('decline-transfer', tracker.id)"> ❌ </button>
+                    <button @click="$emit('accept-transfer', tracker.ur_id)"> ✅ </button>
+                    <button @click="$emit('decline-transfer', tracker.ur_id)"> ❌ </button>
                 </template>
                 <template v-if="tracker.ur_status !== 5">
-                    <button @click="$emit('delete', tracker.id)"> 🗑️ </button>
+                    <button @click="$emit('delete', tracker.ur_id)"> 🗑️ </button>
                 </template>
             </div>
         </div>    

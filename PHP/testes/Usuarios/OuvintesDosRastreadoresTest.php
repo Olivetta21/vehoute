@@ -84,15 +84,15 @@ class OuvintesDosRastreadoresTest extends TestCase {
         $this->assertArrayHasKey('ouvintes', $result);
         $this->assertCount(1, $result['ouvintes']);
         $this->assertEquals([
-            'email' => 'UsuarioForUnitTestB@gmail.com',
-            'id' => 33,
-            'loc_salvos' => true,
-            'loc_temporeal' => true,
-            'rastreador_id' => 24,
-            'telefone' => null,
+            'u_email' => 'UsuarioForUnitTestB@gmail.com',
+            'ur_id' => 33,
+            'ur_loc_salvos' => true,
+            'ur_loc_temporeal' => true,
+            'r_id' => 24,
+            'u_telefone' => null,
             'u_nome' => 'UsuarioFor UnitTestB',
             'ur_status' => 4,
-            'usuario_id' => 377
+            'u_id' => 377
         ], $result['ouvintes'][0]);
 
         $result_negativo = getOuvintesDoRastreador(["pdo" => $pdo, "id" => 377], 24, 'UsuarioForUnitTestb@gmail.com');

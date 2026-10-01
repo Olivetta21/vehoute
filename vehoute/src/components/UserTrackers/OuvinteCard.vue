@@ -10,32 +10,32 @@
         </div>
     </div>
     <div class="ouvinte-contato">
-        <p> {{ ouvinte.email }} </p>
-        <p> {{ ouvinte.telefone }} </p>
+        <p> {{ ouvinte.u_email }} </p>
+        <p> {{ ouvinte.u_telefone }} </p>
     </div>
     <div class="ouvinte-locs">
         <div class="check-field">
-            <input :id="'loc_tempo_real'+ouvinte.id" type="checkbox" :checked="ouvinte.loc_temporeal" />
-            <label :for="'loc_tempo_real'+ouvinte.id">Loc. Tempo Real</label>
+            <input :id="'loc_tempo_real'+ouvinte.ur_id" type="checkbox" :checked="ouvinte.ur_loc_temporeal" />
+            <label :for="'loc_tempo_real'+ouvinte.ur_id">Loc. Tempo Real</label>
         </div>
         <div class="check-field">
-            <input :id="'loc_salvos'+ouvinte.id" type="checkbox" :checked="ouvinte.loc_salvos" />
-            <label :for="'loc_salvos'+ouvinte.id">Loc. Salvos</label>
+            <input :id="'loc_salvos'+ouvinte.ur_id" type="checkbox" :checked="ouvinte.ur_loc_salvos" />
+            <label :for="'loc_salvos'+ouvinte.ur_id">Loc. Salvos</label>
         </div>
     </div>
     <div class="ouvinte-actions">
         <template v-if="ouvinte.ur_status === 1 || ouvinte.ur_status === 2">
-            <button v-if="ouvinte.ur_status === 1" @click="$emit('pause', { ur_id: ouvinte.id, atual_status_id: 1 })"> ⏸️ </button>
-            <button v-if="ouvinte.ur_status === 2" @click="$emit('resume', { ur_id: ouvinte.id, atual_status_id: 2 })"> ▶️ </button>
-            <button v-if="ouvinte.usuario_id !== Usuario.id" @click="$emit('possechange', ouvinte.id)"> 👑 </button>
+            <button v-if="ouvinte.ur_status === 1" @click="$emit('pause', { ur_id: ouvinte.ur_id, atual_status_id: 1 })"> ⏸️ </button>
+            <button v-if="ouvinte.ur_status === 2" @click="$emit('resume', { ur_id: ouvinte.ur_id, atual_status_id: 2 })"> ▶️ </button>
+            <button v-if="ouvinte.u_id !== Usuario.id" @click="$emit('possechange', ouvinte.ur_id)"> 👑 </button>
             <!--button> 📍 </button-->
         </template>
         <template v-else-if="ouvinte.ur_status === 3">
-            <button @click="$emit('accept', ouvinte.id)"> ✅ </button>
-            <button @click="$emit('decline', ouvinte.id)"> ❌ </button>
+            <button @click="$emit('accept', ouvinte.ur_id)"> ✅ </button>
+            <button @click="$emit('decline', ouvinte.ur_id)"> ❌ </button>
         </template>
-        <button v-else-if="ouvinte.ur_status === 5" @click="$emit('cancelpossechange', ouvinte.id)"> ❌ </button>
-        <button v-if="ouvinte.ur_status !== 5 && ouvinte.ur_status !== 3" @click="$emit('exclude', ouvinte.id)"> 🗑️ </button>
+        <button v-else-if="ouvinte.ur_status === 5" @click="$emit('cancelpossechange', ouvinte.ur_id)"> ❌ </button>
+        <button v-if="ouvinte.ur_status !== 5 && ouvinte.ur_status !== 3" @click="$emit('exclude', ouvinte.ur_id)"> 🗑️ </button>
     </div>
 </template>
 

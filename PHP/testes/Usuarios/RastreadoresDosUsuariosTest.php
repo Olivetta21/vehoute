@@ -84,6 +84,26 @@ class RastreadoresDosUsuariosTest extends TestCase {
 		$result = getRastreadoresDoUsuario($credenciais, 'Alpha');
 		$this->assertTrue($result['success']);
 		$this->assertIsArray($result['rastreadores']);
+
+		$this->assertEquals([[
+			'ur_id' => 3,
+			'ur_nome' => 'Meu Alpha',
+			'ur_usuario_id' => 2,
+			'ur_status' => 2,
+			'ur_ativo' => true,
+			'ur_loc_temporeal' => true,
+			'ur_loc_salvos' => true,
+			'r_id' => 2,
+			'r_token_publico' => 'tokenPublicoAlpha123',
+			'r_status' => 1,
+			'r_ativo' => true,
+			'dono_id' => 2,
+			'dono_nome' => 'Kelvin Garcete'
+		]], 
+		$result['rastreadores']
+		);
+
+
 		$result_vazio = getRastreadoresDoUsuario($credenciais, 'NonExistentXYZ');
 		$this->assertTrue($result_vazio['success']);
 		$this->assertCount(0, $result_vazio['rastreadores']);
@@ -101,11 +121,29 @@ class RastreadoresDosUsuariosTest extends TestCase {
 	function test_usuario_adiciona_um_rastreador() {
 		$pdo = getDataBase();
 		$credenciais = ["pdo" => $pdo, "id" => 2];
-		$result = usuarioAdicionaUmRastreador($credenciais, 3, 3, 'tokenPublicoBeta456', 'senhaBeta456', 2, 'Teste ' . uniqid());
+		$uniqID = uniqid();
+		$result = usuarioAdicionaUmRastreador($credenciais, 24, 376, 'unittest', '123', 1, 'Teste ' . $uniqID);
+		$result_duplicado = usuarioAdicionaUmRastreador($credenciais, 24, 376, 'unittest', '123', 1, 'Teste ' . uniqid());
+		$this->assertEquals("Usuário já tem um rastreador com esse id:2 - 24", $result_duplicado['error']);
 		if ($result !== null && isset($result['usuario_rastreador'])) {
 			$stmt = $pdo->prepare('delete from usuario_rastreador where id = :id');
-			$stmt->execute(['id' => $result['usuario_rastreador']['id']]);
+			$stmt->execute(['id' => $result['usuario_rastreador']['ur_id']]);
 		}
+		$this->assertEquals([
+			'ur_id' => $result['usuario_rastreador']['ur_id'],
+			'ur_nome' => "Teste $uniqID",
+			'ur_usuario_id' => 2,
+			'ur_status' => 3,
+			'ur_ativo' => true,
+			'ur_loc_temporeal' => true,
+			'ur_loc_salvos' => true,
+			'r_id' => 24,
+			'r_token_publico' => 'unittest',
+			'r_status' => 1,
+			'r_ativo' => true,
+			'dono_id' => 376,
+			'dono_nome' => 'UsuarioFor UnitTest'
+		], $result['usuario_rastreador']);
 		$result_negativo = usuarioAdicionaUmRastreador($credenciais, 999999, 3, 'token_fake', 'senha_fake', 2, 'Teste');
 		$this->assertThat($result_negativo, $this->logicalOr($this->isNull(), $this->arrayHasKey('error')));
 	}

@@ -21,7 +21,7 @@ Só vai pro estado de transferencia (5) se o estado atual for 1 (normal) ou 2 (p
 
 function validarDonoCorretoForPauseResume($credenciais, $ur_id) {
     $pdo = $credenciais["pdo"];
-    $stmt = $pdo->prepare("select id from vw_rastreadores_dos_usuarios where id = :ur_id and dono_id = :dono_id and ur_status in (1, 2)");
+    $stmt = $pdo->prepare("select ur_id from getRastreadoresDoUsuario(null) where ur_id = :ur_id and dono_id = :dono_id and ur_status in (1, 2)");
     $stmt->execute(["ur_id" => $ur_id, "dono_id" => $credenciais["id"]]);
 
     return $stmt->rowCount() === 1;

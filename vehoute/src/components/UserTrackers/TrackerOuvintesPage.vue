@@ -1,6 +1,6 @@
 <template>
     <HeaderTelas
-        :titulo="PagesRoutes.find(r => r.name === this.$route.name)?.pageName + ' ' + (TrackerOuvintes.tracker?.rastreador_nome || '')"
+        :titulo="PagesRoutes.find(r => r.name === this.$route.name)?.pageName + ' ' + (TrackerOuvintes.tracker?.ur_nome || '')"
         :mostrarVoltar="true"
         :mostrarPesquisa="true"
         :mostrarAdicionar="true"
@@ -24,7 +24,7 @@
     </GenericModalWindow>
     <div class="ouvintes-page-content">
             <ul>
-            <li v-for="ouvinte in ouvintes" :key="ouvinte.id">
+            <li v-for="ouvinte in ouvintes" :key="ouvinte.ur_id">
                 <OuvinteCard
                     :ouvinte="ouvinte"
                     @pause="handlePause"
@@ -86,7 +86,7 @@ export default {
             };
         },
         async salvarNovoOuvinte() {
-            if (!TrackerOuvintes.tracker?.rastreador_id) {
+            if (!TrackerOuvintes.tracker?.r_id) {
                 alert('Nenhum rastreador selecionado');
                 return;
             }
@@ -97,7 +97,7 @@ export default {
             }
 
             const ok = await UserTrackers.donoEnviaPropostaDeNovoOuvinte(
-                TrackerOuvintes.tracker.rastreador_id,
+                TrackerOuvintes.tracker.r_id,
                 this.newOuvinte.nome,
                 Number(this.newOuvinte.usuario_id_destino)
             );
@@ -132,7 +132,7 @@ export default {
         async handleDeleteOuvinte(ur_id) {
             if (!confirm('Confirma excluir este ouvinte?')) return;
             const ok = await TrackerOuvintes.deletarOuvinte(ur_id);
-            if (ok) this.ouvintes = this.ouvintes.filter(o => o.id !== ur_id); else alert('Erro ao excluir');
+            if (ok) this.ouvintes = this.ouvintes.filter(o => o.ur_id !== ur_id); else alert('Erro ao excluir');
         },
         async handlePosseTransfer(ur_id) {
             const ok = await TrackerOuvintes.donoEnviaPropostaParaTransferirPosse(ur_id);

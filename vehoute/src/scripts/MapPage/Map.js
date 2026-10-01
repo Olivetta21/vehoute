@@ -85,10 +85,10 @@ export default class Map {
         try {
             const trackers = await Map.fetchTrackers();
             Map.trackers = trackers.map(t => ({
-                id: t.id,
-                name: t.rastreador_nome,
-                rastreador_id: t.rastreador_id,
-                token_publico: t.token_publico,
+                id: t.ur_id,
+                name: t.ur_nome,
+                rastreador_id: t.r_id,
+                token_publico: t.r_token_publico,
                 localizacoes: [],
             }));
 

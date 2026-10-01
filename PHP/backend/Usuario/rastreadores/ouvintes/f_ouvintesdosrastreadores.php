@@ -26,10 +26,10 @@ function getOuvintesDoRastreador($credenciais, $rastreador_id, $name_filter) {
     }
 
     try {
-        $sql = "select * from vw_ouvintes_dos_rastreadores where rastreador_id = :rastreador_id and (u_nome ilike :name_filter or email ilike :name_filter) order by u_nome";
+        $sql = "select * from getOuvintesDoRastreador(:rastreador_id::int[]) where (u_nome ilike :name_filter or u_email ilike :name_filter) order by u_nome";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            "rastreador_id" => $rastreador_id,
+            "rastreador_id" => "{" . $rastreador_id . "}",
             "name_filter" => '%' . $name_filter . '%'
         ]);
 
@@ -39,6 +39,13 @@ function getOuvintesDoRastreador($credenciais, $rastreador_id, $name_filter) {
     }
 }
 
+function checkCorrectStatusForAction($credenciais, $ur_id, $array_statuses) {
+    $pdo = $credenciais["pdo"];
+    $stmt = $pdo->prepare("select ur_status from getRastreadoresDoUsuario(null) where ur_id = :ur_id and dono_id = :dono_id and ur_status in (" . implode(',', $array_statuses) . ")");
+    $stmt->execute(["ur_id" => $ur_id, "dono_id" => $credenciais["id"]]);
+
+    return $stmt->rowCount() === 1;
+}
 
 function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
     if (!validarIdPositivo($ur_id)) {
@@ -47,24 +54,23 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
 
     $pdo = $credenciais["pdo"];
     $usuario_id = $credenciais["id"];
+    $ur_status_permitidos = [1, 2]; 
 
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare("select rastreador_id from vw_rastreadores_dos_usuarios where id = :ur_id and dono_id = :dono_id and ur_status in (1, 2)");
-        $stmt->execute(["ur_id" => $ur_id, "dono_id" => $usuario_id]);
-        if ($stmt->rowCount() !== 1) {
+        if (!checkCorrectStatusForAction($credenciais, $ur_id, $ur_status_permitidos)) {
             return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o dono, ou status atual não confere para enviar proposta de transferência de posse", $ur_id . " - " . $usuario_id)];
         }
-        $rastreador_id = $stmt->fetchColumn();
 
-        $stmt = $pdo->prepare("update usuario_rastreador set status = 5 where id = :id and status in (1, 2)");
+        $stmt = $pdo->prepare("update usuario_rastreador set status = 5 where id = :id and status in (". implode(',', $ur_status_permitidos) .") returning rastreador_id");
         $stmt->execute(["id" => $ur_id]);
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
             return ["error" => errorMessage("Erro ao enviar proposta de transferência de posse para o ouvinte", $ur_id . " - " . $usuario_id)];
         }
+        $rastreador_id = $stmt->fetchColumn();
 
         $stmt = $pdo->prepare("update rastreador set status = 3 where id = :rastreador_id and dono_id = :dono_id and status in (1, 2)");
         $stmt->execute(["rastreador_id" => $rastreador_id, "dono_id" => $usuario_id]);
@@ -92,24 +98,23 @@ function donoCancelaTransferenciaDePosse($credenciais, $ur_id) {
 
     $pdo = $credenciais["pdo"];
     $usuario_id = $credenciais["id"];
+    $ur_status_permitidos = [5];
 
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare("select rastreador_id from vw_rastreadores_dos_usuarios where id = :ur_id and dono_id = :dono_id and ur_status = 5");
-        $stmt->execute(["ur_id" => $ur_id, "dono_id" => $usuario_id]);
-        if ($stmt->rowCount() !== 1) {
+        if (!checkCorrectStatusForAction($credenciais, $ur_id, $ur_status_permitidos)) {
             return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o dono, ou status atual não confere para cancelar proposta de transferência de posse", $ur_id . " - " . $usuario_id)];
         }
-        $rastreador_id = $stmt->fetchColumn();
 
-        $stmt = $pdo->prepare("update usuario_rastreador set status = 2 where id = :id and status = 5");
+        $stmt = $pdo->prepare("update usuario_rastreador set status = 2 where id = :id and status in (". implode(',', $ur_status_permitidos) .") returning rastreador_id");
         $stmt->execute(["id" => $ur_id]);
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
             return ["error" => errorMessage("Erro ao cancelar proposta de transferência de posse para o ouvinte", $ur_id . " - " . $usuario_id)];
         }
+        $rastreador_id = $stmt->fetchColumn();
 
         $stmt = $pdo->prepare("update rastreador set status = 1 where id = :rastreador_id and dono_id = :dono_id and status = 3");
         $stmt->execute(["rastreador_id" => $rastreador_id, "dono_id" => $usuario_id]);
@@ -168,11 +173,7 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
 
 
 function validarDonoCorretoForAcceptDecline($credenciais, $ur_id) {
-    $pdo = $credenciais["pdo"];
-    $stmt = $pdo->prepare("select id from vw_rastreadores_dos_usuarios where id = :ur_id and dono_id = :dono_id and ur_status = 3");
-    $stmt->execute(["ur_id" => $ur_id, "dono_id" => $credenciais["id"]]);
-
-    return $stmt->rowCount() === 1;
+    return checkCorrectStatusForAction($credenciais, $ur_id, [3]);
 }
 
 function donoAceitaNovoOuvinte($credenciais, $ur_id) {
@@ -238,7 +239,7 @@ function donoRecusaNovoOuvinte($credenciais, $ur_id) {
 
 function validarDonoCorretoForDelete($credenciais, $ur_id) {
     $pdo = $credenciais["pdo"];
-    $stmt = $pdo->prepare("select id from vw_rastreadores_dos_usuarios where id = :ur_id and dono_id = :dono_id");
+    $stmt = $pdo->prepare("select ur_id from getRastreadoresDoUsuario(null) where ur_id = :ur_id and dono_id = :dono_id");
     $stmt->execute(["ur_id" => $ur_id, "dono_id" => $credenciais["id"]]);
 
     return $stmt->rowCount() === 1;

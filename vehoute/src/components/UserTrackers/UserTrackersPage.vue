@@ -30,7 +30,7 @@
             <div class="trackers-container">
             <TrackerCard v-for="(tracker, index) in trackers" :key="index" :tracker="tracker"
                 @ouvintes="TrackerOuvintes.openPage(tracker)"
-                @rastrear="MapPagina.enterWithTracker(tracker.id)"
+                @rastrear="MapPagina.enterWithTracker(tracker.ur_id)"
                 @accept="handleAcceptProposal"
                 @decline="handleDeclineProposal"
                 @accept-transfer="handleAcceptTransfer"

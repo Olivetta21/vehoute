@@ -14,8 +14,8 @@ function existsExactR_WithIdDonoTKStatusSenha($pdo, $rastreador_id, $dono_id, $t
 
 function getRastreadoresDoUsuario($credenciais, $name_filter) {
     $pdo = $credenciais["pdo"];
-    $stmt = $pdo->prepare("select * from vw_rastreadores_dos_usuarios where usuario_id = :usuario_id and rastreador_nome ilike :name_filter order by rastreador_nome");
-    $stmt->execute(["usuario_id" => $credenciais["id"], "name_filter" => "%$name_filter%"]);
+    $stmt = $pdo->prepare("select * from getRastreadoresDoUsuario(:usuario_id) where ur_nome ilike :name_filter order by ur_nome");
+    $stmt->execute(["usuario_id" => "{" . $credenciais["id"] . "}", "name_filter" => "%$name_filter%"]);
     $rastreadores = $stmt->fetchAll(PDO::FETCH_ASSOC);
     return ["success" => true, "rastreadores" => $rastreadores];
 }
@@ -74,8 +74,8 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
 
         $ur_id = $stmt->fetchColumn();
 
-        $stmt = $pdo->prepare("select * from vw_rastreadores_dos_usuarios where id = :ur_id");
-        $stmt->execute(["ur_id" => $ur_id]);
+        $stmt = $pdo->prepare("select * from getRastreadoresDoUsuario(:usuario_id) where ur_id = :ur_id");
+        $stmt->execute(["usuario_id" => "{" . $credenciais["id"] . "}", "ur_id" => $ur_id]);
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
@@ -120,8 +120,8 @@ function deleteUsuarioRastreador($pdo, $ur_id) {
 
 function validarUsuarioCorretoForAcceptDecline($credenciais, $ur_id) {
     $pdo = $credenciais["pdo"];
-    $stmt = $pdo->prepare("select id from vw_rastreadores_dos_usuarios where id = :ur_id and usuario_id = :usuario_id and ur_status = 4");
-    $stmt->execute(["ur_id" => $ur_id, "usuario_id" => $credenciais["id"]]);
+    $stmt = $pdo->prepare("select ur_id from getRastreadoresDoUsuario(:usuario_id) where ur_id = :ur_id and ur_status = 4");
+    $stmt->execute(["ur_id" => $ur_id, "usuario_id" => "{" . $credenciais["id"] . "}"]);
 
     return $stmt->rowCount() === 1;
 }
@@ -147,8 +147,8 @@ function usuarioAceitaPropostaDeOuvinte($credenciais, $ur_id) {
         }
 
         $ur_id = $stmt->fetchColumn();
-        $stmt = $pdo->prepare("select * from vw_rastreadores_dos_usuarios where id = :ur_id");
-        $stmt->execute(["ur_id" => $ur_id]);
+        $stmt = $pdo->prepare("select * from getRastreadoresDoUsuario(:usuario_id) where ur_id = :ur_id");
+        $stmt->execute(["usuario_id" => "{" . $credenciais["id"] . "}", "ur_id" => $ur_id]);
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
@@ -296,8 +296,8 @@ function declineTransferenciaDePosse($credenciais, $ur_id) {
 
 function validarOuvinteCorretoForDeleteUR($credenciais, $ur_id) {
     $pdo = $credenciais["pdo"];
-    $stmt = $pdo->prepare("select ur_status from vw_rastreadores_dos_usuarios where id = :ur_id and usuario_id = :ouvinte_id");
-    $stmt->execute(["ur_id" => $ur_id, "ouvinte_id" => $credenciais["id"]]);
+    $stmt = $pdo->prepare("select ur_status from getRastreadoresDoUsuario(:usuario_id) where ur_id = :ur_id");
+    $stmt->execute(["ur_id" => $ur_id, "usuario_id" => "{" . $credenciais["id"] . "}"]);
 
     if ($stmt->rowCount() === 1) {
         $ur_status = $stmt->fetchColumn();

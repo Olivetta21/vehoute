@@ -307,28 +307,44 @@ $$ language sql;
 create function getRastreadoresDoUsuario(
     var_usuarios_ids integer[]
 ) returns table (
-    ur_id integer, ur_usuario_id integer, ur_nome varchar, ur_status integer, ur_loc_temporeal boolean, ur_loc_salvos boolean,
-    r_id integer, r_hardware varchar, r_token_publico varchar, r_status integer, r_dono_id integer
+    ur_id integer, ur_nome varchar, ur_usuario_id integer, ur_status integer, ur_ativo boolean, ur_loc_temporeal boolean, ur_loc_salvos boolean,
+    r_id integer, r_token_publico varchar, r_status integer, r_ativo boolean,
+    dono_id integer, dono_nome varchar
 ) as $$
-    select ur.id as ur_id, ur.usuario_id as ur_usuario_id, ur.nome as ur_nome, ur.status as ur_status, ur.loc_temporeal as ur_loc_temporeal, ur.loc_salvos as ur_loc_salvos,
-    r.id as r_id, r.hardware as r_hardware, r.token_publico as r_token_publico, r.status as r_status, r.dono_id as r_dono_id
+    select distinct on (r_id, ur_usuario_id) * from (
+		select
+			ur.id as ur_id, ur.nome as ur_nome, ur.usuario_id as ur_usuario_id, ur.status as ur_status, ur.ativo as ur_ativo, ur.loc_temporeal as ur_loc_temporeal, ur.loc_salvos as ur_loc_salvos,
+			r.id as r_id, r.token_publico as r_token_publico, r.status as r_status, r.ativo as r_ativo,
+			dono.id as dono_id, dono.nome as dono_nome
+			from usuario_rastreador ur
+			join rastreador r on r.id = ur.rastreador_id
+			left join usuario dono on dono.id = r.dono_id
+		union all
+		select
+			null as ur_id, 'Sem vínculo' as ur_nome, r.dono_id as ur_usuario_id, -999 as ur_status, false as ur_ativo, false as ur_loc_temporeal, false as ur_loc_salvos,
+			r.id as r_id, r.token_publico as r_token_publico, r.status as r_status, r.ativo as r_ativo,
+			dono.id as dono_id, dono.nome as dono_nome
     from rastreador r
-    join usuario_rastreador ur on ur.rastreador_id = r.id
-    where ur.usuario_id = any(var_usuarios_ids) and ur.ativo = true and r.ativo = true;
+			left join usuario dono on dono.id = r.dono_id
+	)
+    where ur_usuario_id = any(var_usuarios_ids) or var_usuarios_ids is null or cardinality(var_usuarios_ids) = 0
+    order by r_id, ur_usuario_id, ur_id nulls last;
 $$ language sql;
 
 --Pegar todos os ouvintes de um rastreador, ignorar os inativos
 create function getOuvintesDoRastreador(
     var_rastreadores_ids integer[]
 ) returns table (
-    ur_id integer, ur_loc_temporeal boolean, ur_loc_salvos boolean,
-    u_id integer, u_nome varchar, u_email varchar, u_telefone varchar
+    ur_id integer, ur_loc_temporeal boolean, ur_loc_salvos boolean, ur_status integer,
+    u_id integer, u_nome varchar, u_email varchar, u_telefone varchar,
+	r_id integer
 ) as $$
-    select ur.id as ur_id, ur.loc_temporeal as ur_loc_temporeal, ur.loc_salvos as ur_loc_salvos,
-    u.id as u_id, u.nome as u_nome, u.email as u_email, u.telefone as u_telefone
+    select ur.id as ur_id, ur.loc_temporeal as ur_loc_temporeal, ur.loc_salvos as ur_loc_salvos, ur.status as ur_status,
+    u.id as u_id, u.nome as u_nome, u.email as u_email, u.telefone as u_telefone,
+	ur.rastreador_id as r_id
     from usuario_rastreador ur
     join usuario u on u.id = ur.usuario_id
-    where ur.rastreador_id = any(var_rastreadores_ids) and u.ativo = true;
+    where ur.rastreador_id = any(var_rastreadores_ids) or var_rastreadores_ids is null or cardinality(var_rastreadores_ids) = 0;
 $$ language sql;
 
 --Pegar todas localizações ocultas de um rastreador
@@ -341,7 +357,7 @@ create function getLocOcultaDoRastreador(
 ) as $$
     select id, id_inicial, id_final, data_inicial, data_final, rastreador_id, identificacao, novos_ouvintes
     from intervalo_loc_oculta
-    where rastreador_id = any(var_rastreadores_ids);
+    where rastreador_id = any(var_rastreadores_ids)  or var_rastreadores_ids is null or cardinality(var_rastreadores_ids) = 0;
 $$ language sql;
 
 --Pegar todos os usuarios de uma localizacao oculta
@@ -354,7 +370,7 @@ create function getUsuariosDaLocOculta(
     from vinc_loc_oculta_usuario_rastreador vlour
     join usuario_rastreador ur on ur.id = vlour.usuario_rastreador_id
     join usuario u on u.id = ur.usuario_id
-    where vlour.intervalo_loc_oculta_id = any(var_intervalo_loc_oculta_ids) and ur.ativo = true and u.ativo = true;
+    where vlour.intervalo_loc_oculta_id = any(var_intervalo_loc_oculta_ids)  or var_intervalo_loc_oculta_ids is null or cardinality(var_intervalo_loc_oculta_ids) = 0;
 $$ language sql;
 
 
@@ -485,30 +501,6 @@ select r.id, r.hardware, r.token, r.token_publico, r.obs, r.status, r.ativo,
 	left join (select rastreador_id, count(rastreador_id) from usuario_rastreador group by rastreador_id) qnto on qnto.rastreador_id = r.id;
 
 
-
-create view vw_rastreadores_dos_usuarios as
-	select distinct on (rastreador_id, usuario_id) * from (
-		select
-			ur.id, ur.rastreador_id, ur.nome as rastreador_nome, ur.usuario_id, ur.status as ur_status, ur.ativo as ur_ativo, ur.loc_temporeal, ur.loc_salvos,
-			r.token_publico, r.status as r_status, r.ativo as r_ativo, r.dono_id,
-			u.nome as dono_nome
-			from usuario_rastreador ur
-			join rastreador r on r.id = ur.rastreador_id
-			left join usuario u on u.id = r.dono_id
-		union all
-		select
-			null as id, r.id as rastreador_id, 'Sem vínculo' as rastreador_nome, r.dono_id as usuario_id, -999 as ur_status, false as ur_ativo, false as loc_temporeal, false as loc_salvos,
-			token_publico, status as r_status, r.ativo as r_ativo, dono_id,
-			u.nome as dono_nome
-			from rastreador r
-			left join usuario u on u.id = dono_id
-	) order by rastreador_id, usuario_id, id nulls last;
-
-create view vw_ouvintes_dos_rastreadores as
-select ur.id, ur.usuario_id, ur.rastreador_id, ur.status as ur_status, ur.loc_temporeal, ur.loc_salvos,
-	u.nome as u_nome, u.email, u.telefone
-	from usuario_rastreador ur
-	join usuario u on u.id = ur.usuario_id;
 
 
 CREATE FUNCTION insereLocalizacao(p_rastreador_id INTEGER, p_lat numeric(9,6), p_lng numeric(9,6))

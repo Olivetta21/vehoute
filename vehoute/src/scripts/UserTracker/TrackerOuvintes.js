@@ -8,7 +8,7 @@ export default class TrackerOuvintes {
         TrackerOuvintes.tracker = null;
     }
 
-    static after_enter() {
+    static before_enter() {
         if (!TrackerOuvintes.tracker) {
             router.push({ name: 'owntracker' });
         }
@@ -22,7 +22,7 @@ export default class TrackerOuvintes {
     static async getOuvintes(name) {
         //select ur.id, ur.usuario_id, ur.rastreador_id, ur.status as ur_status, ur.loc_temporeal, ur.loc_salvos, 
         // u.nome as u_nome, u.email, u.telefone
-        const result = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ get: { rastreador_id: TrackerOuvintes.tracker.rastreador_id, name_filter: name } }]);
+        const result = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ get: { rastreador_id: TrackerOuvintes.tracker.r_id, name_filter: name } }]);
         if (result.success) {
             return result.ouvintes;
         }
