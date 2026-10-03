@@ -11,10 +11,12 @@ import SystemUsersPage from './components/SystemUsers/SystemUsersPage.vue'
 import SystemTrackersPage from './components/SystemTrackers/SystemTrackersPage.vue'
 import UserTrackersPage from './components/UserTrackers/UserTrackersPage.vue'
 import TrackerOuvintesPage from './components/UserTrackers/TrackerOuvintesPage.vue'
+import TrackerLocOcultaPage from './components/UserTrackers/TrackerLocOcultaPage.vue'
 
 import Login from './scripts/LoginPage/Login'
 import PagesRoutes from './scripts/PagesRoutes.js'
 import TrackerOuvintes from './scripts/UserTracker/TrackerOuvintes.js'
+import TrackerLocOculta from './scripts/UserTracker/TrackerLocOculta.js'
 import MapPagina from './scripts/MapPage/Map.js'
 
 function constructRoute(name, aditional) {
@@ -50,6 +52,7 @@ const routes = [
       constructRoute('systrackers', {component: SystemTrackersPage }),
       constructRoute('owntracker', {component : UserTrackersPage }),
         constructRoute('trackerouvintes', {component: TrackerOuvintesPage, meta: { class: TrackerOuvintes } }),
+        constructRoute('trackerlococulta', {component: TrackerLocOcultaPage, meta: { class: TrackerLocOculta } }),
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: { name: 'home', params: {} } }

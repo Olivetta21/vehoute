@@ -11,6 +11,7 @@ export default [
         home_cardIcon: '/api/imagens/card_seus_rastreadores.png', 
     },
         { pageName: 'Ouvintes do Rastreador', name: 'trackerouvintes', path: 'ouvintes-do-rastreador'},
+        { pageName: 'Localização Oculta do Rastreador', name: 'trackerlococulta', path: 'localizacao-oculta-do-rastreador'},
 
     { pageName: 'Perfil', name: 'perfil', path: 'perfil',
         home_cardIcon: '/api/imagens/card_perfil.png',

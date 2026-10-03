@@ -74,6 +74,37 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
 
         $ur_id = $stmt->fetchColumn();
 
+        //Adiciona o ouvinte no vinculo de localizacoes ocultas do rastreador, caso existam
+        $stmt = $pdo->prepare("select id from intervalo_loc_oculta where novos_ouvintes = true and rastreador_id = :rastreador_id");
+        $stmt->execute(["rastreador_id" => $rastreador_id]);
+        if ($stmt->rowCount() > 0) {
+            $lococulta_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $stmt = $pdo->prepare("insert into vinc_loc_oculta_usuario_rastreador
+            (
+                intervalo_loc_oculta_id,
+                usuario_rastreador_id,
+                intervalo_loc_oculta_rastreador_id,
+                usuario_rastreador_rastreador_id
+            )
+            SELECT
+                loc.id,
+                :ur_id,
+                :rastreador_id,
+                :rastreador_id
+            FROM unnest(CAST(:lococulta_ids AS int[])) AS loc(id)
+            ");
+            $stmt->execute([
+                "lococulta_ids" => '{' . implode(',', array_map('intval', $lococulta_ids)) . '}',
+                "ur_id" => intval($ur_id),
+                "rastreador_id" => $rastreador_id
+            ]);
+
+            if ($stmt->rowCount() !== count($lococulta_ids)) {
+                $pdo->rollBack();
+                return ["error" => errorMessage("Erro ao adicionar ouvinte nas localizações ocultas do rastreador", $credenciais["id"] . " - " . $rastreador_id)];
+            }
+        }
+
         $stmt = $pdo->prepare("select * from getRastreadoresDoUsuario(:usuario_id) where ur_id = :ur_id");
         $stmt->execute(["usuario_id" => "{" . $credenciais["id"] . "}", "ur_id" => $ur_id]);
 
@@ -102,6 +133,9 @@ function deleteUsuarioRastreador($pdo, $ur_id) {
         if (!$pdo->inTransaction()) {
             return ["error" => errorMessage("deleteUsuarioRastreador deve ser chamado dentro de uma transação", $ur_id)];
         }
+        
+        $stmt = $pdo->prepare("delete from vinc_loc_oculta_usuario_rastreador where usuario_rastreador_id = :usuario_rastreador_id");
+        $stmt->execute(["usuario_rastreador_id" => $ur_id]);
 
         $stmt = $pdo->prepare("delete from usuario_rastreador where id = :id");
         $stmt->execute(["id" => $ur_id]);

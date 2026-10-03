@@ -1,4 +1,4 @@
-import MapApi from "./MapApis/MapApi_Google";
+import MapApi from "./MapApis/MapApi_OpenStreet";
 
 export default class MapController {
 

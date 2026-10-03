@@ -67,7 +67,9 @@ create table usuario_rastreador (
     status integer not null,--
     ativo boolean not null default true,
     loc_temporeal boolean not null default true,
-    loc_salvos boolean not null default true
+    loc_salvos boolean not null default true,
+    unique (id, rastreador_id),
+    unique (usuario_id, rastreador_id)
 );
 
 create table localizacao (
@@ -87,13 +89,23 @@ create table intervalo_loc_oculta (
     data_inicial timestamp,
     data_final timestamp,
     identificacao varchar(100),
-    novos_ouvintes boolean not null default true
+    novos_ouvintes boolean not null default true,
+    unique (id, rastreador_id),
+    constraint intervalo_loc_oculta_check_data_nao_usa_milissegundos check ( --Impedir que as datas tenham milissegundos.
+        (coalesce(EXTRACT(microseconds FROM data_inicial), 0) + coalesce(EXTRACT(microseconds FROM data_final), 0)) % 1000000 = 0
+    )
 );
 
 create table vinc_loc_oculta_usuario_rastreador (
-    usuario_rastreador_id integer not null references usuario_rastreador(id),
-    intervalo_loc_oculta_id integer not null references intervalo_loc_oculta(id),
-    primary key (usuario_rastreador_id, intervalo_loc_oculta_id)
+    id serial primary key,
+    usuario_rastreador_id integer not null,
+    usuario_rastreador_rastreador_id integer not null,
+    intervalo_loc_oculta_id integer not null,
+    intervalo_loc_oculta_rastreador_id integer not null,
+    unique (usuario_rastreador_id, intervalo_loc_oculta_id),
+	foreign key (usuario_rastreador_id, usuario_rastreador_rastreador_id) references usuario_rastreador(id, rastreador_id),
+	foreign key (intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) references intervalo_loc_oculta(id, rastreador_id),
+	constraint vlour_check_rastrador_id_equals check (usuario_rastreador_rastreador_id = intervalo_loc_oculta_rastreador_id)
 );
 
 -- Permissões de usuario
@@ -324,7 +336,7 @@ create function getRastreadoresDoUsuario(
 			null as ur_id, 'Sem vínculo' as ur_nome, r.dono_id as ur_usuario_id, -999 as ur_status, false as ur_ativo, false as ur_loc_temporeal, false as ur_loc_salvos,
 			r.id as r_id, r.token_publico as r_token_publico, r.status as r_status, r.ativo as r_ativo,
 			dono.id as dono_id, dono.nome as dono_nome
-    from rastreador r
+			from rastreador r
 			left join usuario dono on dono.id = r.dono_id
 	)
     where ur_usuario_id = any(var_usuarios_ids) or var_usuarios_ids is null or cardinality(var_usuarios_ids) = 0
@@ -360,13 +372,105 @@ create function getLocOcultaDoRastreador(
     where rastreador_id = any(var_rastreadores_ids)  or var_rastreadores_ids is null or cardinality(var_rastreadores_ids) = 0;
 $$ language sql;
 
+
+
+--Criar uma nova localizacao oculta para um rastreador
+create function createLocOcultaDoRastreador(
+    var_rastreador_id integer,
+    var_id_inicial integer,
+    var_id_final integer,
+    var_data_inicial timestamp without time zone,
+    var_data_final timestamp without time zone,
+    var_identificacao varchar
+) returns table (
+    id integer, 
+    id_inicial integer, id_final integer, data_inicial timestamp without time zone, data_final timestamp without time zone,
+    rastreador_id integer, identificacao varchar, novos_ouvintes boolean
+) as $$
+    insert into intervalo_loc_oculta (rastreador_id, id_inicial, id_final, data_inicial, data_final, identificacao)
+    values (var_rastreador_id, var_id_inicial, var_id_final, var_data_inicial, var_data_final, var_identificacao)
+    returning id, id_inicial, id_final, data_inicial, data_final, rastreador_id, identificacao, novos_ouvintes;
+$$ language sql;
+
+
+--definir o vinculo de ouvintes para localizações ocultas
+CREATE FUNCTION setOuvintesParaLocOculta(
+    var_intervalo_loc_oculta_ids integer[],
+    var_usuario_rastreador_ids integer[],
+    var_rastreador_id integer
+) RETURNS TABLE (
+    deleted_count integer,
+    inserted_count integer
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    aux integer;
+    rastr_loc_id integer;
+    rastr_usr_id integer;
+BEGIN
+    DELETE FROM vinc_loc_oculta_usuario_rastreador 
+    WHERE intervalo_loc_oculta_id = ANY(var_intervalo_loc_oculta_ids);
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+
+    SELECT COUNT(DISTINCT rastreador_id), MIN(rastreador_id) INTO aux, rastr_loc_id FROM intervalo_loc_oculta WHERE id = ANY(var_intervalo_loc_oculta_ids);
+    IF aux != 1 THEN
+        RAISE EXCEPTION 
+            'Erro: As localizações ocultas devem pertencer ao mesmo rastreador.';
+    END IF;
+
+    IF var_rastreador_id != rastr_loc_id THEN
+        RAISE EXCEPTION 
+            'Erro: O rastreador informado não corresponde ao das localizações ocultas.';
+    END IF;
+
+    if var_usuario_rastreador_ids is not null and cardinality(var_usuario_rastreador_ids) > 0 then
+        SELECT COUNT(DISTINCT rastreador_id), MIN(rastreador_id) INTO aux, rastr_usr_id FROM usuario_rastreador WHERE id = ANY(var_usuario_rastreador_ids);
+        IF aux != 1 THEN
+            RAISE EXCEPTION 
+                'Erro: Os ouvintes devem pertencer ao mesmo rastreador.';
+        END IF;
+    else
+        inserted_count = 0;
+        RETURN NEXT;
+    end if;
+
+    IF rastr_loc_id != rastr_usr_id THEN
+        RAISE EXCEPTION 
+            'Erro: As localizações ocultas e os ouvintes devem pertencer ao mesmo rastreador.';
+    END IF;
+
+    INSERT INTO vinc_loc_oculta_usuario_rastreador
+    (
+        intervalo_loc_oculta_id,
+        usuario_rastreador_id,
+        intervalo_loc_oculta_rastreador_id,
+        usuario_rastreador_rastreador_id
+    )
+    SELECT
+        loc.id,
+        usr.id,
+        rastr_loc_id,
+        rastr_usr_id
+    FROM unnest(var_intervalo_loc_oculta_ids) AS loc(id)
+    CROSS JOIN unnest(var_usuario_rastreador_ids) AS usr(id);
+    GET DIAGNOSTICS inserted_count = ROW_COUNT;
+    RETURN NEXT;
+END;
+$$;
+
+    
+
+
+
+
 --Pegar todos os usuarios de uma localizacao oculta
 create function getUsuariosDaLocOculta(
     var_intervalo_loc_oculta_ids integer[]
 ) returns table (
-    ilo_id integer, u_id integer, u_nome varchar
+    ilo_id integer, u_id integer, u_nome varchar, ur_id integer
 ) as $$
-    select vlour.intervalo_loc_oculta_id as ilo_id, u.id as u_id, u.nome as u_nome
+    select vlour.intervalo_loc_oculta_id as ilo_id, u.id as u_id, u.nome as u_nome, ur.id as ur_id
     from vinc_loc_oculta_usuario_rastreador vlour
     join usuario_rastreador ur on ur.id = vlour.usuario_rastreador_id
     join usuario u on u.id = ur.usuario_id

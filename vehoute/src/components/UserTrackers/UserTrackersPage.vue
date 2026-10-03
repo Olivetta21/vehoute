@@ -30,6 +30,7 @@
             <div class="trackers-container">
             <TrackerCard v-for="(tracker, index) in trackers" :key="index" :tracker="tracker"
                 @ouvintes="TrackerOuvintes.openPage(tracker)"
+                @lococulta="TrackerLocOculta.openPage(tracker)"
                 @rastrear="MapPagina.enterWithTracker(tracker.ur_id)"
                 @accept="handleAcceptProposal"
                 @decline="handleDeclineProposal"
@@ -45,6 +46,7 @@ import UserTrackers from '../../scripts/UserTracker/UserTrackers';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import PagesRoutes from '../../scripts/PagesRoutes.js';
 import TrackerOuvintes from '../../scripts/UserTracker/TrackerOuvintes.js';
+import TrackerLocOculta from '../../scripts/UserTracker/TrackerLocOculta.js';
 import TrackerCard from './TrackerCard.vue';
 import GenericModalWindow from '../utils/GenericModalWindow.vue';
 import MapPagina from '../../scripts/MapPage/Map.js';
@@ -55,6 +57,7 @@ export default {
         return {
             PagesRoutes,
             TrackerOuvintes,
+            TrackerLocOculta,
             MapPagina,
             trackers: [],
             showAddTrackerForm: false,

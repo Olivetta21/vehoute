@@ -151,7 +151,7 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
             return ["error" => errorMessage("Rastreador não encontrado ou usuário autenticado não é o dono para enviar proposta de ouvinte", $rastreador_id . " - " . $credenciais["id"])];
         }
 
-        $stmt = $pdo->prepare("insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (:usuario_id, :rastreador_id, :nome, 4)");
+        $stmt = $pdo->prepare("insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (:usuario_id, :rastreador_id, :nome, 4) returning id");
         $stmt->execute([
             "usuario_id" => $usuario_id_destino,
             "rastreador_id" => $rastreador_id,
@@ -161,6 +161,38 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
             return ["error" => errorMessage("Erro ao enviar proposta de ouvinte para o usuário", $rastreador_id . " - " . $usuario_id_destino)];
+        }
+        $ur_id = $stmt->fetchColumn();
+        
+        //Adiciona o ouvinte no vinculo de localizacoes ocultas do rastreador, caso existam
+        $stmt = $pdo->prepare("select id from intervalo_loc_oculta where novos_ouvintes = true and rastreador_id = :rastreador_id");
+        $stmt->execute(["rastreador_id" => $rastreador_id]);
+        if ($stmt->rowCount() > 0) {
+            $lococulta_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $stmt = $pdo->prepare("insert into vinc_loc_oculta_usuario_rastreador
+            (
+                intervalo_loc_oculta_id,
+                usuario_rastreador_id,
+                intervalo_loc_oculta_rastreador_id,
+                usuario_rastreador_rastreador_id
+            )
+            SELECT
+                loc.id,
+                :ur_id,
+                :rastreador_id,
+                :rastreador_id
+            FROM unnest(CAST(:lococulta_ids AS int[])) AS loc(id)
+            ");
+            $stmt->execute([
+                "lococulta_ids" => '{' . implode(',', array_map('intval', $lococulta_ids)) . '}',
+                "ur_id" => intval($ur_id),
+                "rastreador_id" => $rastreador_id
+            ]);
+
+            if ($stmt->rowCount() !== count($lococulta_ids)) {
+                $pdo->rollBack();
+                return ["error" => errorMessage("Erro ao adicionar ouvinte nas localizações ocultas do rastreador", $credenciais["id"] . " - " . $rastreador_id)];
+            }
         }
 
         $pdo->commit();
