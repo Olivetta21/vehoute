@@ -8,10 +8,6 @@
                 <button @click="avanceLocation(-1)"> {{ '<' }} </button>
                 <button @click="gotoLastLocation"> O </button>
                 <button @click="avanceLocation(1)"> {{ '>' }} </button>
-                <button @click="MapPagina.insertLocation(
-                    tracker_selected_id,
-                    { lat: -23.54980 + Math.random() * 0.01, lng: -46.62950 + Math.random() * 0.01, id: new Date().getTime(), l_data: getDateWithOffset(-5) + ' 10:00:00' }
-                    )"> + </button>
             </div>
             <div class="tracker-info-buttons">
                 <div class="tracker-location-container">

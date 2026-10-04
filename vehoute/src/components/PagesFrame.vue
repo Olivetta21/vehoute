@@ -11,7 +11,7 @@
             </div>
 
             <div class="sidebar-nav">
-                <div class="nav-section">{{ isCollapsed ? '' : 'Acesso rápido' }}</div>
+                <div class="nav-section" v-if="!isCollapsed">Acesso rápido</div>
                 <ul class="nav-list">
                     <li v-for="item in menuItems" :key="item.id" 
                         class="nav-link" 
@@ -140,6 +140,8 @@ export default {
         display: flex;
         flex-direction: column;
         gap: 10px;
+        overflow-x: auto;
+        scrollbar-width: none;
     }
     .sidebar.is-collapsed .sidebar-nav {
         padding: 0;
