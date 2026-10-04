@@ -45,8 +45,9 @@ class OuvintesDosRastreadoresTest extends TestCase {
     }
 
     private function removerUsuarioRastreador($pdo, $ur_id) {
-        $stmt = $pdo->prepare('delete from usuario_rastreador where id = :id');
-        $stmt->execute(['id' => $ur_id]);
+        $pdo->beginTransaction();
+        deleteUsuarioRastreador($pdo, $ur_id);
+        $pdo->commit();
     }
 
     private function buscarStatusUsuarioRastreador($pdo, $ur_id) {

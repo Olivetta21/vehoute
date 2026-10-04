@@ -43,6 +43,10 @@ function getLocOcultaDoRastreador($credenciais, $rastreador_id, $filter) {
             "locsOcultasIds" => '{' . implode(',', array_column($localizacoes_ocultas, 'id')) . '}'
         ]);
         $ouvintes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        foreach ($localizacoes_ocultas as &$loc) {
+            $loc["ouvintes"] = [];
+        }
 
         if ($ouvintes && count($ouvintes) > 0) {
             foreach ($localizacoes_ocultas as &$loc) {

@@ -56,8 +56,9 @@ class RastreadoresDosUsuariosTest extends TestCase {
 	}
 
 	private function removerUsuarioRastreador($pdo, $ur_id) {
-		$stmt = $pdo->prepare('delete from usuario_rastreador where id = :id');
-		$stmt->execute(['id' => $ur_id]);
+		$pdo->beginTransaction();
+		deleteUsuarioRastreador($pdo, $ur_id);
+		$pdo->commit();
 	}
 
 	private function buscarStatusUsuarioRastreador($pdo, $ur_id) {
@@ -126,8 +127,7 @@ class RastreadoresDosUsuariosTest extends TestCase {
 		$result_duplicado = usuarioAdicionaUmRastreador($credenciais, 24, 376, 'unittest', '123', 1, 'Teste ' . uniqid());
 		$this->assertEquals("Usuário já tem um rastreador com esse id:2 - 24", $result_duplicado['error']);
 		if ($result !== null && isset($result['usuario_rastreador'])) {
-			$stmt = $pdo->prepare('delete from usuario_rastreador where id = :id');
-			$stmt->execute(['id' => $result['usuario_rastreador']['ur_id']]);
+			$this->removerUsuarioRastreador($pdo, $result['usuario_rastreador']['ur_id']);
 		}
 		$this->assertEquals([
 			'ur_id' => $result['usuario_rastreador']['ur_id'],
