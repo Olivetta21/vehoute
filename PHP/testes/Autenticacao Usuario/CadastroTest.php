@@ -64,7 +64,7 @@ class CadastroTest extends TestCase {
 
         $this->assertEquals(["success"=>true], $finalisar_result);
         
-        $stmt = $pdo->prepare("select id from usuario where nome like 'Teste%' and email like 'Teste%@example.com.brasil' and login like 'Teste%login' and telefone = '11999999999' and senha = 'senha123A#'");
+        $stmt = $pdo->prepare("select id from usuario where nome like 'Teste%' and email like 'Teste%@example.com.brasil' and login like 'Teste%login' and telefone = '11999999999'");
         $stmt->execute();
         $users = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $this->assertGreaterThan(0 , $stmt->rowCount());

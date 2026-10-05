@@ -1,7 +1,7 @@
 -- Postgresql
 -- versão: 0.0.1
 -- em homologação
-
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 create table legal_ident_tipo   (
     id serial primary key,
@@ -257,7 +257,7 @@ BEGIN
 
     -- Insere usuário
     INSERT INTO usuario (legal_ident_id, nome, email, telefone, login, senha)
-    VALUES (1, p_nome, p_email, p_telefone, p_login, p_senha)
+    VALUES (1, p_nome, p_email, p_telefone, p_login, crypt(p_senha, gen_salt('bf')))
     RETURNING id INTO var_usuario_id;
 
     IF var_usuario_id IS NULL THEN

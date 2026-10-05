@@ -7,7 +7,7 @@ class LoginTest extends TestCase {
 
     function test_fazer_login_sucesso() {
         $login = 'donoexemplo';
-        $senha = '123';
+        $senha = '@Ivan123';
         $result = fazerLogin($login, $senha);
         $access_token = $result['usuario']['access_token'];
         $this->assertNotNull($access_token);

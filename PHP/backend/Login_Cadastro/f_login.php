@@ -1,7 +1,7 @@
 <?php
 
 function selectUsuarioPorSenha($pdo, $login, $senha) {
-    $stmt = $pdo->prepare("select id, nome, login from usuario where login = :login and senha = :senha");
+    $stmt = $pdo->prepare("select id, nome, login from usuario where login = :login and senha = crypt(:senha, senha)");
     $stmt->execute([
         "login"=>$login,
         "senha"=>$senha

@@ -8,11 +8,11 @@ describe('Login', () => {
     vi.spyOn(MainWS, 'genWS').mockReturnValue(() => {});
 
     it('Realiza Login', async () => {
-        expect(await Login.fazerLogin("donoexemplo","123")).toBe(true);
+        expect(await Login.fazerLogin("donoexemplo","@Ivan123")).toBe(true);
     })
 
     it('Realiza Login falso', async () => {
-        expect(await Login.fazerLogin("donoexemplo","456")).toBe(false);
+        expect(await Login.fazerLogin("donoexemplo","@Ivan456")).toBe(false);
     })
     
     it('Está autenticado', async () => {
