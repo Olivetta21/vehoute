@@ -25,4 +25,13 @@ export default class TrackerPage {
             dono_id: donoId
         } }]);
     }
+
+    static async getUsuariosDisponiveis(nome) {
+        const response = await fetch_('/administrativo/usuarios/usuarios.php', [{ getSimple: nome }]);
+        if (response && response.success) {
+            return response.usuarios;
+        }
+        console.error("Erro ao buscar usuários disponíveis");
+        return [];
+    }
 }

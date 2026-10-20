@@ -8,20 +8,31 @@
         @pesquisa="fetchTrackers"
         @adicionar="alternarFormulario"
     />
-    <section v-if="mostrarFormulario" class="new-tracker-panel">
-        <h2>Novo rastreador</h2>
-        <form class="new-tracker-form" @submit.prevent="criarRastreador">
-            <input v-model="novoRastreador.hardware" type="text" placeholder="Hardware" required />
-            <input v-model="novoRastreador.token" type="text" placeholder="Token" required />
-            <input v-model="novoRastreador.tokenPublico" type="text" placeholder="Token público" required />
-            <input v-model="novoRastreador.senha" type="text" placeholder="Senha" />
-            <input v-model="novoRastreador.obs" type="text" placeholder="Observações" />
-            <input v-model.number="novoRastreador.status" type="number" min="1" placeholder="Status" required />
-            <input v-model.number="novoRastreador.donoId" type="number" min="1" placeholder="ID do dono" required />
-            <button type="submit">Adicionar</button>
-        </form>
+    <GenericModalWindow v-if="mostrarFormulario" @close="alternarFormulario">
+        <div class="modal-container">
+            <form class="modal-form" @submit.prevent="criarRastreador">
+                <h2>Novo rastreador</h2>
+                <SelectInput
+                    :data="statusOptions"
+                    placeholder="Selecione o status"
+                    @update:value="novoRastreador.status = $event?.id"
+                />
+                <input v-model="novoRastreador.hardware" type="text" placeholder="Hardware" required />
+                <input v-model="novoRastreador.token" type="text" placeholder="Token" required />
+                <input v-model="novoRastreador.tokenPublico" type="text" placeholder="Token público" required />
+                <input v-model="novoRastreador.senha" type="text" placeholder="Senha" />
+                <input v-model="novoRastreador.obs" type="text" placeholder="Observações" />
+                <SelectInput 
+                    :searchFn="searchUsuarios"
+                    placeholder="Selecione um usuário"
+                    @update:value="novoRastreador.donoId = $event?.id"
+                />
+                <button type="submit">Adicionar</button>
+            </form>
         <p v-if="mensagem" class="feedback-message">{{ mensagem }}</p>
-    </section>
+        </div>
+    </GenericModalWindow>
+
     <div class="tracker-cards-container">
         <div class="tracker-card" v-for="(tracker, index) in trackers" :key="index">            
             <div v-if="tracker.mostrarObservacao">
@@ -62,6 +73,8 @@ import TrackerPage from '../../scripts/SystemTrackerPage/TrackerPage';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import PagesRoutes from '../../scripts/PagesRoutes.js';
 import LeftArrow from '../utils/LeftArrow.vue';
+import GenericModalWindow from '../utils/GenericModalWindow.vue';
+import SelectInput from '../utils/SelectInput.vue';
 
 export default {
     name: 'SystemTrackersPage',
@@ -79,8 +92,15 @@ export default {
                 senha: '',
                 obs: '',
                 status: 1,
-                donoId: 1
-            }
+                donoId: null
+            },
+
+            statusOptions: [
+                {'id': 1, 'nome': 'Operando normalmente'},
+                {'id': 2, 'nome': 'O dono desligou o salvamento de novas localizações'},
+                {'id': 3, 'nome': 'O dono iniciou o processo de transferência, algumas funções são desligadas'},
+                {'id': 4, 'nome': 'O dono desativou, o sistema age como se não existisse'}
+            ]
         };
     },
     mounted() {
@@ -122,8 +142,8 @@ export default {
                     tokenPublico: '',
                     senha: '',
                     obs: '',
-                    status: 1,
-                    donoId: 1
+                    status: '',
+                    donoId: null
                 };
                 this.mostrarFormulario = false;
                 await this.fetchTrackers(this.termoPesquisa);
@@ -131,30 +151,44 @@ export default {
             }
 
             this.mensagem = response?.error ?? 'Não foi possível criar o rastreador.';
+        },
+        async searchUsuarios(searchText) {
+            let users = await TrackerPage.getUsuariosDisponiveis(searchText);
+            users.forEach(user => {
+                user.nome = `${user.id}: ${user.nome}`;
+            });
+            return users;
         }
+
     },
     components: {
         HeaderTelas,
-        LeftArrow
+        LeftArrow,
+        GenericModalWindow,
+        SelectInput
     }
 };
 </script>
 
 <style scoped>
-.new-tracker-panel {
+.modal-container {
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    background: #f9f9f9;
+    justify-content: center;
+    align-items: center;
 }
 
-.new-tracker-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 8px;
-    align-items: center;
+.modal-form {
+    pointer-events: all;
+    background: white;
+    border: 1px solid var(--colorA2);
+    padding: 20px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .feedback-message {

@@ -7,6 +7,10 @@ if ($name_filter = getRequestValue("get", "is_string")) {
     returnJson(getUsuarios($credenciais["pdo"], $name_filter));
 }
 
+if ($name_filter = getRequestValue("getSimple", "is_string")) {    
+    returnJson(getSimpleUsuarios($credenciais["pdo"], $name_filter));
+}
+
 if ($id = getRequestValue("toggle_ativo", "is_int")) {
     returnJson(toggleUsuarioAtivo($credenciais["pdo"], $id));
 }

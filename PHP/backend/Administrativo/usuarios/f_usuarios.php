@@ -18,6 +18,12 @@ function gerarSenhaUsuario() {
     return 'Aa1#' . substr(getRandomHex(8), 0, 8);
 }
 
+function getSimpleUsuarios($pdo, $nome = "%") {
+    $stmt = $pdo->prepare("select id, nome from usuario where ativo = true and nome ilike :nome order by nome");
+    $stmt->execute(["nome" => '%' . $nome . '%']);
+    return ["success" => true, "usuarios" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+}
+
 function getUsuarios($pdo, $nome = null) {
     $nome = normalizarFiltroTexto($nome);
 
