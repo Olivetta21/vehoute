@@ -18,6 +18,24 @@ function getRastreadores($pdo, $filtro = null) {
 	return ["success" => true, "rastreadores" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
 }
 
+function getSimpleRastreadores($pdo, $filtro = null) {
+	$filtro = normalizarFiltroTexto($filtro);
+
+	$sql = "SELECT id, hardware as nome from rastreador where ativo = true";
+	$params = [];
+
+	if ($filtro !== null) {
+		$sql .= " and hardware ilike :filtro";
+		$params["filtro"] = '%' . $filtro . '%';
+	}
+
+	$sql .= " order by hardware nulls last, id";
+	$stmt = $pdo->prepare($sql);
+	$stmt->execute($params);
+
+	return ["success" => true, "rastreadores" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+}
+
 function toggleRastreadorAtivo($pdo, $rastreador_id) {
 	if (!validarIdPositivo($rastreador_id)) {
 		return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];

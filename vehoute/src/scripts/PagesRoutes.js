@@ -51,11 +51,18 @@ export default [
         { pageName: 'Permissoes de Usuário', name: 'userperms', path: 'permissoesdeusuario',
             userandperms_cardIcon: '/api/imagens/card_userspermissions.png',
         },
-
-    { pageName: 'Permissões de Rastreador', name: 'trackerperms', path: 'permissoesderastreador',
+    { pageName: 'Rastreadores e Permissões', name: 'trackerandperms', path: 'trackerandpermissions',
         admin_cardIcon: '/api/imagens/card_trackerpermissions.png',
         sidebarIcon: '/api/imagens/icon_blacktrackerperms64.png'
     },
+        { pageName: 'Grupo de Rastreadores', name: 'trackergroups', path: 'gruposderastreador',
+            trackerandperms_cardIcon: '/api/imagens/card_systracker.png'
+        },
+        { pageName: 'Permissoes de Rastreador', name: 'trackerperms', path: 'permissoesderastreador',
+            trackerandperms_cardIcon: '/api/imagens/card_trackerpermissions.png',
+        },
+
+
     { pageName: 'Auditoria', name: 'audit', path: 'auditoria',
         admin_cardIcon: '/api/imagens/card_sysaudit.png',
         sidebarIcon: '/api/imagens/icon_blackaudit64.png'

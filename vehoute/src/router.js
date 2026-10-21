@@ -12,10 +12,15 @@ import NotificationPage from './components/Notification/NotificationPage.vue'
 import AdminHomePage from './components/Pagina_Inicial/AdminHomePage.vue'
 import SystemUsersPage from './components/SystemUsers/SystemUsersPage.vue'
 import SystemTrackersPage from './components/SystemTrackers/SystemTrackersPage.vue'
+
 import SystemUserPermissionHome from './components/SystemUserPermission/SystemUserPermissionHome.vue'
 import SystemUserPermissionGroupPage from './components/SystemUserPermission/SystemUserPermissionGroupPage.vue'
 import SystemUserPermissionPage from './components/SystemUserPermission/SystemUserPermissionPage.vue'
+
+import SystemTrackerPermissionHome from './components/SystemTrackerPermission/SystemTrackerPermissionHome.vue'
+import SystemTrackerPermissionGroupPage from './components/SystemTrackerPermission/SystemTrackerPermissionGroupPage.vue'
 import SystemTrackerPermissionPage from './components/SystemTrackerPermission/SystemTrackerPermissionPage.vue'
+
 import SystemAuditPage from './components/SystemAudit/SystemAuditPage.vue'
 import SystemLogPage from './components/SystemLog/SystemLogPage.vue'
 import UserTrackersPage from './components/UserTrackers/UserTrackersPage.vue'
@@ -68,7 +73,9 @@ const routes = [
       constructRoute('userandperms', {component: SystemUserPermissionHome }),
         constructRoute('usergroups', {component: SystemUserPermissionGroupPage }),
         constructRoute('userperms', {component: SystemUserPermissionPage }),
-      constructRoute('trackerperms', {component: SystemTrackerPermissionPage }),
+      constructRoute('trackerandperms', {component: SystemTrackerPermissionHome }),
+        constructRoute('trackergroups', {component: SystemTrackerPermissionGroupPage }),
+        constructRoute('trackerperms', {component: SystemTrackerPermissionPage }),
       constructRoute('audit', {component: SystemAuditPage }),
       constructRoute('logs', {component: SystemLogPage }),
       constructRoute('owntracker', {component : UserTrackersPage }),

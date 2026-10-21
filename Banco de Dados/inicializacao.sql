@@ -154,24 +154,44 @@ $$ language sql;
 -- Permisões de rastreador
 create table permissao_rastreador (
     id serial primary key,
-    nome varchar(100) not null
+    nome varchar(100) not null unique
 );
 create table grupo_rastreador (
     id serial primary key,
-    nome varchar(100) not null
+    nome varchar(100) not null unique
 );
 create table vinc_grupo_rastreador (
     id serial primary key,
     rastreador_id integer not null references rastreador(id),
-    grupo_id integer not null references grupo_rastreador(id)
+    grupo_id integer not null references grupo_rastreador(id),
+    unique (rastreador_id, grupo_id);
 );
 create table vinc_perm_rastreador (
     id serial primary key,
     grupo_id integer references grupo_rastreador(id),
     rastreador_id integer references rastreador(id),
     perm_id integer not null references permissao_rastreador(id),
-    negado boolean not null default false
+    negado boolean not null default false,
+    unique nulls not distinct (grupo_id, rastreador_id, perm_id, negado),
+    check ((grupo_id is not null and rastreador_id is null) or (grupo_id is null and rastreador_id is not null))
 );
+create function getGruposPermissaoRastreador(
+    var_grupos_ids integer[]
+) returns table (
+    vgr_id integer,
+    gr_id integer,
+    gr_nome varchar(100),
+    r_id integer,
+    r_hardware varchar(100)
+) as $$
+    select 
+    vgr.id vgr_id, gr.id gr_id, gr.nome gr_nome, r.id r_id, r.hardware r_hardware
+    from grupo_rastreador gr
+    left join vinc_grupo_rastreador vgr on vgr.grupo_id = gr.id
+    left join rastreador r on r.id = vgr.rastreador_id
+    where gr.id = any(var_grupos_ids) or var_grupos_ids is null or cardinality(var_grupos_ids) = 0
+    order by gr.id, r.id
+$$ language sql;
 
 create table logs (
     id serial primary key,
