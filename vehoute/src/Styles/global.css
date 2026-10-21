@@ -13,6 +13,8 @@
     --colorB2: #E6B910;
     --colorB3: #E68310;
     --colorB4: #70604C;
+    --colorB5: #d33b3b;
+    --colorB6: #991a1a;
     --colorC1: #1ED3E6;
     --colorC2: #3498db;
     --colorC3: #1162E6;
@@ -74,6 +76,14 @@ button {
 }
 button:hover {
     background-color: var(--colorC4);
+}
+
+button.red-button {
+    background-color: var(--colorB5);
+    color: var(--colorA1);
+}
+button.red-button:hover {
+    background-color: var(--colorB6);
 }
 
 input {

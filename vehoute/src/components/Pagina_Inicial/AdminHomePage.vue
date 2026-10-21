@@ -4,23 +4,23 @@
       :mostrarVoltar="true"
       @voltar="this.$router.back()"
   />
-  <LayouteHomePage :items="adminItens" />
+  <LayoutePageCardsLink :items="{admin_cardIcon}" />
 </template>
 
 <script>
 import PagesRoutes from '../../scripts/PagesRoutes.js';
 import HeaderTelas from '../utils/HeaderTelas.vue';
-import LayouteHomePage from './LayouteHomePage.vue';
+import LayoutePageCardsLink from '../utils/LayoutePageCardsLink.vue';
 
 export default {
   name: 'AdminHomePage',
   components: {
     HeaderTelas,
-    LayouteHomePage
+    LayoutePageCardsLink
   },
   data() {
     return {
-      adminItens: PagesRoutes.filter(r => r.admin_cardIcon)
+      admin_cardIcon: PagesRoutes.filter(r => r.admin_cardIcon)
     };
   }
 }

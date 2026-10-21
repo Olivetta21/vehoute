@@ -2,25 +2,25 @@
   <HeaderTelas
       titulo="Página Inicial"
   />
-  <LayouteHomePage :items="homeItens" />
+  <LayoutePageCardsLink :items="{home_cardIcon}" />
 </template>
 
 <script>
 import PagesRoutes from '../../scripts/PagesRoutes.js';
 import HomePage from '../../scripts/HomePage/HomePage.js';
 import HeaderTelas from '../utils/HeaderTelas.vue';
-import LayouteHomePage from './LayouteHomePage.vue';
+import LayoutePageCardsLink from '../utils/LayoutePageCardsLink.vue';
 
 export default {
   name: 'HomePage',
   components: {
     HeaderTelas,
-    LayouteHomePage
+    LayoutePageCardsLink
   },
   data() {
     return {
       HomePage,
-      homeItens: PagesRoutes.filter(r => r.home_cardIcon)
+      home_cardIcon: PagesRoutes.filter(r => r.home_cardIcon)
     };
   }
 }

@@ -1,19 +1,45 @@
+
 <template>
-  <div class="home">
-    <div class="home-card" v-for="(page, index) in items" :key="index"
-    @click="$router.push({name: page.name})"
-    :style="{'background-image': 'url(' + (page.home_cardIcon || page.admin_cardIcon) + ')'}">
-      <p class="card-nome">{{page.pageName}}</p>
-    </div>
+  <div class="links">
+    <template v-for="(links, key) in items">
+      <div
+        v-for="(link, index) in links"
+        :key="`${key}-${link.name || index}`"
+        class="links-card"
+        :style="{
+          backgroundImage: `url('${link[key]}')`
+        }"
+        @click="$router.push({ name: link.name })"
+      >
+        <p class="card-name">{{ link.pageName }}</p>
+      </div>
+    </template>
   </div>
 </template>
 
+
 <script>
 export default {
-  name: 'LayouteHomePage',
+  name: 'LayoutePageCardsLink',
   props: {
     items: {
-      type: Array,
+      type: Object,
+      /* exemplo:
+      {
+        home_cardIcon: [
+          {
+            name: 'HomePage',
+            pageName: 'Página Inicial',
+            home_cardIcon: require('api/home.png')
+          },
+          {
+            name: 'AdminHomePage',
+            pageName: 'Administração',
+            home_cardIcon: require('api/admin.png')
+          }
+        ]
+      }
+       */
       required: true
     }
   }
@@ -21,7 +47,7 @@ export default {
 </script>
 
 <style scoped>
-.home {
+.links {
   padding: 5px;
   height: 100%;
   width: 100%;
@@ -36,7 +62,7 @@ export default {
   gap: 20px;
 }
 
-.home-card {
+.links-card {
   width: calc(100% / 4);
   max-width: 200px;
   max-height: 200px;
@@ -56,19 +82,19 @@ export default {
   text-align: end;
   align-content: end;
 }
-.home-card:hover {
+.links-card:hover {
   transform: scale(1.05);
   box-shadow: 2px 2px 8px 5px rgb(0 0 0 / 12%);
 }
 
 @media (orientation: portrait) {
-  .home-card {
+  .links-card {
     width: calc((100% / 2) - 14px);
     min-width: 130px;
   }
 }
 
-.card-nome {
+.card-name {
   padding: 5px;
   border-radius: 10px;
   color: var(--colorD1);

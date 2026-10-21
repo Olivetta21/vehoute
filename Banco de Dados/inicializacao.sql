@@ -111,24 +111,45 @@ create table vinc_loc_oculta_usuario_rastreador (
 -- Permissões de usuario
 create table permissao_usuario (
     id serial primary key,
-    nome varchar(100) not null
+    nome varchar(100) not null unique
 );
 create table grupo_usuario (
     id serial primary key,
-    nome varchar(100) not null
+    nome varchar(100) not null unique
 );
 create table vinc_grupo_usuario (
     id serial primary key,
     usuario_id integer not null references usuario(id),
-    grupo_id integer not null references grupo_usuario(id)
+    grupo_id integer not null references grupo_usuario(id),
+    unique (usuario_id, grupo_id)
 );
 create table vinc_perm_usuario (
     id serial primary key,
     grupo_id integer references grupo_usuario(id),
     usuario_id integer references usuario(id),
     perm_id integer not null references permissao_usuario(id),
-    negado boolean not null default false
+    negado boolean not null default false,
+    unique nulls not distinct (grupo_id, usuario_id, perm_id, negado),
+    check ((grupo_id is not null and usuario_id is null) or (grupo_id is null and usuario_id is not null))
 );
+create function getGruposPermissaoUsuario(
+    var_grupos_ids integer[]
+) returns table (
+    vgu_id integer,
+    gu_id integer,
+    gu_nome varchar(100),
+    u_id integer,
+    u_nome varchar(100)
+) as $$
+    select 
+    vgu.id vgu_id, gu.id gu_id, gu.nome gu_nome, u.id u_id, u.nome u_nome
+    from grupo_usuario gu
+    left join vinc_grupo_usuario vgu on vgu.grupo_id = gu.id
+    left join usuario u on u.id = vgu.usuario_id
+    where gu.id = any(var_grupos_ids) or var_grupos_ids is null or cardinality(var_grupos_ids) = 0
+    order by gu.id, u.id
+$$ language sql;
+
 
 -- Permisões de rastreador
 create table permissao_rastreador (

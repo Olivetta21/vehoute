@@ -41,10 +41,17 @@ export default [
         admin_cardIcon: '/api/imagens/card_systracker.png',
         sidebarIcon: '/api/imagens/icon_blacksystrackers64.png'
     },
-    { pageName: 'Permissões de Usuário', name: 'userperms', path: 'permissoesdeusuario',
+    { pageName: 'Usuarios e Permissões', name: 'userandperms', path: 'userandpermissions',
         admin_cardIcon: '/api/imagens/card_userspermissions.png',
         sidebarIcon: '/api/imagens/icon_blackuserperms64.png'
     },
+        { pageName: 'Grupo de Usuários', name: 'usergroups', path: 'gruposdeusuario',
+            userandperms_cardIcon: '/api/imagens/card_users.png'
+        },
+        { pageName: 'Permissoes de Usuário', name: 'userperms', path: 'permissoesdeusuario',
+            userandperms_cardIcon: '/api/imagens/card_userspermissions.png',
+        },
+
     { pageName: 'Permissões de Rastreador', name: 'trackerperms', path: 'permissoesderastreador',
         admin_cardIcon: '/api/imagens/card_trackerpermissions.png',
         sidebarIcon: '/api/imagens/icon_blacktrackerperms64.png'
