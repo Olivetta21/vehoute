@@ -47,6 +47,86 @@ create table administrador (
     id integer primary key references usuario(id)
 );
 
+CREATE TABLE classe_configuracao (
+    id SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL UNIQUE
+);
+
+CREATE FUNCTION verificar_tipo_variavel(
+    p_valor TEXT,
+    p_tipo TEXT
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+IMMUTABLE
+STRICT
+AS $$
+BEGIN
+    CASE p_tipo
+        WHEN 'boolean' THEN
+            PERFORM p_valor::BOOLEAN;
+
+        WHEN 'text' THEN
+            RETURN TRUE;
+
+        WHEN 'integer' THEN
+            PERFORM p_valor::INTEGER;
+
+        WHEN 'double precision' THEN
+            PERFORM p_valor::DOUBLE PRECISION;
+
+        WHEN 'real' THEN
+            PERFORM p_valor::REAL;
+
+        WHEN 'bigint' THEN
+            PERFORM p_valor::BIGINT;
+
+        ELSE
+            RETURN FALSE;
+    END CASE;
+
+    RETURN TRUE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN FALSE;
+END;
+$$;
+
+CREATE TABLE configuracao (
+    id SERIAL PRIMARY KEY,
+    classe_id INTEGER NOT NULL REFERENCES classe_configuracao(id),
+    nome TEXT NOT NULL UNIQUE,
+    var_type TEXT NOT NULL CHECK (
+        var_type IN (
+            'boolean',
+            'text',
+            'integer',
+            'double precision',
+            'real',
+            'bigint'
+        )
+    ),
+    padrao TEXT CHECK (
+        padrao IS NULL
+        OR verificar_tipo_variavel(padrao, var_type)
+    ),
+    UNIQUE (id, var_type)
+);
+
+CREATE TABLE vinculo_configuracao (
+    id SERIAL PRIMARY KEY,
+    config_id INTEGER NOT NULL,
+    config_var_type TEXT NOT NULL,
+    usuario_id INTEGER NOT NULL,
+    variavel TEXT NOT NULL,
+    FOREIGN KEY (config_id, config_var_type)
+        REFERENCES configuracao (id, var_type),
+    CHECK (
+        verificar_tipo_variavel(variavel, config_var_type)
+    ),
+    UNIQUE (config_id, usuario_id)
+);
+
 create table rastreador (
     id serial primary key,
     hardware varchar(100) not null,

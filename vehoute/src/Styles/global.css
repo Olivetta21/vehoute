@@ -68,7 +68,7 @@
 button {
     background-color: var(--colorC3);
     color: var(--colorA1);
-    border: none;
+    border: 1px solid var(--colorC3);
     padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
@@ -77,9 +77,16 @@ button {
 button:hover {
     background-color: var(--colorC4);
 }
+button:disabled {
+    background: none;
+    color: var(--colorA2);
+    border: 1px solid var(--colorA2);
+    cursor: not-allowed;
+}
 
 button.red-button {
     background-color: var(--colorB5);
+    border: 1px solid var(--colorB5);
     color: var(--colorA1);
 }
 button.red-button:hover {
