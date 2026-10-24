@@ -292,8 +292,8 @@ class OuvintesDosRastreadoresTest extends TestCase {
         $credenciais_dono = ["pdo" => $pdo, "id" => 376];
         $credenciais_nao_dono = ["pdo" => $pdo, "id" => 377];
 
-        $this->assertTrue(validarDonoCorretoForDelete($credenciais_dono, 32));
-        $this->assertFalse(validarDonoCorretoForDelete($credenciais_nao_dono, 32));
+        $this->assertTrue(validarDonoCorretoForManipulate($credenciais_dono, 32));
+        $this->assertFalse(validarDonoCorretoForManipulate($credenciais_nao_dono, 32));
     }
 
     function test_dono_deleta_ouvinte() {

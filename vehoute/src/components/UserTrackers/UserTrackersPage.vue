@@ -37,6 +37,7 @@
                 @accept-transfer="handleAcceptTransfer"
                 @decline-transfer="handleDeclineTransfer"
                 @delete="handleDeleteTracker"
+                @update:tracker="(updatedTracker) => { trackers[index] = updatedTracker }"
             />
         </div>
 </template>
@@ -175,6 +176,7 @@ export default {
     flex-wrap: wrap;
     gap: 20px;
     padding: 20px;
+    align-items: flex-start;
 }
 
 

@@ -53,6 +53,16 @@ if ($switch = getRequestValue("resume_tracking", "is_int")) {
     ));
 }
 
+//dono mudando o valor das configurações de localizacao de um usuario(ouvinte) a um rastreador seu;
+if ($new_value = getRequestValue("change_loc_state", "is_array")) {
+    returnJson(changeLocStateForOuvinte(
+        $credenciais,
+        $new_value["loc_type"] ?? null,
+        $new_value["ur_id"] ?? null,
+        $new_value["new_value"] ?? null
+    ));
+}
+
 //dono aceitando um pedido de inclusão de um usuario(ouvinte) a um rastreador seu;
 if ($ur_id = getRequestValue("aceitar_novo_ouvinte", "is_int")) {
     returnJson(donoAceitaNovoOuvinte($credenciais, $ur_id));

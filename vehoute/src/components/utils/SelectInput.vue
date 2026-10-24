@@ -26,6 +26,11 @@ export default {
             required: false,
             default: true
         },
+        selectedId: {
+            type: Number,
+            required: false,
+            default: null
+        },
         preSelectedValue: {
             type: Object,
             required: false,
@@ -84,6 +89,13 @@ export default {
             this.updateRealData([this.preSelectedValue]);
             this.selected_value = this.preSelectedValue.id;
             this.$emit('update:value', this.preSelectedValue);
+        }
+        if (this.selectedId) {
+            const selectedItem = this.real_data.find(item => item.id === this.selectedId);
+            if (selectedItem) {
+                this.selected_value = selectedItem.id;
+                this.$emit('update:value', selectedItem);
+            }
         }
     },
     methods: {

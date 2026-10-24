@@ -98,7 +98,11 @@
                                 </div>
                                 <div class="loc-oculta-td-filter-actions">
                                     <p>Aplica a Novos Ouvintes?: </p>
-                                    <button @click="salvarEdicao(loc, 'novo_ouvinte')" > {{ loc.novos_ouvintes ? 'Sim' : 'Não' }} </button>
+                                    <SwitchButtonInput
+                                        :value="loc.novos_ouvintes"
+                                        :label="loc.novos_ouvintes ? 'Sim' : 'Não'"
+                                        @update:value="salvarEdicao(loc, 'novo_ouvinte')"
+                                    />
                                 </div>
                             </div>
                             <div class="loc-oculta-td-ouvintes" v-if="loc.mostrando_ouvintes">
@@ -127,6 +131,7 @@ import HeaderTelas from '../utils/HeaderTelas.vue';
 import TrackerLocOculta from '../../scripts/UserTracker/TrackerLocOculta.js';
 import GenericModalWindow from '../utils/GenericModalWindow.vue';
 import { compararDatas, compararVariaveis } from '../../scripts/utils.js';
+import SwitchButtonInput from '../utils/SwitchButtonInput.vue';
 
 
 export default {
@@ -338,7 +343,8 @@ export default {
     },
     components: {
         HeaderTelas,
-        GenericModalWindow
+        GenericModalWindow,
+        SwitchButtonInput
     }
 }
 

@@ -1,14 +1,21 @@
 <?php 
 
-function existsExactUR_WithIdAndStatus($pdo, $ur_id, $status) {
-    $stmt = $pdo->prepare("select * from rastreador_usuario where id = :id and status = :status");
-    $stmt->execute(["id" => $ur_id, "status" => $status]);
+function existsExactUR_WithIdAndStatus($credenciais, $ur_id, $ur_status) {
+    $pdo = $credenciais["pdo"];
+    $stmt = $pdo->prepare("select * from usuario_rastreador where id = :id and status = :status and usuario_id = :usuario_id");
+    $stmt->execute(["id" => $ur_id, "status" => $ur_status, "usuario_id" => $credenciais["id"]]);
     return $stmt->rowCount() === 1;
 }
 
 function existsExactR_WithIdDonoTKStatusSenha($pdo, $rastreador_id, $dono_id, $token, $status, $senha) {
     $stmt = $pdo->prepare("select * from rastreador where id = :id and dono_id = :dono_id and token_publico = :token and status = :status and senha = :senha and status in (1, 2) and ativo = true");
     $stmt->execute(["id" => $rastreador_id, "dono_id" => $dono_id, "token" => $token, "status" => $status, "senha" => $senha]);
+    return $stmt->rowCount() === 1;
+}
+
+function existsExactR_WithIdDonoTKStatus($pdo, $rastreador_id, $dono_id, $token, $status) {
+    $stmt = $pdo->prepare("select * from rastreador where id = :id and dono_id = :dono_id and token_publico = :token and status = :status and ativo = true");
+    $stmt->execute(["id" => $rastreador_id, "dono_id" => $dono_id, "token" => $token, "status" => $status]);
     return $stmt->rowCount() === 1;
 }
 
@@ -367,5 +374,114 @@ function excluirRastreadorDoOuvinte($credenciais, $ur_id) {
             $pdo->rollBack();
         }
         return ["error" => errorMessage("Erro ao excluir rastreador do ouvinte", $e->getMessage())];
+    }
+}
+
+function updateVinculoUsuarioRastreador($credenciais, $ur_id, $ur_status, $new_values) {
+    if (empty($new_values)) {
+        return ["error" => errorMessage("Nenhum valor novo fornecido para atualização", $credenciais["id"])];
+    }
+    
+    if (!validarIdPositivo($ur_id)) {
+        return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
+    }
+
+    if (!existsExactUR_WithIdAndStatus($credenciais, $ur_id, $ur_status)) {
+        return ["error" => errorMessage("Rastreador de usuário não encontrado ou usuário autenticado não é o ouvinte para atualizar", $credenciais["id"] . " - " .$ur_id)];
+    }
+
+    if (!array_key_exists('ur_nome', $new_values)) {
+        return ["error" => errorMessage("Chave de valor novo inválida", implode(", ", array_keys($new_values)))];
+    }
+    $ur_nome = $new_values['ur_nome'];
+
+    try {
+        $pdo = $credenciais["pdo"];
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("update usuario_rastreador set nome = :nome where id = :id and usuario_id = :usuario_id and status = :status returning id, nome");
+        $stmt->execute(["id" => $ur_id, "usuario_id" => $credenciais["id"], "status" => $ur_status, "nome" => $ur_nome]);
+
+        if ($stmt->rowCount() !== 1) {
+            $pdo->rollBack();
+            return ["error" => errorMessage("Erro ao atualizar rastreador do ouvinte", "Nenhuma linha afetada")];
+        }
+
+        $updated_ur = $stmt->fetch(PDO::FETCH_ASSOC);
+        $pdo->commit();
+        return ["success" => true, "usuario_rastreador" => $updated_ur];
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ["error" => errorMessage("Erro ao atualizar rastreador do ouvinte", $e->getMessage())];
+    }
+}
+
+function updateRastreadorDoDono($credenciais, $r_id, $r_token_publico, $r_status, $new_values) {
+    if (empty($new_values)) {
+        return ["error" => errorMessage("Nenhum valor novo fornecido para atualização", $credenciais["id"])];
+    }
+
+    if (!validarIdPositivo($r_id)) {
+        return ["error" => errorMessage("Id de rastreador inválido", $r_id)];
+    }
+
+    if (!existsExactR_WithIdDonoTKStatus($credenciais["pdo"], $r_id, $credenciais["id"], $r_token_publico, $r_status)) {
+        return ["error" => errorMessage("Rastreador não encontrado ou usuário autenticado não é o dono para atualizar", $credenciais["id"] . " - " .$r_id)];
+    }
+
+    $edit_sql = [];
+    $values_sql = [
+            "id" => $r_id,
+            "dono_id" => $credenciais["id"]
+    ];
+
+    foreach ($new_values as $key => $value) {
+        switch ($key) {
+        case 'senha':
+            if (!validarSenha($value)) {
+                return ["error" => errorMessage("Senha inválida", $value)];
+            }
+            break;
+        case 'token_publico':
+            if (!validarTokenPublico($value)) {
+                return ["error" => errorMessage("Token público inválido", $value)];
+            }
+            break;
+        case 'status':
+            if (!in_array($value, [1, 2, 4]) || in_array($r_status, [3])) {
+                return ["error" => errorMessage("Status inválido", $value)];
+            }
+            break;
+        default:
+            return ["error" => errorMessage("Chave de valor novo inválida", $key)];
+        }
+        $edit_sql[] = "$key = :$key";
+        $values_sql["$key"] = $value;
+    }
+    $edit_sql = implode(", ", $edit_sql);
+
+    try {
+        $pdo = $credenciais["pdo"];
+        $pdo->beginTransaction();
+
+        // Atualiza o rastreador com os novos valores
+        $stmt = $pdo->prepare("update rastreador set $edit_sql where id = :id and dono_id = :dono_id returning id, token_publico, status, '*' as senha");
+        $stmt->execute($values_sql);
+
+        if ($stmt->rowCount() !== 1) {
+            $pdo->rollBack();
+            return ["error" => errorMessage("Erro ao atualizar rastreador do dono", "Nenhuma linha afetada")];
+        }
+
+        $updated_rastreador = $stmt->fetch(PDO::FETCH_ASSOC);
+        $pdo->commit();
+        return ["success" => true, "rastreador" => $updated_rastreador];
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ["error" => errorMessage("Erro ao atualizar rastreador do dono", $e->getMessage())];
     }
 }

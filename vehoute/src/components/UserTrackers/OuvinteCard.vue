@@ -15,12 +15,18 @@
     </div>
     <div class="ouvinte-locs">
         <div class="check-field">
-            <input :id="'loc_tempo_real'+ouvinte.ur_id" type="checkbox" :checked="ouvinte.ur_loc_temporeal" />
-            <label :for="'loc_tempo_real'+ouvinte.ur_id">Loc. Tempo Real</label>
+            <SwitchButtonInput
+                :value="ouvinte.ur_loc_temporeal"
+                @update:value="$emit('locte', { ur_id: ouvinte.ur_id, new_value: $event })"
+            />
+            <p>Loc. Tempo Real</p>
         </div>
         <div class="check-field">
-            <input :id="'loc_salvos'+ouvinte.ur_id" type="checkbox" :checked="ouvinte.ur_loc_salvos" />
-            <label :for="'loc_salvos'+ouvinte.ur_id">Loc. Salvos</label>
+            <SwitchButtonInput
+                :value="ouvinte.ur_loc_salvos"
+                @update:value="$emit('locsa', { ur_id: ouvinte.ur_id, new_value: $event })"
+            />
+            <p>Loc. Salvos</p>
         </div>
     </div>
     <div class="ouvinte-actions">
@@ -41,10 +47,11 @@
 
 <script>
 import Usuario from '../../scripts/LoginPage/Usuario';
+import SwitchButtonInput from '../utils/SwitchButtonInput.vue';
 
 export default {
     name: 'OuvinteCard',
-    emits: ['pause', 'resume', 'accept', 'decline', 'possechange', 'cancelpossechange', 'exclude', 'hideloc'],
+    emits: ['pause', 'resume', 'accept', 'decline', 'possechange', 'cancelpossechange', 'exclude', 'hideloc', 'locte', 'locsa'],
     props: {
         ouvinte: {
             type: Object,
@@ -62,6 +69,9 @@ export default {
                 {id: 5, for_dono: 'Aguardando resposta do ouvinte', color: 'magenta'},
             ],
         }
+    },
+    components: {
+        SwitchButtonInput
     }
 }
 </script>

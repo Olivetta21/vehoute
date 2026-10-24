@@ -269,7 +269,7 @@ function donoRecusaNovoOuvinte($credenciais, $ur_id) {
     }
 }
 
-function validarDonoCorretoForDelete($credenciais, $ur_id) {
+function validarDonoCorretoForManipulate($credenciais, $ur_id) {
     $pdo = $credenciais["pdo"];
     $stmt = $pdo->prepare("select ur_id from getRastreadoresDoUsuario(null) where ur_id = :ur_id and dono_id = :dono_id");
     $stmt->execute(["ur_id" => $ur_id, "dono_id" => $credenciais["id"]]);
@@ -282,7 +282,7 @@ function donoDeletaOuvinte($credenciais, $ur_id) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
 
-    if (!validarDonoCorretoForDelete($credenciais, $ur_id)) {
+    if (!validarDonoCorretoForManipulate($credenciais, $ur_id)) {
         return ["error" => errorMessage("Rastreador de usuário não encontrado ou usuário autenticado não é o dono para deletar ouvinte", $credenciais["id"] . " - " .$ur_id)];
     }
 
@@ -304,5 +304,42 @@ function donoDeletaOuvinte($credenciais, $ur_id) {
             $pdo->rollBack();
         }
         return ["error" => errorMessage("Erro ao deletar ouvinte do rastreador de usuário", $e->getMessage())];
+    }
+}
+
+function changeLocStateForOuvinte($credenciais, $loc_type, $ur_id, $new_value) {
+    if (!validarIdPositivo($ur_id)) {
+        return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
+    }
+    if (!in_array($loc_type, ["loc_temporeal", "loc_salvos"])) {
+        return ["error" => errorMessage("Tipo de localização inválido", $loc_type)];
+    }
+
+    if (!validarDonoCorretoForManipulate($credenciais, $ur_id)) {
+        return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o dono, ou status atual não confere para mudar localização", $credenciais["id"] . " - " .$ur_id)];
+    }
+
+    $new_value = $new_value ? 1 : 0;
+
+    try {
+        $pdo = $credenciais["pdo"];
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare("update usuario_rastreador set " . $loc_type . " = :new_value where id = :id returning " . $loc_type);
+        $stmt->execute(["id" => $ur_id, "new_value" => $new_value]);
+
+        if ($stmt->rowCount() !== 1) {
+            $pdo->rollBack();
+            return ["error" => errorMessage("Rastreador de usuário não encontrado ou status atual não confere ao atualizar localização", $credenciais["id"] . " - " .$ur_id)];
+        }
+
+        $loc_value = $stmt->fetchColumn();
+        $pdo->commit();
+
+        return ["success" => true, "loc_value" => $loc_value];
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ["error" => errorMessage("Erro ao atualizar localização do rastreador de usuário", $e->getMessage())];
     }
 }

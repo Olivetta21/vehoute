@@ -85,3 +85,32 @@ export function compararDatas(data1, data2) {
 
     return compararVariaveis(d1, d2);
 }
+
+export function compararObjetos(obj1, obj2) {
+    if ((obj1 == null && obj2 == null) || (obj1 == undefined && obj2 == undefined)) return 0;
+    if (obj1 == null || obj1 == undefined) return -1;
+    if (obj2 == null || obj2 == undefined) return 1;
+    if (typeof obj1 !== 'object') return -1;
+    if (typeof obj2 !== 'object') return 1;
+    
+    for (const chave in obj1) {
+        if (!(chave in obj2)) return 1;
+
+        if ((typeof obj1[chave] !== 'object' || obj1[chave] === null) && (typeof obj2[chave] !== 'object' || obj2[chave] === null)) {
+            const r = compararVariaveis(obj1[chave], obj2[chave]);
+            if (r !== 0) return r;
+            continue;
+        }
+
+        const r = compararObjetos(obj1[chave], obj2[chave]);
+        if (r !== 0) return r;
+    }
+
+    for (const chave in obj2) {
+        if (!(chave in obj1)) {
+            return -1;
+        }
+    }
+
+    return 0;
+}

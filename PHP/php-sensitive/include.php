@@ -31,6 +31,10 @@
         if (!preg_match('/[#@$!%*?&]/', $senha)) return 0;
         return 1;
     }
+
+    function validarTokenPublico($token) {
+        return preg_match('/^[a-zA-Z0-9._%+-]{8,}$/', $token);
+    }
     
     function validarNomeUsuario($nome) {
         return preg_match('/^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ]+)+$/', $nome);
@@ -74,7 +78,7 @@
         if (is_array($data) && count($data) > 0) {
             $type = $type ?: array_keys($data)[0];
 			foreach ($data as $key => $value) {
-				$result[$key] = mb_convert_encoding($value, 'UTF-8', 'auto');
+				$result[$key] = is_bool($value) ? $value : mb_convert_encoding($value, 'UTF-8', 'auto');
 			}
 		} else {
             $type = 'in_error';

@@ -85,4 +85,22 @@ export default class UserTrackers {
         console.error("Erro ao excluir rastreador do ouvinte");
         return false;
     }
+
+    static async atualizarRastreador(r_id, r_token_publico, r_status, new_values) {
+        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ update_rastreador: { r_id, r_token_publico, r_status, new_values } }]);
+        if (response && response.success) {
+            return response.rastreador;
+        }
+        console.error("Erro ao atualizar rastreador");
+        return null;
+    }
+
+    static async atualizaVinculoUsuarioRastreador(ur_id, ur_status, new_values) {
+        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ update_ur: { ur_id, ur_status, new_values } }]);
+        if (response && response.success) {
+            return response.usuario_rastreador;
+        }
+        console.error("Erro ao atualizar vínculo usuário-rastreador");
+        return null;
+    }
 }

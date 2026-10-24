@@ -34,6 +34,8 @@
                     @exclude="handleDeleteOuvinte"
                     @possechange="handlePosseTransfer"
                     @cancelpossechange="handleCancelTransfer"
+                    @locte="handleLocTempoRealChange(ouvinte, $event)"
+                    @locsa="handleLocSalvoChange(ouvinte, $event)"
                 />
             </li>
         </ul>
@@ -147,6 +149,24 @@ export default {
             }
 
             alert('Erro ao cancelar a transferência');
+        },
+        async handleLocTempoRealChange(ouvinte, payload) {
+            const { ur_id, new_value } = payload;
+            console.log('handleLocTempoRealChange', ur_id, new_value);
+            
+            const ok = await TrackerOuvintes.changeLocStateForOuvinte("loc_temporeal",ur_id, new_value);
+            if (ok !== null) {
+                ouvinte.ur_loc_temporeal = ok;
+            }
+        },
+        async handleLocSalvoChange(ouvinte, payload) {
+            const { ur_id, new_value } = payload;
+            console.log('handleLocSalvoChange', ur_id, new_value);
+            
+            const ok = await TrackerOuvintes.changeLocStateForOuvinte("loc_salvos",ur_id, new_value);
+            if (ok !== null) {
+                ouvinte.ur_loc_salvos = ok;
+            }
         }
     },
     components: {
@@ -208,6 +228,8 @@ li {
     gap: 5px;
     border-radius: 5px;
     text-wrap: nowrap;
+    align-items: center;
+    margin-bottom: 14px;
 }
 
 

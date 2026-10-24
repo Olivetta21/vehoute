@@ -66,6 +66,15 @@ export default class TrackerOuvintes {
         return null;
     }
 
+    static async changeLocStateForOuvinte(loc_type, ur_id, new_value) {
+        const response = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ change_loc_state: { loc_type, ur_id, new_value } }]);
+        if (response && response.success) {
+            return response.loc_value;
+        }
+        console.error("Erro ao alterar localização em tempo real");
+        return null;
+    }
+
     static async aceitarNovoOuvinte(ur_id) {
         const response = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ aceitar_novo_ouvinte: ur_id }]);
         if (response && response.success) {

@@ -57,6 +57,27 @@ if ($ur_id = getRequestValue("excluir_rastreador", "is_int")) {
     returnJson(excluirRastreadorDoOuvinte($credenciais, $ur_id));
 }
 
+//usuario(ouvinte) atualizando o proprio UR;
+if ($update = getRequestValue("update_ur", "is_array")) {
+    returnJson(updateVinculoUsuarioRastreador(
+        $credenciais,
+        $update["ur_id"],
+        $update["ur_status"],
+        $update["new_values"]
+    ));
+}
+
+//usuario(dono) atualizando seu rastreador;
+if ($update = getRequestValue("update_rastreador", "is_array")) {
+    returnJson(updateRastreadorDoDono(
+        $credenciais,
+        $update["r_id"],
+        $update["r_token_publico"],
+        $update["r_status"],
+        $update["new_values"]
+    ));
+}
+
 } catch (Exception $e) {
     returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
 }

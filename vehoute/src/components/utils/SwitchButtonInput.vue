@@ -36,8 +36,7 @@ export default {
     props: {
         value: {
             type: [Boolean, Number, String, null],
-            required: false,
-            default: null
+            required: true
         },
         label: {
             type: String,
@@ -91,13 +90,15 @@ export default {
                 return;
             }
 
+            let newValue;
+
             if (this.real_value === this.trueValue) {
-                this.real_value = this.falseValue;
+                newValue = this.falseValue;
             } else {
-                this.real_value = this.trueValue;
+                newValue = this.trueValue;
             }
 
-            this.$emit('update:value', this.real_value);
+            this.$emit('update:value', newValue);
         }
     },
     watch: {
