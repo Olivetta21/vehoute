@@ -51,6 +51,7 @@ import TrackerLocOculta from '../../scripts/UserTracker/TrackerLocOculta.js';
 import TrackerCard from './TrackerCard.vue';
 import GenericModalWindow from '../utils/GenericModalWindow.vue';
 import MapPagina from '../../scripts/MapPage/Map.js';
+import ToastMessage from '../../scripts/ToastMessage/ToastMessage';
 
 export default {
     name: 'UserTrackersPage',
@@ -83,13 +84,13 @@ export default {
                 rastreador.senha = this.newTracker.password;
                 this.newTracker = {...rastreador};
             } else {
-                alert('Token ou senha inválidos');
+                ToastMessage.add('Token ou senha inválidos', '', 'error', true);
             }
         },
 
         async criarRastreador() {
             if (!this.newTracker.name) {
-                alert('Insira um nome para o rastreador');
+                ToastMessage.add('Insira um nome para o rastreador', '', 'error', true);
                 return;
             }
             
@@ -105,7 +106,7 @@ export default {
             if (usuario_rastreador) {
                 this.trackers.push(usuario_rastreador);
             } else {
-                alert('Erro ao adicionar rastreador');
+                ToastMessage.add('Erro ao adicionar rastreador', '', 'error', true);
             }
 
             this.showAddTrackerForm = false;
@@ -118,7 +119,7 @@ export default {
                 // refresh list
                 this.fetchTrackers('');
             } else {
-                alert('Erro ao aceitar proposta');
+                ToastMessage.add('Erro ao aceitar proposta', '', 'error', true);
             }
         },
 
@@ -127,7 +128,7 @@ export default {
             if (ok) {
                 this.fetchTrackers('');
             } else {
-                alert('Erro ao recusar proposta');
+                ToastMessage.add('Erro ao recusar proposta', '', 'error', true);
             }
         },
 
@@ -136,7 +137,7 @@ export default {
             if (ok) {
                 this.fetchTrackers('');
             } else {
-                alert('Erro ao aceitar transferência');
+                ToastMessage.add('Erro ao aceitar transferência', '', 'error', true);
             }
         },
 
@@ -145,7 +146,7 @@ export default {
             if (ok) {
                 this.fetchTrackers('');
             } else {
-                alert('Erro ao recusar transferência');
+                ToastMessage.add('Erro ao recusar transferência', '', 'error', true);
             }
         },
 
@@ -155,7 +156,7 @@ export default {
             if (ok) {
                 this.trackers = this.trackers.filter(t => t.id !== ur_id);
             } else {
-                alert('Erro ao excluir rastreador');
+                ToastMessage.add('Erro ao excluir rastreador', '', 'error', true);
             }
         }
     },

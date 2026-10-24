@@ -19,6 +19,7 @@
 import SelectInput from '../../utils/SelectInput.vue';
 import SystemUserPermissionGroup from '../../../scripts/SystemUserPermissionPage/SystemUserPermissionGroup.js';
 import GenericModalWindow from '../../utils/GenericModalWindow.vue';
+import ToastMessage from '../../../scripts/ToastMessage/ToastMessage.js';
 
 export default {
     name: 'AddUsuarioGrupo',
@@ -42,7 +43,7 @@ export default {
     methods: {
         async addUsuarioNoGrupo() {
             if (!this.usuario) {
-                alert('Por favor, selecione um usuário.');
+                ToastMessage.add('Por favor, selecione um usuário.', '', 'error', true);
                 return;
             }
             const newUser = await this.SUPG.addUsuarioNoGrupo(this.usuario.id, this.groupId);

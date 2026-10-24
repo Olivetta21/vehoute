@@ -50,6 +50,7 @@ import TrackerOuvintes from '../../scripts/UserTracker/TrackerOuvintes.js';
 import OuvinteCard from './OuvinteCard.vue';
 import GenericModalWindow from '../utils/GenericModalWindow.vue';
 import UserTrackers from '../../scripts/UserTracker/UserTrackers';
+import ToastMessage from '../../scripts/ToastMessage/ToastMessage.js';
 
 
 export default {
@@ -89,12 +90,12 @@ export default {
         },
         async salvarNovoOuvinte() {
             if (!TrackerOuvintes.tracker?.r_id) {
-                alert('Nenhum rastreador selecionado');
+                ToastMessage.add('Nenhum rastreador selecionado', '', 'error', true);
                 return;
             }
 
             if (!this.newOuvinte.nome || !this.newOuvinte.usuario_id_destino) {
-                alert('Informe o nome do ouvinte e o ID do usuário destino');
+                ToastMessage.add('Informe o nome do ouvinte e o ID do usuário destino', '', 'error', true);
                 return;
             }
 
@@ -107,48 +108,48 @@ export default {
             if (ok) {
                 this.fecharModalNovoOuvinte();
                 await this.fetchOuvintes();
-                alert('Proposta de novo ouvinte enviada');
+                ToastMessage.add('Proposta de novo ouvinte enviada', '', 'success', true);
                 return;
             }
 
-            alert('Erro ao enviar proposta de novo ouvinte');
+            ToastMessage.add('Erro ao enviar proposta de novo ouvinte', '', 'error', true);
         },
         async handlePause(payload) {
             const { ur_id, atual_status_id } = payload;
             const resp = await TrackerOuvintes.pauseTracking(ur_id, atual_status_id);
-            if (resp) this.fetchOuvintes(); else alert('Erro ao pausar');
+            if (resp) this.fetchOuvintes(); else ToastMessage.add('Erro ao pausar', '', 'error', true);
         },
         async handleResume(payload) {
             const { ur_id, atual_status_id } = payload;
             const resp = await TrackerOuvintes.resumeTracking(ur_id, atual_status_id);
-            if (resp) this.fetchOuvintes(); else alert('Erro ao resumir');
+            if (resp) this.fetchOuvintes(); else ToastMessage.add('Erro ao resumir', '', 'error', true);
         },
         async handleAcceptOuvinte(ur_id) {
             const ok = await TrackerOuvintes.aceitarNovoOuvinte(ur_id);
-            if (ok) this.fetchOuvintes(); else alert('Erro ao aceitar');
+            if (ok) this.fetchOuvintes(); else ToastMessage.add('Erro ao aceitar', '', 'error', true);
         },
         async handleDeclineOuvinte(ur_id) {
             const ok = await TrackerOuvintes.recusarNovoOuvinte(ur_id);
-            if (ok) this.fetchOuvintes(); else alert('Erro ao recusar');
+            if (ok) this.fetchOuvintes(); else ToastMessage.add('Erro ao recusar', '', 'error', true);
         },
         async handleDeleteOuvinte(ur_id) {
             if (!confirm('Confirma excluir este ouvinte?')) return;
             const ok = await TrackerOuvintes.deletarOuvinte(ur_id);
-            if (ok) this.ouvintes = this.ouvintes.filter(o => o.ur_id !== ur_id); else alert('Erro ao excluir');
+            if (ok) this.ouvintes = this.ouvintes.filter(o => o.ur_id !== ur_id); else ToastMessage.add('Erro ao excluir', '', 'error', true);
         },
         async handlePosseTransfer(ur_id) {
             const ok = await TrackerOuvintes.donoEnviaPropostaParaTransferirPosse(ur_id);
-            if (ok) alert('Proposta enviada'); else alert('Erro ao enviar proposta');
+            if (ok) ToastMessage.add('Proposta enviada', '', 'success', true); else ToastMessage.add('Erro ao enviar proposta', '', 'error', true);
         },
         async handleCancelTransfer(ur_id) {
             const ok = await TrackerOuvintes.donoCancelaTransferenciaDePosse(ur_id);
             if (ok) {
                 await this.fetchOuvintes();
-                alert('Transferência cancelada');
+                ToastMessage.add('Transferência cancelada', '', 'success', true);
                 return;
             }
 
-            alert('Erro ao cancelar a transferência');
+            ToastMessage.add('Erro ao cancelar a transferência', '', 'error', true);
         },
         async handleLocTempoRealChange(ouvinte, payload) {
             const { ur_id, new_value } = payload;

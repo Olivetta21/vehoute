@@ -32,6 +32,7 @@
 import SelectInput from '../../utils/SelectInput.vue';
 import SystemUserPermission from '../../../scripts/SystemUserPermissionPage/SystemUserPermission.js';
 import GenericModalWindow from '../../utils/GenericModalWindow.vue';
+import ToastMessage from '../../../scripts/ToastMessage/ToastMessage.js';
 
 export default {
     name: 'AddVinculoPermissao',
@@ -67,11 +68,11 @@ export default {
     methods: {
         async addVinculoPermissao() {
             if (!this.UsuariouOuGrupo || !this.Permissao) {
-                alert('Por favor, selecione um usuário e uma permissão.');
+                ToastMessage.add('Por favor, selecione um usuário e uma permissão.', '', 'error', true);
                 return;
             }
             if (!this.Negado) {
-                alert('Por favor, selecione se a permissão é permitida ou negada.');
+                ToastMessage.add('Por favor, selecione se a permissão é permitida ou negada.', '', 'error', true);
                 return;
             }
 

@@ -29,17 +29,21 @@
         <main class="page-content-wrapper">
             <router-view />
         </main>
+
+        <ToastMessage />
     </div>
 </template>
 
 <script>
 import PagesRoutes from '../scripts/PagesRoutes.js';
+import ToastMessage from './ToastMessage/ToastMessage.vue';
 import LeftArrow from './utils/LeftArrow.vue';
 
 export default {
     name: 'PagesFrame',
     components: {
-        LeftArrow
+        LeftArrow,
+        ToastMessage
     },
     data() {
         return {

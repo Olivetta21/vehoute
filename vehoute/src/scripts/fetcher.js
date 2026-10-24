@@ -1,4 +1,5 @@
 import Usuario from "./LoginPage/Usuario";
+import ToastMessage from "./ToastMessage/ToastMessage";
 import { getBaseOfDestApi } from "./utils";
 
 async function fetch_with_form_data(endereco, arrayValores) {
@@ -48,6 +49,30 @@ async function fetch_with_json_only(endereco, arrayValores) {
     
 }
 
+
+export function noPermissionMsg(dequem, perm){
+    if (!dequem) dequem = '';
+    ToastMessage.add(dequem + " Você não tem permissão!", "Permissão exigida: " + perm, "error", true);
+}
+
+export function tratarRetornosApi(retorno, dequem) {
+    if (!dequem) dequem = '';
+
+    if (retorno['error']){
+        ToastMessage.add(dequem, retorno['error'], "error", true);
+    }
+    else if (retorno['warn']){
+        ToastMessage.add(dequem, retorno['warn'], "warn", true);
+    }
+    else if (retorno['nopermission']){
+        noPermissionMsg(dequem, retorno['nopermission'], true);
+    }
+    else if (retorno['invalid_token']){
+        document.title = "Sessão expirada!";
+        ToastMessage.add("Sessão expirada!","Refaça o login.", "error", true);
+    }
+}
+
 export async function fetch_(endereco, arrayValores, rawResponse = false) {
     //[{"head":"body"}]
     if (arrayValores && !Array.isArray(arrayValores)) {
@@ -71,10 +96,12 @@ export async function fetch_(endereco, arrayValores, rawResponse = false) {
                 return response;
             }
             const result = await response.json();
+
+            tratarRetornosApi(result, endereco.split('/').pop().split('.php')[0]);
             return result;
         }
         catch (error) {
-            console.error("fetch_", "Error parsing JSON response:", response);
+            console.error("fetch_", "Error parsing JSON response:", error);
         }
         
     } catch (error) {

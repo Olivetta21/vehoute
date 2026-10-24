@@ -162,7 +162,7 @@
         }
 
         usleep(rand(1000, 10000) * 1000);
-        returnJson(["error" => errorMessage("internal error", "invalid access_token")]);
+        returnJson(["invalid_token" => errorMessage("invalid_token", $_POST['access_token'] ?? "not_provided")]);
     }
 
 ?>

@@ -19,6 +19,7 @@
 import SelectInput from '../../utils/SelectInput.vue';
 import SystemTrackerPermissionGroup from '../../../scripts/SystemTrackerPermissionPage/SystemTrackerPermissionGroup.js';
 import GenericModalWindow from '../../utils/GenericModalWindow.vue';
+import ToastMessage from '../../../scripts/ToastMessage/ToastMessage.js';
 
 export default {
     name: 'AddRastreadorGrupo',
@@ -42,7 +43,7 @@ export default {
     methods: {
         async addRastreadorNoGrupo() {
             if (!this.rastreador) {
-                alert('Por favor, selecione um rastreador.');
+                ToastMessage.add('Por favor, selecione um rastreador.', '', 'error', true);
                 return;
             }
             const newTracker = await this.STPG.addRastreadorNoGrupo(this.rastreador.id, this.groupId);

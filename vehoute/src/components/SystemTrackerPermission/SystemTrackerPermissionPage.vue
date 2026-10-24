@@ -76,6 +76,7 @@ import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import AddVinculoPermissao from './Modals/AddVinculoPermissao.vue';
 import SelectInput from '../utils/SelectInput.vue';
+import ToastMessage from '../../scripts/ToastMessage/ToastMessage';
 
 export default {
     name: 'SystemTrackerPermissionPage',
@@ -103,7 +104,7 @@ export default {
             }
 
             if (!this.agrupamento_selecionado) {
-                alert('Por favor, selecione um agrupamento antes de buscar permissões.');
+                ToastMessage.add('Por favor, selecione um agrupamento antes de buscar permissões.', '', 'error', true);
                 return;
             }
 

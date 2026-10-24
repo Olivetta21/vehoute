@@ -11,6 +11,7 @@
 </template>
 
 <script>
+import ToastMessage from '../../../scripts/ToastMessage/ToastMessage.js';
 import SystemUserPermissionGroup from '../../../scripts/SystemUserPermissionPage/SystemUserPermissionGroup.js';
 import GenericModalWindow from '../../utils/GenericModalWindow.vue';
 
@@ -26,7 +27,7 @@ export default {
     methods: {
         async addGroup() {
             if (this.groupName.trim() === '') {
-                alert('O nome do grupo não pode estar vazio.');
+                ToastMessage.add('O nome do grupo não pode estar vazio.', '', 'error', true);
                 return;
             }
             const newGroup = await this.SUPG.addGrupo(this.groupName);
