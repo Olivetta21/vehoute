@@ -74,7 +74,7 @@ export default {
             selectedGroupId: null,
             selectedGroupName: '',
 
-            last_searched_name: '',
+            last_searched_name: '%',
             grupos: [],
         };
     },

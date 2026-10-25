@@ -86,7 +86,7 @@ export default {
             agrupamento: [],
             ultimo_agrupado_por: null,
             showAddVinculoPermissaoModal: false,
-            last_searched_filter: '',
+            last_searched_filter: '%',
             agrupamento_options: [{'id': 1, 'nome': 'Permissão', 'x': 'permissao'}, {'id': 2, 'nome': 'Entidade', 'x': 'entidade'}, {'id': 3, 'nome': 'Rastreador', 'x': 'rastreador'}],
             agrupamento_selecionado: null,
 
@@ -113,8 +113,8 @@ export default {
             this.ultimo_agrupado_por = this.agrupamento_selecionado.x;
         },
         openAddVinculoPermissaoModal(preselectedTrackerOuGrupo = null, preselectedPermissao = null) {
-            this.preSelRouG = preselectedTrackerOuGrupo;
-            this.preSelPerm = preselectedPermissao;
+            this.preSelRouG = preselectedTrackerOuGrupo ? {...preselectedTrackerOuGrupo} : null;
+            this.preSelPerm = preselectedPermissao ? {...preselectedPermissao} : null;
             if (this.preSelRouG) this.preSelRouG.nome = `${this.preSelRouG.id}: ${this.preSelRouG.nome}`;
             if (this.preSelPerm) this.preSelPerm.nome = `${this.preSelPerm.id}: ${this.preSelPerm.nome}`;
             this.showAddVinculoPermissaoModal = true;

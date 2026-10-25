@@ -8,12 +8,20 @@ export default class ToastMessage {
     }
 
     static add(title, message, type, _console){
-        if (!title || !message || !type) {
-            message = `parâmetro incorreto ao adicionar toast!\nValores recebidos:\n${title}\n${message}\n${type}`;
-            title = "addToast";
+        if (!type) {
             type = "error";
             _console = true;
         }
+        if (!title && !message) {
+            message = "Mensagem de toast não fornecida";
+            type = "error";
+            _console = true;
+        }
+        if (!message) {
+            message = title;
+            title = "";
+        }
+
         const id = Date.now();
         
         ToastMessage.toasts.unshift({id, title, message, type});

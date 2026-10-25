@@ -222,7 +222,7 @@ function addGrupo($credenciais, $novo_grupo) {
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
-            return [errorMessage("Erro ao adicionar grupo", "Foi adicionado algo diferente de 1 registro.")];
+            return ["error" => errorMessage("Erro ao adicionar grupo", "Foi adicionado algo diferente de 1 registro.")];
         }
 
         $pdo->commit();
@@ -231,7 +231,7 @@ function addGrupo($credenciais, $novo_grupo) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        return [errorMessage("Erro ao adicionar grupo", $e->getMessage())];
+        return ["error" => errorMessage("Erro ao adicionar grupo", $e->getMessage())];
     }
 }
 
@@ -254,7 +254,7 @@ function deleteGrupo($credenciais, $grupo_id) {
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
-            return [errorMessage("Erro ao deletar grupo", "Foi deletado algo diferente de 1 registro.")];
+            return ["error" => errorMessage("Erro ao deletar grupo", "Foi deletado algo diferente de 1 registro.")];
         }
 
         $pdo->commit();
@@ -263,7 +263,7 @@ function deleteGrupo($credenciais, $grupo_id) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        return [errorMessage("Erro ao deletar grupo", $e->getMessage())];
+        return ["error" => errorMessage("Erro ao deletar grupo", $e->getMessage())];
     }
 }
 
@@ -278,7 +278,7 @@ function addUsuarioNoGrupo($credenciais, $usuario_id, $grupo_id) {
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
-            return [errorMessage("Erro ao adicionar usuário ao grupo", "Foi adicionado algo diferente de 1 registro.")];
+            return ["error" => errorMessage("Erro ao adicionar usuário ao grupo", "Foi adicionado algo diferente de 1 registro.")];
         }
 
         $pdo->commit();
@@ -287,7 +287,7 @@ function addUsuarioNoGrupo($credenciais, $usuario_id, $grupo_id) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        return [errorMessage("Erro ao adicionar usuário ao grupo", $e->getMessage())];
+        return ["error" => errorMessage("Erro ao adicionar usuário ao grupo", $e->getMessage())];
     }
 }
 
@@ -302,7 +302,7 @@ function removerUsuarioDoGrupo($credenciais, $usuario_id, $grupo_id) {
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
-            return [errorMessage("Erro ao remover usuário do grupo", "Foi removido algo diferente de 1 registro.")];
+            return ["error" => errorMessage("Erro ao remover usuário do grupo", "Foi removido algo diferente de 1 registro.")];
         }
 
         $pdo->commit();
@@ -311,7 +311,7 @@ function removerUsuarioDoGrupo($credenciais, $usuario_id, $grupo_id) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        return [errorMessage("Erro ao remover usuário do grupo", $e->getMessage())];
+        return ["error" => errorMessage("Erro ao remover usuário do grupo", $e->getMessage())];
     }
 }
 
@@ -354,7 +354,7 @@ function addVinculoPermissao($credenciais, $usuarioOuGrupoID, $is_user, $negado,
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
-            return [errorMessage("Erro ao adicionar permissão", "Foi adicionado algo diferente de 1 registro.")];
+            return ["error" => errorMessage("Erro ao adicionar permissão", "Foi adicionado algo diferente de 1 registro.")];
         }
 
         $pdo->commit();
@@ -363,7 +363,7 @@ function addVinculoPermissao($credenciais, $usuarioOuGrupoID, $is_user, $negado,
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        return [errorMessage("Erro ao adicionar permissão", $e->getMessage())];
+        return ["error" => errorMessage("Erro ao adicionar permissão", $e->getMessage())];
     }
 }
 
@@ -383,7 +383,7 @@ function removeVinculoPermissao($credenciais, $vinculo_id, $usuarioOuGrupoID, $i
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
-            return [errorMessage("Erro ao remover permissão", "Foi removido algo diferente de 1 registro.")];
+            return ["error" => errorMessage("Erro ao remover permissão", "Foi removido algo diferente de 1 registro.")];
         }
 
         $pdo->commit();
@@ -392,6 +392,6 @@ function removeVinculoPermissao($credenciais, $vinculo_id, $usuarioOuGrupoID, $i
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        return [errorMessage("Erro ao remover permissão", $e->getMessage())];
+        return ["error" => errorMessage("Erro ao remover permissão", $e->getMessage())];
     }
 }

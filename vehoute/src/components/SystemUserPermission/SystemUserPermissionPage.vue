@@ -87,7 +87,7 @@ export default {
             agrupamento: [],
             ultimo_agrupado_por: null,
             showAddVinculoPermissaoModal: false,
-            last_searched_filter: '',
+            last_searched_filter: '%',
             agrupamento_options: [{'id': 1, 'nome': 'Permissão', 'x': 'permissao'}, {'id': 2, 'nome': 'Entidade', 'x': 'entidade'}, {'id': 3, 'nome': 'Usuário', 'x': 'usuario'}],
             agrupamento_selecionado: null,
 
@@ -114,8 +114,8 @@ export default {
             this.ultimo_agrupado_por = this.agrupamento_selecionado.x;
         },
         openAddVinculoPermissaoModal(preselectedUsuarioOuGrupo = null, preselectedPermissao = null) {
-            this.preSelUouG = preselectedUsuarioOuGrupo;
-            this.preSelPerm = preselectedPermissao;
+            this.preSelUouG = (preselectedUsuarioOuGrupo) ? {...preselectedUsuarioOuGrupo} : null;
+            this.preSelPerm = (preselectedPermissao) ? {...preselectedPermissao} : null;
             if (this.preSelUouG) this.preSelUouG.nome = `${this.preSelUouG.id}: ${this.preSelUouG.nome}`;
             if (this.preSelPerm) this.preSelPerm.nome = `${this.preSelPerm.id}: ${this.preSelPerm.nome}`;
             this.showAddVinculoPermissaoModal = true;

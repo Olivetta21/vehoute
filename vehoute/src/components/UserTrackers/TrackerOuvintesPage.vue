@@ -111,35 +111,33 @@ export default {
                 ToastMessage.add('Proposta de novo ouvinte enviada', '', 'success', true);
                 return;
             }
-
-            ToastMessage.add('Erro ao enviar proposta de novo ouvinte', '', 'error', true);
         },
         async handlePause(payload) {
             const { ur_id, atual_status_id } = payload;
             const resp = await TrackerOuvintes.pauseTracking(ur_id, atual_status_id);
-            if (resp) this.fetchOuvintes(); else ToastMessage.add('Erro ao pausar', '', 'error', true);
+            if (resp) this.fetchOuvintes();
         },
         async handleResume(payload) {
             const { ur_id, atual_status_id } = payload;
             const resp = await TrackerOuvintes.resumeTracking(ur_id, atual_status_id);
-            if (resp) this.fetchOuvintes(); else ToastMessage.add('Erro ao resumir', '', 'error', true);
+            if (resp) this.fetchOuvintes();
         },
         async handleAcceptOuvinte(ur_id) {
             const ok = await TrackerOuvintes.aceitarNovoOuvinte(ur_id);
-            if (ok) this.fetchOuvintes(); else ToastMessage.add('Erro ao aceitar', '', 'error', true);
+            if (ok) this.fetchOuvintes();
         },
         async handleDeclineOuvinte(ur_id) {
             const ok = await TrackerOuvintes.recusarNovoOuvinte(ur_id);
-            if (ok) this.fetchOuvintes(); else ToastMessage.add('Erro ao recusar', '', 'error', true);
+            if (ok) this.fetchOuvintes();
         },
         async handleDeleteOuvinte(ur_id) {
             if (!confirm('Confirma excluir este ouvinte?')) return;
             const ok = await TrackerOuvintes.deletarOuvinte(ur_id);
-            if (ok) this.ouvintes = this.ouvintes.filter(o => o.ur_id !== ur_id); else ToastMessage.add('Erro ao excluir', '', 'error', true);
+            if (ok) this.ouvintes = this.ouvintes.filter(o => o.ur_id !== ur_id);
         },
         async handlePosseTransfer(ur_id) {
             const ok = await TrackerOuvintes.donoEnviaPropostaParaTransferirPosse(ur_id);
-            if (ok) ToastMessage.add('Proposta enviada', '', 'success', true); else ToastMessage.add('Erro ao enviar proposta', '', 'error', true);
+            if (ok) ToastMessage.add('Proposta enviada', '', 'success', true);
         },
         async handleCancelTransfer(ur_id) {
             const ok = await TrackerOuvintes.donoCancelaTransferenciaDePosse(ur_id);
@@ -148,8 +146,6 @@ export default {
                 ToastMessage.add('Transferência cancelada', '', 'success', true);
                 return;
             }
-
-            ToastMessage.add('Erro ao cancelar a transferência', '', 'error', true);
         },
         async handleLocTempoRealChange(ouvinte, payload) {
             const { ur_id, new_value } = payload;

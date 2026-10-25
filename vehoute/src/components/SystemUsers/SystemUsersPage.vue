@@ -80,7 +80,7 @@ export default {
             this.mostrarFormulario = !this.mostrarFormulario;
             this.mensagem = '';
         },
-        async fetchUsers(pesquisa = '') {
+        async fetchUsers(pesquisa = '%') {
             this.termoPesquisa = pesquisa ?? '';
             this.users = await SystemUser.getUsuarios(this.termoPesquisa);
         },

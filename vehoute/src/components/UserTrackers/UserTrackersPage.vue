@@ -83,8 +83,6 @@ export default {
                 rastreador.validated = true;
                 rastreador.senha = this.newTracker.password;
                 this.newTracker = {...rastreador};
-            } else {
-                ToastMessage.add('Token ou senha inválidos', '', 'error', true);
             }
         },
 
@@ -105,8 +103,6 @@ export default {
 
             if (usuario_rastreador) {
                 this.trackers.push(usuario_rastreador);
-            } else {
-                ToastMessage.add('Erro ao adicionar rastreador', '', 'error', true);
             }
 
             this.showAddTrackerForm = false;
@@ -118,8 +114,6 @@ export default {
             if (updated) {
                 // refresh list
                 this.fetchTrackers('');
-            } else {
-                ToastMessage.add('Erro ao aceitar proposta', '', 'error', true);
             }
         },
 
@@ -127,8 +121,6 @@ export default {
             const ok = await UserTrackers.recusarPropostaOuvinte(ur_id);
             if (ok) {
                 this.fetchTrackers('');
-            } else {
-                ToastMessage.add('Erro ao recusar proposta', '', 'error', true);
             }
         },
 
@@ -136,8 +128,6 @@ export default {
             const ok = await UserTrackers.aceitarTransferencia(ur_id);
             if (ok) {
                 this.fetchTrackers('');
-            } else {
-                ToastMessage.add('Erro ao aceitar transferência', '', 'error', true);
             }
         },
 
@@ -145,8 +135,6 @@ export default {
             const ok = await UserTrackers.recusarTransferencia(ur_id);
             if (ok) {
                 this.fetchTrackers('');
-            } else {
-                ToastMessage.add('Erro ao recusar transferência', '', 'error', true);
             }
         },
 
@@ -155,8 +143,6 @@ export default {
             const ok = await UserTrackers.excluirRastreador(ur_id);
             if (ok) {
                 this.trackers = this.trackers.filter(t => t.id !== ur_id);
-            } else {
-                ToastMessage.add('Erro ao excluir rastreador', '', 'error', true);
             }
         }
     },

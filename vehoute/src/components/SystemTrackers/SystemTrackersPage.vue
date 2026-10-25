@@ -114,7 +114,7 @@ export default {
         toggleObservacao(index) {
             this.trackers[index].mostrarObservacao = !this.trackers[index].mostrarObservacao;
         },
-        async fetchTrackers(pesquisa = '') {
+        async fetchTrackers(pesquisa = '%') {
             this.termoPesquisa = pesquisa ?? '';
             this.trackers = await TrackerPage.getRastreadores(this.termoPesquisa);
         },
