@@ -273,11 +273,6 @@ create function getGruposPermissaoRastreador(
     order by gr.id, r.id
 $$ language sql;
 
-create table logs (
-    id serial primary key,
-    tipo varchar(50) not null,
-    descricao text not null
-)
 
 create table auditoria (
     id serial primary key,
@@ -786,7 +781,7 @@ CREATE TABLE errors_log (
     u_access_token VARCHAR(256),
     ip VARCHAR(45),
     url TEXT,
-    time TIMESTAMP DEFAULT NOW()
+    data TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE audit_log (

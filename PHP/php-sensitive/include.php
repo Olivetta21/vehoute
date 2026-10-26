@@ -66,6 +66,23 @@
         return $arrA;
     }
 
+    function refazArrayComValoresStringDelimitados($array, $delimitador = '|') {
+        $separado = [];
+        foreach ($array as $index => $valor) {
+            if (is_array($valor)) {
+                $valor = implode($delimitador, refazArrayComValoresStringDelimitados($valor, $delimitador));
+            }
+
+            $t = explode($delimitador, $valor);
+            foreach ($t as $subtabela) {
+                if (!in_array($subtabela, $separado)) {
+                    $separado[] = $subtabela;
+                }
+            }
+        }
+        return $separado;
+    }
+
     class Auditoria {
 
         private $audits = [];

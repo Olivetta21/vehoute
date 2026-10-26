@@ -62,6 +62,16 @@ export default {
             type: [Boolean, Number, String],
             required: false,
             default: false
+        },
+        neutralValue: {
+            type: [Boolean, Number, String, null],
+            required: false,
+            default: null
+        },
+        canSwitchToNeutral: {
+            type: Boolean,
+            required: false,
+            default: false
         }
     },
     emits: ['update:value'],
@@ -95,7 +105,11 @@ export default {
             if (this.real_value === this.trueValue) {
                 newValue = this.falseValue;
             } else {
-                newValue = this.trueValue;
+                if (this.canSwitchToNeutral && this.real_value === this.falseValue) {
+                    newValue = this.neutralValue;
+                } else {
+                    newValue = this.trueValue;
+                }
             }
 
             this.$emit('update:value', newValue);
