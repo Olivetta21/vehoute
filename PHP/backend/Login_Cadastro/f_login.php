@@ -60,6 +60,9 @@ function fazerLogin($login, $senha) {
         
         $usuario = selectUsuarioPorSenha($pdo, $login, $senha);
         if (!$usuario) return ["error"=> errorMessage("Usuario não encontrado", "login=". $login ."")];
+
+        $GLOBALS['USUARIO_ID'] = $usuario['id'];
+        $Audit = (new Auditoria())->add('usuario|usuario_access_token', 'fazerLogin', null, ["usuario_id" => $usuario['id']], false);
         
         $access_token = insertAccess_Token($pdo, $usuario['id']);
         if (!$access_token) return ["error"=> errorMessage("access_token não adicionado", "usuario=". $usuario ."")];
@@ -71,6 +74,8 @@ function fazerLogin($login, $senha) {
         $usuario['permissoes'] = $permissoes;
 
         $pdo->commit();
+        $Audit->depois(["usuario_id" => $usuario['id'], "qnt_permissoes" => count($permissoes)]);
+        $Audit->sucesso(true);
         return ["success"=>true, "usuario"=>$usuario];
     } catch (Exception $e) {
         if ($pdo?->inTransaction()) {
@@ -87,6 +92,9 @@ function testAccessToken($access_token) {
 
         $usuario = selectUsuarioPorToken($pdo, $access_token);
         if (!$usuario) return ["error"=> errorMessage("Access_token inválido", "access_token=" . $access_token ."")];
+
+        $GLOBALS['USUARIO_ID'] = $usuario['id'];
+        $Audit = (new Auditoria())->add('usuario|usuario_access_token', 'testAccessToken', null, ["usuario_id" => $usuario['id']], false);
         
         $permissoes = selectPermissoesDoUsuario($pdo, $usuario["id"]);
         if (!$permissoes) return ["error"=> errorMessage("Erro ao recuperar permissões", "usuario=". $usuario ."")];
@@ -94,6 +102,8 @@ function testAccessToken($access_token) {
         $usuario['access_token'] = $access_token;
         $usuario['permissoes'] = $permissoes;
 
+        $Audit->depois(["usuario_id" => $usuario['id'], "qnt_permissoes" => count($permissoes)]);
+        $Audit->sucesso(true);
         return ["success"=>true, "usuario"=>$usuario];
     } catch (Exception $e) {
         return ["error"=> errorMessage("Exceção ao testar access_token", $e->getMessage())];

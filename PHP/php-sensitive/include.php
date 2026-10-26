@@ -19,9 +19,154 @@
 
     function errorMessage($error_title, $error_message) {
         $message = '' . $error_title . '' . (DEVELOPMENT_ENV ?  ':' . $error_message . '': '');
+
+        try {
+            $pdo = getDataBase();
+            if ($pdo) {
+                $stmt = $pdo->prepare("INSERT INTO errors_log (titulo, mensagem, u_access_token, ip, url) VALUES (:titulo, :mensagem, :u_access_token, :ip, :url)");
+                $stmt->execute([
+                    ':titulo' => $error_title,
+                    ':mensagem' => $error_message,
+                    ':u_access_token' => json_decode($_POST['access_token'], true) ?? $_POST['access_token'] ?? null,
+                    ':ip' => getClientIp(),
+                    ':url' => $_SERVER['REQUEST_URI'] ?? null
+                ]);
+            }
+        } catch (Exception $e) {
+            
+        }
         return $message;
     }
 
+    
+    function mesclarArrayRecursivo(array $arrA, array $arrB): array
+    {
+        foreach ($arrB as $chave => $valor) {
+            if (
+                isset($arrA[$chave]) &&
+                is_array($arrA[$chave]) &&
+                is_array($valor)
+            ) {
+                // Se ambos forem arrays numéricos, concatena os elementos.
+                if (
+                    array_is_list($arrA[$chave]) &&
+                    array_is_list($valor)
+                ) {
+                    $arrA[$chave] = array_merge($arrA[$chave], $valor);
+                } else {
+                    // Caso contrário, mescla recursivamente.
+                    $arrA[$chave] = mesclarArrayRecursivo($arrA[$chave], $valor);
+                }
+            } else {
+                // Sobrescreve o valor anterior.
+                $arrA[$chave] = $valor;
+            }
+        }
+
+        return $arrA;
+    }
+
+    class Auditoria {
+
+        private $audits = [];
+
+        function add($tabela, $acao, $antes, $depois, $sucesso) {
+            $values = [
+                ':usuario_id' => $GLOBALS['USUARIO_ID'],
+                ':tabela' => $tabela,
+                ':acao' => $acao
+            ];
+
+            if ($antes !== null) {
+                $values[':antes'] = json_encode($antes);
+            }
+            if ($depois !== null) {
+                $values[':depois'] = json_encode($depois);
+            }
+            if ($sucesso !== null) {
+                $values[':sucesso'] = $sucesso ? 1 : 0;
+            }
+
+            $keys = array_keys($values);
+            $columns = array_map(fn($key) => substr($key, 1), $keys);
+
+            try {
+                $pdo = getDataBase();
+                if ($pdo) {
+                    $stmt = $pdo->prepare("INSERT INTO audit_log (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $keys) . ") returning *");
+                    $stmt->execute($values);
+
+                    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    $this->audits = [
+                        'id' => $result['id'],
+                        'tabela' => $tabela,
+                        'acao' => $acao,
+                        'antes' => $antes,
+                        'depois' => $depois,
+                        'sucesso' => $sucesso ? 1 : 0
+                    ];
+
+                    return $this;
+                }
+            } catch (Exception $e) {
+                errorMessage("Erro ao registrar log de auditoria", $e->getMessage());
+            }
+            return null;
+        }
+
+        private function change($column, $value, $concat = true) {
+            if (!array_key_exists($column, $this->audits)) {
+                errorMessage("Coluna de log de auditoria não encontrada", $column);
+                return;
+            }
+            if ($concat) {
+                $current_value = $this->audits[$column];
+                if ($current_value !== null) {
+                    if (is_array($current_value)) {
+                        $value = mesclarArrayRecursivo($current_value, is_array($value) ? $value : [$value]);
+                    } else {
+                        $value = $current_value . '|' . (is_array($value) ? json_encode($value) : $value);
+                    }
+                }                
+            }
+            $this->audits[$column] = $value;
+
+            try {
+                $pdo = getDataBase();
+                if ($pdo) {
+                    $sql = "UPDATE audit_log SET " . $column . " = :value WHERE id = :log_id";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([
+                        ':value' => is_array($value) ? json_encode($value) : $value,
+                        ':log_id' => $this->audits['id']
+                    ]);
+                }
+            } catch (Exception $e) {
+                errorMessage("Erro ao atualizar log de auditoria", $e->getMessage());
+            }
+        }
+
+        function sucesso($sucesso) {
+            $this->change('sucesso', $sucesso ? 1 : 0, false);
+        }
+
+        function tabela($tabela, $concat = true) {
+            $this->change('tabela', $tabela, $concat);
+        }
+
+        function acao($acao, $concat = true) {
+            $this->change('acao', $acao, $concat);
+        }
+
+        function antes($antes, $concat = true) {
+            $this->change('antes', $antes, $concat);
+        }
+
+        function depois($depois, $concat = true) {
+            $this->change('depois', $depois, $concat);
+        }
+    }
 
     function validarSenha($senha) {
         if (strlen($senha) < 8) return 0;
@@ -153,6 +298,7 @@
 
                 if ($stmt->rowCount() === 1) {
                     $usuario = $stmt->fetchAll(PDO::FETCH_ASSOC)[0];
+                    $GLOBALS['USUARIO_ID'] = $usuario['id'];
                     $usuario['pdo'] = $pdo;
                     return $usuario;
                 }

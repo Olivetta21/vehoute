@@ -19,12 +19,17 @@ function gerarSenhaUsuario() {
 }
 
 function getSimpleUsuarios($pdo, $nome = "%") {
+    $Audit = (new Auditoria())->add('usuario', 'getSimpleUsuarios', null, ["nome" => $nome], false);
     $stmt = $pdo->prepare("select id, nome from usuario where ativo = true and nome ilike :nome order by nome");
     $stmt->execute(["nome" => '%' . $nome . '%']);
-    return ["success" => true, "usuarios" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+    $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $Audit->depois(["qnt_usuarios" => count($usuarios)]);
+    $Audit->sucesso(true);
+    return ["success" => true, "usuarios" => $usuarios];
 }
 
 function getUsuarios($pdo, $nome = null) {
+    $Audit = (new Auditoria())->add('usuario', 'getUsuarios', null, ["nome" => $nome], false);
     $nome = normalizarFiltroTexto($nome);
 
     $sql = "SELECT * from vw_usuarios_do_sistema";
@@ -39,10 +44,14 @@ function getUsuarios($pdo, $nome = null) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
 
-    return ["success" => true, "usuarios" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+    $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $Audit->depois(["qnt_usuarios" => count($usuarios)]);
+    $Audit->sucesso(true);
+    return ["success" => true, "usuarios" => $usuarios];
 }
 
 function toggleUsuarioAtivo($pdo, $usuario_id) {
+	$Audit = (new Auditoria())->add('usuario', 'toggleUsuarioAtivo', ["id" => $usuario_id], null, false);
     if (!validarIdPositivo($usuario_id)) {
         return ["error" => errorMessage("Id de usuário inválido", $usuario_id)];
     }
@@ -61,6 +70,8 @@ function toggleUsuarioAtivo($pdo, $usuario_id) {
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
         $pdo->commit();
 
+        $Audit->depois($usuario);
+        $Audit->sucesso(true);
         return ["success" => true, "usuario" => $usuario];
     } catch (Exception $e) {
         if ($pdo?->inTransaction()) {
@@ -72,6 +83,7 @@ function toggleUsuarioAtivo($pdo, $usuario_id) {
 }
 
 function toggleUsuarioAdm($pdo, $usuario_id) {
+	$Audit = (new Auditoria())->add('administrador', 'toggleUsuarioAdm', null, null, false);
     if (!validarIdPositivo($usuario_id)) {
         return ["error" => errorMessage("Id de usuário inválido", $usuario_id)];
     }
@@ -96,14 +108,17 @@ function toggleUsuarioAdm($pdo, $usuario_id) {
             $stmt = $pdo->prepare("delete from administrador where id = :id");
             $stmt->execute(["id" => $usuario_id]);
             $novoAdm = false;
+            $Audit->antes(["usuario_id" => $usuario_id]);
         } else {
             $stmt = $pdo->prepare("insert into administrador (id) values (:id)");
             $stmt->execute(["id" => $usuario_id]);
             $novoAdm = true;
+            $Audit->depois(["usuario_id" => $usuario_id]);
         }
 
         $pdo->commit();
 
+        $Audit->sucesso(true);
         return ["success" => true, "usuario" => ["id" => $usuario_id, "nome" => $usuario["nome"], "adm" => $novoAdm]];
     } catch (Exception $e) {
         if ($pdo?->inTransaction()) {
@@ -115,6 +130,7 @@ function toggleUsuarioAdm($pdo, $usuario_id) {
 }
 
 function adicionarUsuario($pdo, $nome, $email, $identidade, $tipo_ident, $adm = false) {
+	$Audit = (new Auditoria())->add('usuario|legal_ident|administrador', 'adicionarUsuario', null, ["nome" => $nome, "email" => $email, "identidade" => $identidade, "tipo_ident" => $tipo_ident, "adm" => $adm], false);
     if (!validarNomeUsuario($nome)) {
         return ["error" => errorMessage("Nome de usuário inválido", $nome)];
     }
@@ -203,6 +219,8 @@ function adicionarUsuario($pdo, $nome, $email, $identidade, $tipo_ident, $adm = 
         $usuario["legal_ident_id"] = $legal_ident_id;
         $usuario["identidade"] = $identidade;
 
+        $Audit->depois(["usuario" => $usuario]);
+        $Audit->sucesso(true);
         return [
             "success" => true,
             "usuario" => $usuario,

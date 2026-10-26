@@ -1,5 +1,6 @@
 <?php
 function getConfiguracaoUsuario($credenciais) {
+    $Audit = (new Auditoria())->add('configuracao|vinculo_configuracao', 'getConfiguracaoUsuario', null, null, false);
     $pdo = $credenciais["pdo"];
     $stmt = $pdo->prepare("SELECT 
         c.id AS config_id, c.nome AS config_nome, c.var_type AS config_var_type,
@@ -39,10 +40,13 @@ function getConfiguracaoUsuario($credenciais) {
 
     }
 
+    $Audit->depois(["qnt_configuracoes" => count($configs)]);
+    $Audit->sucesso(true);
     return ["success" => true, "configs" => $grupo];   
 }
 
 function updateConfiguracaoUsuario($credenciais, $config_id, $variavel) {
+    $Audit = (new Auditoria())->add('vinculo_configuracao', 'updateConfiguracaoUsuario', null, ["config_id" => $config_id, "variavel" => $variavel], false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -76,6 +80,7 @@ function updateConfiguracaoUsuario($credenciais, $config_id, $variavel) {
 
         $config = $stmt->fetch(PDO::FETCH_ASSOC);
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true, "config" => $config];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {

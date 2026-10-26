@@ -1,6 +1,7 @@
 <?php
 
 function getPerfilUsuario($credenciais) {
+    $Audit = (new Auditoria())->add('usuario|usuario_rastreador', 'getPerfilUsuario', null, null, false);
     $pdo = $credenciais["pdo"];
     $stmt = $pdo->prepare("SELECT id, nome, login, email, telefone FROM usuario WHERE id = :usuario_id");
     $stmt->execute(['usuario_id' => $credenciais["id"]]);
@@ -20,10 +21,13 @@ function getPerfilUsuario($credenciais) {
 
     $perfil = array_merge($usuario, $contagem);
 
+    $Audit->depois(["perfil_usuario_id" => $credenciais["id"]]);
+    $Audit->sucesso(true);
     return ["success" => true, "perfil" => $perfil];
 }
 
 function updatePerfilUsuario($credenciais, $valores) {
+    $Audit = (new Auditoria())->add('usuario', 'updatePerfilUsuario', ["usuario_id" => $credenciais["id"]], $valores, false);
     $pdo = $credenciais["pdo"];
 
     $sql = "UPDATE usuario SET ";
@@ -60,5 +64,6 @@ function updatePerfilUsuario($credenciais, $valores) {
         return ["error" => errorMessage("Erro ao atualizar perfil", $valores)];
     }
     $pdo->commit();
+    $Audit->sucesso(true);
     return getPerfilUsuario($credenciais);
 }

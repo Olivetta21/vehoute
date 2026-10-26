@@ -1,6 +1,7 @@
 <?php
 
 function getLocalizacoesDoRastreador($credentials, $rastreador_id) {
+    $Audit = (new Auditoria())->add('localizacao', 'getLocalizacoesDoRastreador', null, ["rastreador_id" => $rastreador_id], false);
 
     $pdo = null;
     try {
@@ -18,8 +19,12 @@ function getLocalizacoesDoRastreador($credentials, $rastreador_id) {
                 $localizacao["l_lng"] = floatval($localizacao["l_lng"]);
             }
 
+            $Audit->depois(["qnt_localizacoes" => count($localizacoes)]);
+            $Audit->sucesso(true);
             return ["success" => true, "localizacoes" => $localizacoes];
         } else {
+            $Audit->depois(["qnt_localizacoes" => 0]);
+            $Audit->sucesso(true);
             return ["success" => true, "localizacoes" => [], "message" => errorMessage("Nenhuma localização encontrada", $rastreador_id . '-' . $credentials["id"])];
         }
     } catch (Exception $e) {

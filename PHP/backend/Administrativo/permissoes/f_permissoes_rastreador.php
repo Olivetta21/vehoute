@@ -1,6 +1,7 @@
 ﻿<?php
 
 function getPermissoesRastreador($credenciais, $agrupar_por, $filter) {
+    $Audit = (new Auditoria())->add('vinc_perm_rastreador', 'getPermissoesRastreador', null, ["agrupar_por" => $agrupar_por, "filtro" => $filter], false);
     $pdo = $credenciais["pdo"];
     
     function findIndexEntity($agrupamento, $id, $is_tracker) {
@@ -122,10 +123,13 @@ function getPermissoesRastreador($credenciais, $agrupar_por, $filter) {
         unset($rastreador);
     }
 
+    $Audit->depois(["qnt_entidades" => count($agrupamento)]);
+    $Audit->sucesso(true);
     return ["success" => true, "agrupamento" => $agrupamento];
 }
 
 function getGrupos($credenciais, $grupo_nome) {
+    $Audit = (new Auditoria())->add('grupo_rastreador|vinc_grupo_rastreador|vinc_perm_rastreador', 'getGrupos', null, ["nome" => $grupo_nome], false);
     $pdo = $credenciais["pdo"];
 
     $sql = "select id from grupo_rastreador where nome ilike :grupo_nome";
@@ -177,10 +181,13 @@ function getGrupos($credenciais, $grupo_nome) {
         ];
     }
 
+    $Audit->depois(["qnt_grupos" => count($grupos)]);
+    $Audit->sucesso(true);
     return ["success" => true, "grupos" => $grupos];
 }
 
 function addGrupo($credenciais, $novo_grupo) {
+    $Audit = (new Auditoria())->add('grupo_rastreador', 'addGrupo', null, ["nome" => $novo_grupo], false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -196,6 +203,8 @@ function addGrupo($credenciais, $novo_grupo) {
         }
 
         $pdo->commit();
+        $Audit->depois(["id" => $grupo_id, "nome" => $novo_grupo]);
+        $Audit->sucesso(true);
         return ["success" => true, "grupo" => ["id" => $grupo_id, "nome" => $novo_grupo]];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -206,6 +215,7 @@ function addGrupo($credenciais, $novo_grupo) {
 }
 
 function deleteGrupo($credenciais, $grupo_id) {
+    $Audit = (new Auditoria())->add('grupo_rastreador|vinc_grupo_rastreador|vinc_perm_rastreador', 'deleteGrupo', ["id" => $grupo_id], null, false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -229,6 +239,7 @@ function deleteGrupo($credenciais, $grupo_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -239,6 +250,7 @@ function deleteGrupo($credenciais, $grupo_id) {
 }
 
 function addRastreadorNoGrupo($credenciais, $rastreador_id, $grupo_id) {
+    $Audit = (new Auditoria())->add('vinc_grupo_rastreador', 'addRastreadorNoGrupo', null, ["rastreador_id" => $rastreador_id, "grupo_id" => $grupo_id], false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -253,6 +265,7 @@ function addRastreadorNoGrupo($credenciais, $rastreador_id, $grupo_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -263,6 +276,7 @@ function addRastreadorNoGrupo($credenciais, $rastreador_id, $grupo_id) {
 }
 
 function removerRastreadorDoGrupo($credenciais, $rastreador_id, $grupo_id) {
+    $Audit = (new Auditoria())->add('vinc_grupo_rastreador', 'removerRastreadorDoGrupo', ["rastreador_id" => $rastreador_id, "grupo_id" => $grupo_id], null, false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -277,6 +291,7 @@ function removerRastreadorDoGrupo($credenciais, $rastreador_id, $grupo_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -288,6 +303,7 @@ function removerRastreadorDoGrupo($credenciais, $rastreador_id, $grupo_id) {
 
 
 function searchGrupos($credenciais, $group_name) {
+    $Audit = (new Auditoria())->add('grupo_rastreador', 'searchGrupos', null, ["nome" => $group_name], false);
     $pdo = $credenciais["pdo"];
 
     $sql = "select id, nome from grupo_rastreador where nome ilike :group_name";
@@ -295,10 +311,13 @@ function searchGrupos($credenciais, $group_name) {
     $stmt->execute([":group_name" => "%$group_name%"]);
     $grupos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $Audit->depois(["qnt_grupos" => count($grupos)]);
+    $Audit->sucesso(true);
     return ["success" => true, "grupos" => $grupos];
 }
 
 function searchPermissoes($credenciais, $permissoes_name) {
+    $Audit = (new Auditoria())->add('permissao_rastreador', 'searchPermissoes', null, ["nome" => $permissoes_name], false);
     $pdo = $credenciais["pdo"];
 
     $sql = "select id, nome from permissao_rastreador where nome ilike :permissoes_name";
@@ -306,10 +325,13 @@ function searchPermissoes($credenciais, $permissoes_name) {
     $stmt->execute([":permissoes_name" => "%$permissoes_name%"]);
     $permissoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $Audit->depois(["qnt_permissoes" => count($permissoes)]);
+    $Audit->sucesso(true);
     return ["success" => true, "permissoes" => $permissoes];
 }
 
 function addVinculoPermissao($credenciais, $rastreadorOuGrupoID, $is_tracker, $negado, $permissaoID) {
+    $Audit = (new Auditoria())->add('vinc_perm_rastreador', 'addVinculoPermissao', null, ["entidade_id" => $rastreadorOuGrupoID, "is_tracker" => $is_tracker, "permissao_id" => $permissaoID], false);
     $pdo = $credenciais["pdo"];
     $negado = $negado ? 1 : 0;
 
@@ -340,6 +362,7 @@ function addVinculoPermissao($credenciais, $rastreadorOuGrupoID, $is_tracker, $n
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -350,6 +373,7 @@ function addVinculoPermissao($credenciais, $rastreadorOuGrupoID, $is_tracker, $n
 }
 
 function removeVinculoPermissao($credenciais, $vinculo_id, $rastreadorOuGrupoID, $is_tracker, $permissaoID) {
+    $Audit = (new Auditoria())->add('vinc_perm_rastreador', 'removeVinculoPermissao', ["id" => $vinculo_id], null, false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -373,6 +397,7 @@ function removeVinculoPermissao($credenciais, $vinculo_id, $rastreadorOuGrupoID,
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {

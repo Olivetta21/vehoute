@@ -20,15 +20,19 @@ function existsExactR_WithIdDonoTKStatus($pdo, $rastreador_id, $dono_id, $token,
 }
 
 function getRastreadoresDoUsuario($credenciais, $name_filter) {
+    $Audit = (new Auditoria())->add('usuario_rastreador|rastreador', 'getRastreadoresDoUsuario', null, ["filtro" => $name_filter], false);
     $pdo = $credenciais["pdo"];
     $stmt = $pdo->prepare("select * from getRastreadoresDoUsuario(:usuario_id) where ur_nome ilike :name_filter order by ur_nome");
     $stmt->execute(["usuario_id" => "{" . $credenciais["id"] . "}", "name_filter" => "%$name_filter%"]);
     $rastreadores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $Audit->depois(["qnt_rastreadores" => count($rastreadores)]);
+    $Audit->sucesso(true);
     return ["success" => true, "rastreadores" => $rastreadores];
 }
 
 
 function checkRastreadorDoUsuario($credenciais, $token, $senha) {
+    $Audit = (new Auditoria())->add('rastreador', 'checkRastreadorDoUsuario', null, ["token" => $token], false);
     if (!$token || !$senha) {
         return ["error" => errorMessage("Token ou senha não fornecidos", null)];
     }
@@ -38,6 +42,8 @@ function checkRastreadorDoUsuario($credenciais, $token, $senha) {
 
     if ($stmt->rowCount() === 1) {
         $rastreador = $stmt->fetch(PDO::FETCH_ASSOC);
+        $Audit->depois($rastreador);
+        $Audit->sucesso(true);
         return ["success" => true, "rastreador" => $rastreador];
     } else {
         return ["error" => errorMessage("Token ou senha inválidos", null)];
@@ -45,6 +51,7 @@ function checkRastreadorDoUsuario($credenciais, $token, $senha) {
 }
 
 function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $token, $senha, $status, $nome) {
+    $Audit = (new Auditoria())->add('usuario_rastreador|vinc_loc_oculta_usuario_rastreador', 'usuarioAdicionaUmRastreador', null, ["rastreador_id" => $rastreador_id, "nome" => $nome, "status" => $status], false);
     $pdo = $credenciais["pdo"];
 
     if (!$rastreador_id || !$nome) {
@@ -122,6 +129,8 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
 
         $new_ur = $stmt->fetch(PDO::FETCH_ASSOC);
         $pdo->commit();
+        $Audit->depois(["usuario_rastreador" => $new_ur]);
+        $Audit->sucesso(true);
         return ["success" => true, "usuario_rastreador" => $new_ur];
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -168,6 +177,7 @@ function validarUsuarioCorretoForAcceptDecline($credenciais, $ur_id) {
 }
 
 function usuarioAceitaPropostaDeOuvinte($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'usuarioAceitaPropostaDeOuvinte', ["id" => $ur_id, "status" => 4], ["id" => $ur_id, "status" => 2], false);
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -198,6 +208,8 @@ function usuarioAceitaPropostaDeOuvinte($credenciais, $ur_id) {
 
         $updated_ur = $stmt->fetch(PDO::FETCH_ASSOC);
         $pdo->commit();
+        $Audit->depois(["usuario_rastreador" => $updated_ur]);
+        $Audit->sucesso(true);
         return ["success" => true, "usuario_rastreador" => $updated_ur];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -208,6 +220,7 @@ function usuarioAceitaPropostaDeOuvinte($credenciais, $ur_id) {
 }
 
 function usuarioRecusaPropostaDeOuvinte($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'usuarioRecusaPropostaDeOuvinte', ["id" => $ur_id, "status" => 4], null, false);
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -226,6 +239,7 @@ function usuarioRecusaPropostaDeOuvinte($credenciais, $ur_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -254,6 +268,7 @@ function validarUsuarioCorretoForTransferencia($credenciais, $ur_id) {
 }
 //
 function acceptTransferenciaDePosse($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('rastreador|usuario_rastreador', 'acceptTransferenciaDePosse', ["usuario_rastreador_id" => $ur_id, "status" => 5], ["status" => 1], false);
     $pdo = $credenciais["pdo"];
 
     if (!validarIdPositivo($ur_id)) {
@@ -284,6 +299,7 @@ function acceptTransferenciaDePosse($credenciais, $ur_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -294,6 +310,7 @@ function acceptTransferenciaDePosse($credenciais, $ur_id) {
 }
 
 function declineTransferenciaDePosse($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('rastreador|usuario_rastreador', 'declineTransferenciaDePosse', ["usuario_rastreador_id" => $ur_id, "status" => 5], ["status" => 2], false);
     $pdo = $credenciais["pdo"];
 
     if (!validarIdPositivo($ur_id)) {
@@ -324,6 +341,7 @@ function declineTransferenciaDePosse($credenciais, $ur_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -348,6 +366,7 @@ function validarOuvinteCorretoForDeleteUR($credenciais, $ur_id) {
     return false;
 }
 function excluirRastreadorDoOuvinte($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador|vinc_loc_oculta_usuario_rastreador', 'excluirRastreadorDoOuvinte', ["id" => $ur_id], null, false);
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -368,6 +387,7 @@ function excluirRastreadorDoOuvinte($credenciais, $ur_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -378,6 +398,7 @@ function excluirRastreadorDoOuvinte($credenciais, $ur_id) {
 }
 
 function updateVinculoUsuarioRastreador($credenciais, $ur_id, $ur_status, $new_values) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'updateVinculoUsuarioRastreador', ["id" => $ur_id, "status" => $ur_status], $new_values, false);
     if (empty($new_values)) {
         return ["error" => errorMessage("Nenhum valor novo fornecido para atualização", $credenciais["id"])];
     }
@@ -409,6 +430,8 @@ function updateVinculoUsuarioRastreador($credenciais, $ur_id, $ur_status, $new_v
 
         $updated_ur = $stmt->fetch(PDO::FETCH_ASSOC);
         $pdo->commit();
+        $Audit->depois(["usuario_rastreador" => $updated_ur]);
+        $Audit->sucesso(true);
         return ["success" => true, "usuario_rastreador" => $updated_ur];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -419,6 +442,7 @@ function updateVinculoUsuarioRastreador($credenciais, $ur_id, $ur_status, $new_v
 }
 
 function updateRastreadorDoDono($credenciais, $r_id, $r_token_publico, $r_status, $new_values) {
+    $Audit = (new Auditoria())->add('rastreador', 'updateRastreadorDoDono', ["id" => $r_id, "status" => $r_status], $new_values, false);
     if (empty($new_values)) {
         return ["error" => errorMessage("Nenhum valor novo fornecido para atualização", $credenciais["id"])];
     }
@@ -477,6 +501,8 @@ function updateRastreadorDoDono($credenciais, $r_id, $r_token_publico, $r_status
 
         $updated_rastreador = $stmt->fetch(PDO::FETCH_ASSOC);
         $pdo->commit();
+        $Audit->depois(["rastreador" => $updated_rastreador]);
+        $Audit->sucesso(true);
         return ["success" => true, "rastreador" => $updated_rastreador];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {

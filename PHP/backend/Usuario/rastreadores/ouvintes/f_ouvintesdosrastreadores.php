@@ -13,6 +13,8 @@ function validarUsuarioPodeVerOuvintesDoRastreador($pdo, $usuario_id, $rastreado
 }
 
 function getOuvintesDoRastreador($credenciais, $rastreador_id, $name_filter) {
+    $Audit = (new Auditoria())->add('usuario|rastreador|usuario_rastreador', 'getOuvintesDoRastreador', NULL, ["id" => $rastreador_id, "filtro" => $name_filter], false);
+
     if (!validarIdPositivo($rastreador_id)) {
         return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
     }
@@ -33,6 +35,8 @@ function getOuvintesDoRastreador($credenciais, $rastreador_id, $name_filter) {
             "name_filter" => '%' . $name_filter . '%'
         ]);
 
+        $Audit->depois(["qnt_ouvintes" => $stmt->rowCount()]);
+        $Audit->sucesso(true);
         return ["success" => true, "ouvintes" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
     } catch (Exception $e) {
         return ["error" => errorMessage("Erro ao buscar ouvintes do rastreador", $e->getMessage())];
@@ -48,6 +52,8 @@ function checkCorrectStatusForAction($credenciais, $ur_id, $array_statuses) {
 }
 
 function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoEnviaPropostaDeTransferenciaDePosse', NULL, ["usuario_rastreador" => ["id" => $ur_id, "status" => 5]], false);
+
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -71,6 +77,8 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
             return ["error" => errorMessage("Erro ao enviar proposta de transferência de posse para o ouvinte", $ur_id . " - " . $usuario_id)];
         }
         $rastreador_id = $stmt->fetchColumn();
+        $Audit->tabela("rastreador");
+        $Audit->depois(["rastreador" => ["id" => $rastreador_id, "status" => 3]]);
 
         $stmt = $pdo->prepare("update rastreador set status = 3 where id = :rastreador_id and dono_id = :dono_id and status in (1, 2)");
         $stmt->execute(["rastreador_id" => $rastreador_id, "dono_id" => $usuario_id]);
@@ -80,6 +88,7 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
             return ["error" => errorMessage("Erro ao enviar proposta de transferência de posse para o ouvinte ao atualizar status do rastreador", $rastreador_id . " - " . $usuario_id)];
         }
 
+        $Audit->sucesso(true);
         $pdo->commit();
         return ["success" => true];
     } catch (Exception $e) {
@@ -92,6 +101,8 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
 
 
 function donoCancelaTransferenciaDePosse($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoCancelaTransferenciaDePosse', NULL, ["usuario_rastreador" => ["id" => $ur_id, "status" => 2]], false);
+
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -115,6 +126,8 @@ function donoCancelaTransferenciaDePosse($credenciais, $ur_id) {
             return ["error" => errorMessage("Erro ao cancelar proposta de transferência de posse para o ouvinte", $ur_id . " - " . $usuario_id)];
         }
         $rastreador_id = $stmt->fetchColumn();
+        $Audit->tabela("rastreador");
+        $Audit->depois(["rastreador" => ["id" => $rastreador_id, "status" => 1]]);
 
         $stmt = $pdo->prepare("update rastreador set status = 1 where id = :rastreador_id and dono_id = :dono_id and status = 3");
         $stmt->execute(["rastreador_id" => $rastreador_id, "dono_id" => $usuario_id]);
@@ -124,6 +137,7 @@ function donoCancelaTransferenciaDePosse($credenciais, $ur_id) {
             return ["error" => errorMessage("Erro ao cancelar proposta de transferência de posse para o ouvinte ao atualizar status do rastreador", $rastreador_id . " - " . $usuario_id)];
         }
 
+        $Audit->sucesso(true);
         $pdo->commit();
         return ["success" => true];
     } catch (Exception $e) {
@@ -136,6 +150,8 @@ function donoCancelaTransferenciaDePosse($credenciais, $ur_id) {
 
 
 function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nome, $usuario_id_destino) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoEnviaPropostaDeOuvinteAUmUsuario', NULL, ["usuario_rastreador" => ["rastreador_id" => $rastreador_id, "nome" => $nome, "usuario_id" => $usuario_id_destino]], false);
+
     $pdo = $credenciais["pdo"];
 
     if (!$rastreador_id || !$nome || !$usuario_id_destino) {
@@ -163,12 +179,15 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
             return ["error" => errorMessage("Erro ao enviar proposta de ouvinte para o usuário", $rastreador_id . " - " . $usuario_id_destino)];
         }
         $ur_id = $stmt->fetchColumn();
+        $Audit->depois(["usuario_rastreador" => ["id" => $ur_id, "status" => 4]]);
         
         //Adiciona o ouvinte no vinculo de localizacoes ocultas do rastreador, caso existam
         $stmt = $pdo->prepare("select id from intervalo_loc_oculta where novos_ouvintes = true and rastreador_id = :rastreador_id");
         $stmt->execute(["rastreador_id" => $rastreador_id]);
         if ($stmt->rowCount() > 0) {
+            $Audit->tabela("vinc_loc_oculta_usuario_rastreador");
             $lococulta_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $Audit->depois(["vinc_loc_oculta_usuario_rastreador" => ["ids_to_vinc" => $lococulta_ids]]);
             $stmt = $pdo->prepare("insert into vinc_loc_oculta_usuario_rastreador
             (
                 intervalo_loc_oculta_id,
@@ -195,6 +214,7 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
             }
         }
 
+        $Audit->sucesso(true);
         $pdo->commit();
         return ["success" => true];
     } catch (Exception $e) {
@@ -209,6 +229,8 @@ function validarDonoCorretoForAcceptDecline($credenciais, $ur_id) {
 }
 
 function donoAceitaNovoOuvinte($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoAceitaNovoOuvinte', NULL, ["ur_id" => $ur_id], false);
+
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -229,6 +251,7 @@ function donoAceitaNovoOuvinte($credenciais, $ur_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -241,6 +264,8 @@ function donoAceitaNovoOuvinte($credenciais, $ur_id) {
 
 
 function donoRecusaNovoOuvinte($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoRecusaNovoOuvinte', ["ur_id" => $ur_id], NULL, false);
+
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -260,6 +285,7 @@ function donoRecusaNovoOuvinte($credenciais, $ur_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -278,6 +304,8 @@ function validarDonoCorretoForManipulate($credenciais, $ur_id) {
 }
 
 function donoDeletaOuvinte($credenciais, $ur_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoDeletaOuvinte', ["ur_id" => $ur_id], NULL, false);
+
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -298,6 +326,7 @@ function donoDeletaOuvinte($credenciais, $ur_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -308,6 +337,8 @@ function donoDeletaOuvinte($credenciais, $ur_id) {
 }
 
 function changeLocStateForOuvinte($credenciais, $loc_type, $ur_id, $new_value) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'changeLocStateForOuvinte', NULL, ["ur_id" => $ur_id, "loc_type" => $loc_type, "new_value" => $new_value], false);
+
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
     }
@@ -334,7 +365,7 @@ function changeLocStateForOuvinte($credenciais, $loc_type, $ur_id, $new_value) {
 
         $loc_value = $stmt->fetchColumn();
         $pdo->commit();
-
+        $Audit->sucesso(true);
         return ["success" => true, "loc_value" => $loc_value];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {

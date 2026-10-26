@@ -29,6 +29,7 @@ function validarDonoCorretoForPauseResume($credenciais, $ur_id) {
 
 
 function swtichBetweenPauseAndNormalTracking($credenciais, $ur_id, $pause) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', $pause ? 'pauseTrackingForOuvinte' : 'resumeTrackingForOuvinte', ["id" => $ur_id], ["id" => $ur_id], false);
 
     if (!validarIdPositivo($ur_id)) {
         return ["error" => errorMessage("Id de rastreador de usuário inválido", $ur_id)];
@@ -42,7 +43,9 @@ function swtichBetweenPauseAndNormalTracking($credenciais, $ur_id, $pause) {
         $pdo = $credenciais["pdo"];
         $pdo->beginTransaction();
 
-        $status_a_d = $pause ? [1,2] : [2,1];   
+        $status_a_d = $pause ? [1,2] : [2,1];
+        $Audit->antes(["status" => $status_a_d[0]]);
+        $Audit->depois(["status" => $status_a_d[1]]);
 
         $stmt = $pdo->prepare("update usuario_rastreador set status = :new_status where id = :id and status = :old_status");
         $stmt->execute(["id" => $ur_id, "new_status" => $status_a_d[1], "old_status" => $status_a_d[0]]);
@@ -52,6 +55,7 @@ function swtichBetweenPauseAndNormalTracking($credenciais, $ur_id, $pause) {
             return ["error" => errorMessage("Rastreador de usuário não encontrado ou status atual não confere ao atualizar", $credenciais["id"] . " - " . $ur_id)];
         }
 
+        $Audit->sucesso(true);
         $pdo->commit();
         return ["success" => true];
 

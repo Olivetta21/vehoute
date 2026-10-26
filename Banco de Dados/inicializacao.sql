@@ -779,6 +779,27 @@ END;
 $$;
 
 
+CREATE TABLE errors_log (
+    id SERIAL PRIMARY KEY,
+    titulo TEXT,
+    mensagem TEXT,
+    u_access_token VARCHAR(256),
+    ip VARCHAR(45),
+    url TEXT,
+    time TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE audit_log (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuario(id),
+    tabela VARCHAR(100) NOT NULL,
+    acao VARCHAR(100) NOT NULL,
+    antes TEXT,
+    depois TEXT,
+    sucesso BOOLEAN,
+    data TIMESTAMP DEFAULT NOW()
+);
+
 
 insert into legal_ident_tipo (descricao, regex) values ('Geral', '.+');
 insert into legal_ident (tipo_id, identidade) values (1, '123456789');

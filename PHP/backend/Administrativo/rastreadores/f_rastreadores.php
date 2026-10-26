@@ -1,6 +1,7 @@
 <?php
 
 function getRastreadores($pdo, $filtro = null) {
+	$Audit = (new Auditoria())->add('rastreador', 'getRastreadores', null, ["filtro" => $filtro], false);
 	$filtro = normalizarFiltroTexto($filtro);
 
 	$sql = "SELECT * from vw_rastreadores_do_sistema";
@@ -15,10 +16,14 @@ function getRastreadores($pdo, $filtro = null) {
 	$stmt = $pdo->prepare($sql);
 	$stmt->execute($params);
 
-	return ["success" => true, "rastreadores" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+	$rastreadores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	$Audit->depois(["qnt_rastreadores" => count($rastreadores)]);
+	$Audit->sucesso(true);
+	return ["success" => true, "rastreadores" => $rastreadores];
 }
 
 function getSimpleRastreadores($pdo, $filtro = null) {
+	$Audit = (new Auditoria())->add('rastreador', 'getSimpleRastreadores', null, ["filtro" => $filtro], false);
 	$filtro = normalizarFiltroTexto($filtro);
 
 	$sql = "SELECT id, hardware as nome from rastreador where ativo = true";
@@ -33,10 +38,14 @@ function getSimpleRastreadores($pdo, $filtro = null) {
 	$stmt = $pdo->prepare($sql);
 	$stmt->execute($params);
 
-	return ["success" => true, "rastreadores" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+	$rastreadores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	$Audit->depois(["qnt_rastreadores" => count($rastreadores)]);
+	$Audit->sucesso(true);
+	return ["success" => true, "rastreadores" => $rastreadores];
 }
 
 function toggleRastreadorAtivo($pdo, $rastreador_id) {
+	$Audit = (new Auditoria())->add('rastreador', 'toggleRastreadorAtivo', ["id" => $rastreador_id], null, false);
 	if (!validarIdPositivo($rastreador_id)) {
 		return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
 	}
@@ -55,6 +64,8 @@ function toggleRastreadorAtivo($pdo, $rastreador_id) {
 		$rastreador = $stmt->fetch(PDO::FETCH_ASSOC);
 		$pdo->commit();
 
+		$Audit->depois($rastreador);
+		$Audit->sucesso(true);
 		return ["success" => true, "rastreador" => $rastreador];
 	} catch (Exception $e) {
 		if ($pdo?->inTransaction()) {
@@ -66,6 +77,7 @@ function toggleRastreadorAtivo($pdo, $rastreador_id) {
 }
 
 function adicionarRastreador($pdo, $hardware, $token, $token_publico, $senha, $obs, $status, $dono_id) {
+	$Audit = (new Auditoria())->add('rastreador', 'adicionarRastreador', null, ["hardware" => $hardware, "token_publico" => $token_publico, "dono_id" => $dono_id], false);
 	$hardware = normalizarFiltroTexto($hardware);
 	$token = normalizarFiltroTexto($token);
 	$token_publico = normalizarFiltroTexto($token_publico);
@@ -126,6 +138,8 @@ function adicionarRastreador($pdo, $hardware, $token, $token_publico, $senha, $o
 
 		$pdo->commit();
 
+		$Audit->depois(["rastreador" => $rastreador]);
+		$Audit->sucesso(true);
 		return ["success" => true, "rastreador" => $rastreador];
 	} catch (Exception $e) {
 		if ($pdo?->inTransaction()) {

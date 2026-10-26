@@ -12,6 +12,7 @@ function validarUsuarioPodeVerLocOcultaDoRastreador($pdo, $usuario_id, $rastread
 }
 
 function getLocOcultaDoRastreador($credenciais, $rastreador_id, $filter) {
+    $Audit = (new Auditoria())->add('intervalo_loc_oculta|vinc_loc_oculta_usuario_rastreador', 'getLocOcultaDoRastreador', null, ["rastreador_id" => $rastreador_id, "filtro" => $filter], false);
     if (!validarIdPositivo($rastreador_id)) {
         return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
     }
@@ -56,6 +57,8 @@ function getLocOcultaDoRastreador($credenciais, $rastreador_id, $filter) {
             }
         }
 
+        $Audit->depois(["qnt_localizacoes" => count($localizacoes_ocultas)]);
+        $Audit->sucesso(true);
         return ["success" => true, "localizacoes_ocultas" => $localizacoes_ocultas];
     } catch (Exception $e) {
         return ["error" => errorMessage("Erro ao buscar ouvintes do rastreador", $e->getMessage())];
@@ -63,6 +66,7 @@ function getLocOcultaDoRastreador($credenciais, $rastreador_id, $filter) {
 }
 
 function createLocOcultaDoRastreador($credenciais, $rastreador_id, $id_inicial, $id_final, $data_inicial, $data_final, $identificacao) {
+    $Audit = (new Auditoria())->add('intervalo_loc_oculta', 'createLocOcultaDoRastreador', null, ["rastreador_id" => $rastreador_id, "identificacao" => $identificacao], false);
     if (!validarIdPositivo($rastreador_id)) {
         return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
     }
@@ -96,6 +100,8 @@ function createLocOcultaDoRastreador($credenciais, $rastreador_id, $id_inicial, 
         $pdo->commit();
         $loc_oculta = $stmt->fetch(PDO::FETCH_ASSOC);
         $loc_oculta["ouvintes"] = [];
+        $Audit->depois(["localizacao_oculta" => $loc_oculta]);
+        $Audit->sucesso(true);
         return ["success" => true, "localizacao_oculta" => $loc_oculta];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -107,6 +113,7 @@ function createLocOcultaDoRastreador($credenciais, $rastreador_id, $id_inicial, 
 
 
 function updateLocOcultaDoRastreador($credenciais, $rastreador_id, $lococulta_id, $array_caracteristicas_novosvalores) {
+    $Audit = (new Auditoria())->add('intervalo_loc_oculta', 'updateLocOcultaDoRastreador', ["id" => $lococulta_id], $array_caracteristicas_novosvalores, false);
     if (!validarIdPositivo($rastreador_id)) {
         return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
     }
@@ -165,8 +172,11 @@ function updateLocOcultaDoRastreador($credenciais, $rastreador_id, $lococulta_id
             return ["error" => errorMessage("Erro ao atualizar localização oculta do rastreador", "Numero de linhas afetadas diferente de 1: " . $rcount)];
         }
 
+        $localizacao_oculta = $stmt->fetch(PDO::FETCH_ASSOC);
         $pdo->commit();
-        return ["success" => true, "localizacao_oculta" => $stmt->fetch(PDO::FETCH_ASSOC)];
+        $Audit->depois(["localizacao_oculta" => $localizacao_oculta]);
+        $Audit->sucesso(true);
+        return ["success" => true, "localizacao_oculta" => $localizacao_oculta];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
@@ -177,6 +187,7 @@ function updateLocOcultaDoRastreador($credenciais, $rastreador_id, $lococulta_id
 
 
 function deleteLocOcultaDoRastreador($credenciais, $rastreador_id, $lococulta_ids) {
+    $Audit = (new Auditoria())->add('intervalo_loc_oculta|vinc_loc_oculta_usuario_rastreador', 'deleteLocOcultaDoRastreador', ["rastreador_id" => $rastreador_id, "ids" => $lococulta_ids], null, false);
     if (!validarIdPositivo($rastreador_id)) {
         return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
     }
@@ -210,6 +221,8 @@ function deleteLocOcultaDoRastreador($credenciais, $rastreador_id, $lococulta_id
         }
 
         $pdo->commit();
+        $Audit->depois(["ids" => $lococulta_ids]);
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -220,6 +233,7 @@ function deleteLocOcultaDoRastreador($credenciais, $rastreador_id, $lococulta_id
 }
 
 function getOuvintesDisponiveis($credenciais, $rastreador_id) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'getOuvintesDisponiveis', null, ["rastreador_id" => $rastreador_id], false);
     if (!validarIdPositivo($rastreador_id)) {
         return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
     }
@@ -239,6 +253,8 @@ function getOuvintesDisponiveis($credenciais, $rastreador_id) {
         ]);
         $ouvintes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $Audit->depois(["qnt_ouvintes" => count($ouvintes)]);
+        $Audit->sucesso(true);
         return ["success" => true, "ouvintes" => $ouvintes];
     } catch (Exception $e) {
         return ["error" => errorMessage("Erro ao buscar ouvintes do rastreador", $e->getMessage())];
@@ -246,6 +262,7 @@ function getOuvintesDisponiveis($credenciais, $rastreador_id) {
 }
 
 function setOuvintesLocOculta($credenciais, $lococulta_ids, $usuario_rastreador_ids, $rastreador_id) {
+    $Audit = (new Auditoria())->add('vinc_loc_oculta_usuario_rastreador', 'setOuvintesLocOculta', null, ["lococulta_ids" => $lococulta_ids, "usuario_rastreador_ids" => $usuario_rastreador_ids, "rastreador_id" => $rastreador_id], false);
     if (!validarIdPositivo($rastreador_id)) {
         return ["error" => errorMessage("Id de rastreador inválido", $rastreador_id)];
     }
@@ -289,6 +306,8 @@ function setOuvintesLocOculta($credenciais, $lococulta_ids, $usuario_rastreador_
         $ouvintes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $pdo->commit();
+        $Audit->depois(["qnt_ouvintes" => count($ouvintes)]);
+        $Audit->sucesso(true);
         return ["success" => true, "ouvintes" => $ouvintes];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {

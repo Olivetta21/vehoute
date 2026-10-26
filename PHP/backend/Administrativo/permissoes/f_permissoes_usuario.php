@@ -1,6 +1,7 @@
 <?php
 
 function getPermissoesUsuario($credenciais, $agrupar_por, $filter) {
+    $Audit = (new Auditoria())->add('vinc_perm_usuario', 'getPermissoesUsuario', null, ["agrupar_por" => $agrupar_por, "filtro" => $filter], false);
     $pdo = $credenciais["pdo"];
 
     function findIndexEntity($agrupamento, $id, $is_user) {
@@ -155,11 +156,14 @@ function getPermissoesUsuario($credenciais, $agrupar_por, $filter) {
     }
 
 
+    $Audit->depois(["qnt_entidades" => count($agrupamento)]);
+    $Audit->sucesso(true);
     return ["success" => true, "agrupamento" => $agrupamento];    
 }
 
 
 function getGrupos($credenciais, $grupo_nome) {
+    $Audit = (new Auditoria())->add('grupo_usuario|vinc_grupo_usuario|vinc_perm_usuario', 'getGrupos', null, ["nome" => $grupo_nome], false);
     $pdo = $credenciais["pdo"];
 
     $sql = "select id from grupo_usuario where nome ilike :grupo_nome";
@@ -207,10 +211,13 @@ function getGrupos($credenciais, $grupo_nome) {
         ];
     }
 
+    $Audit->depois(["qnt_grupos" => count($grupos)]);
+    $Audit->sucesso(true);
     return ["success" => true, "grupos" => $grupos];
 }
 
 function addGrupo($credenciais, $novo_grupo) {
+    $Audit = (new Auditoria())->add('grupo_usuario', 'addGrupo', null, ["nome" => $novo_grupo], false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -226,6 +233,8 @@ function addGrupo($credenciais, $novo_grupo) {
         }
 
         $pdo->commit();
+        $Audit->depois(["id" => $grupo_id, "nome" => $novo_grupo]);
+        $Audit->sucesso(true);
         return ["success" => true, "grupo" => ["id" => $grupo_id, "nome" => $novo_grupo]];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -236,6 +245,7 @@ function addGrupo($credenciais, $novo_grupo) {
 }
 
 function deleteGrupo($credenciais, $grupo_id) {
+    $Audit = (new Auditoria())->add('grupo_usuario|vinc_grupo_usuario|vinc_perm_usuario', 'deleteGrupo', ["id" => $grupo_id], null, false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -258,6 +268,7 @@ function deleteGrupo($credenciais, $grupo_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -268,6 +279,7 @@ function deleteGrupo($credenciais, $grupo_id) {
 }
 
 function addUsuarioNoGrupo($credenciais, $usuario_id, $grupo_id) {
+    $Audit = (new Auditoria())->add('vinc_grupo_usuario', 'addUsuarioNoGrupo', null, ["usuario_id" => $usuario_id, "grupo_id" => $grupo_id], false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -282,6 +294,7 @@ function addUsuarioNoGrupo($credenciais, $usuario_id, $grupo_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -292,6 +305,7 @@ function addUsuarioNoGrupo($credenciais, $usuario_id, $grupo_id) {
 }
 
 function removerUsuarioDoGrupo($credenciais, $usuario_id, $grupo_id) {
+    $Audit = (new Auditoria())->add('vinc_grupo_usuario', 'removerUsuarioDoGrupo', ["usuario_id" => $usuario_id, "grupo_id" => $grupo_id], null, false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -306,6 +320,7 @@ function removerUsuarioDoGrupo($credenciais, $usuario_id, $grupo_id) {
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -316,6 +331,7 @@ function removerUsuarioDoGrupo($credenciais, $usuario_id, $grupo_id) {
 }
 
 function searchGrupos($credenciais, $group_name) {
+    $Audit = (new Auditoria())->add('grupo_usuario', 'searchGrupos', null, ["nome" => $group_name], false);
     $pdo = $credenciais["pdo"];
 
     $sql = "select id, nome from grupo_usuario where nome ilike :group_name";
@@ -323,10 +339,13 @@ function searchGrupos($credenciais, $group_name) {
     $stmt->execute([":group_name" => "%$group_name%"]);
     $grupos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $Audit->depois(["qnt_grupos" => count($grupos)]);
+    $Audit->sucesso(true);
     return ["success" => true, "grupos" => $grupos];
 }
 
 function searchPermissoes($credenciais, $permissoes_name) {
+    $Audit = (new Auditoria())->add('permissao_usuario', 'searchPermissoes', null, ["nome" => $permissoes_name], false);
     $pdo = $credenciais["pdo"];
 
     $sql = "select id, nome from permissao_usuario where nome ilike :permissoes_name";
@@ -334,10 +353,13 @@ function searchPermissoes($credenciais, $permissoes_name) {
     $stmt->execute([":permissoes_name" => "%$permissoes_name%"]);
     $permissoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $Audit->depois(["qnt_permissoes" => count($permissoes)]);
+    $Audit->sucesso(true);
     return ["success" => true, "permissoes" => $permissoes];
 }
 
 function addVinculoPermissao($credenciais, $usuarioOuGrupoID, $is_user, $negado, $permissaoID) {
+    $Audit = (new Auditoria())->add('vinc_perm_usuario', 'addVinculoPermissao', null, ["entidade_id" => $usuarioOuGrupoID, "is_user" => $is_user, "permissao_id" => $permissaoID], false);
     $pdo = $credenciais["pdo"];
 
     $negado = $negado ? 1 : 0;
@@ -358,6 +380,7 @@ function addVinculoPermissao($credenciais, $usuarioOuGrupoID, $is_user, $negado,
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -368,6 +391,7 @@ function addVinculoPermissao($credenciais, $usuarioOuGrupoID, $is_user, $negado,
 }
 
 function removeVinculoPermissao($credenciais, $vinculo_id, $usuarioOuGrupoID, $is_user, $permissaoID) {
+    $Audit = (new Auditoria())->add('vinc_perm_usuario', 'removeVinculoPermissao', ["id" => $vinculo_id], null, false);
     $pdo = $credenciais["pdo"];
 
     try {
@@ -387,6 +411,7 @@ function removeVinculoPermissao($credenciais, $vinculo_id, $usuarioOuGrupoID, $i
         }
 
         $pdo->commit();
+        $Audit->sucesso(true);
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
