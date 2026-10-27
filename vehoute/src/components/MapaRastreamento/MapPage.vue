@@ -78,7 +78,12 @@ export default {
             console.error("Failed to initialize map");
             return;
         }
-
+        if (!MapPagina.already_confirmed_fullscreen && !document.fullscreenElement && confirm("Deseja entrar em tela cheia para melhor visualização do mapa?")) {
+            MapPagina.already_confirmed_fullscreen = true;
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        }
     },
     methods: {
         filtrarLocalizacoes() {
@@ -172,7 +177,7 @@ export default {
 
 <style scoped>
     #map-container {
-        height: calc(100vh - 100px);
+        height: calc(100dvh);
         width: calc(100vw - 40px);
         position: absolute;
     }
@@ -184,36 +189,43 @@ export default {
     }
 
     #map-buttons {
-        height: 100vh;
+        height: 100dvh;
         width: calc(100vw - 40px);
         position: absolute;
         pointer-events: none;
     }
 
     .buttons-container {
-        background-color: var(--colorD1);
-        color: var(--colorA4);
-        height: 100px;
-        width: 100%;
+        background-color: var(--colorD1-transparent);
+        color: var(--colorA1);
         position: absolute;
         left: 50%;
-        bottom: 0;
+        bottom: 2px;
         padding: 5px;
         transform: translateX(-50%);
         pointer-events: all;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         gap: 5px;
+        border-radius: 5px;
+        align-items: center;
+        width: calc(100% - 4px);
+        max-width: 540px;
+        overflow: auto;
+        scrollbar-width: none;
     }
 
     .tracker-info-buttons {
         display: flex;
-        justify-content: space-between;
+        justify-content: space-evenly;
+        flex-wrap: wrap;
+        gap: 2px;
     }
     .tracker-location-container, .filter-container {
         display: flex;
         flex-direction: column;
         justify-content: space-evenly;
+        gap: 2px;
     }
     .filter-container {
         align-items: flex-end;
@@ -221,30 +233,30 @@ export default {
 
     option {
         background-color: var(--colorD1);
-        color: var(--colorA4);
+        color: var(--colorA1);
     }
 
 
     .loc-navigation-buttons, .filter-container {
         display: flex;
         justify-content: space-evenly;
-        flex: 1;
     }
     .loc-navigation-buttons button {
         padding: 0;
-        width: 80px;
+        width: 50px;
+        height: 50px;
         font-size: 1.2rem;
         background-color: unset;
-        color: var(--colorA4);
-        border: 1px solid var(--colorA4);
+        color: var(--colorA1);
+        border: 1px solid var(--colorA1);
         
     }
     
     input[type="date"],
     select {
-        border: 1px solid var(--colorA4);
+        border: 1px solid var(--colorA1);
         background: unset;
-        color: var(--colorA4);
+        color: var(--colorA1);
         padding: 1px;
         border-radius: 5px;
     }

@@ -16,6 +16,7 @@ export default class MapController {
                 return false;
             }
             console.log("Map already initialized");
+            window.dispatchEvent(new Event('resize'));
             return true;
         }
         MapApi.initializeMap(map_el_div);
@@ -24,6 +25,7 @@ export default class MapController {
             return false;
         }
         console.log("Map initialized");
+        window.dispatchEvent(new Event('resize'));
         return true
     }
 

@@ -20,6 +20,8 @@
     --colorC3: #1162E6;
     --colorC4: #0935f7;
     --colorD1: #3A4B66;
+
+    --colorD1-transparent: color-mix(in srgb, var(--colorD1) 50%, transparent);
 }
 
 

@@ -15,7 +15,7 @@ export default {
 
 .modal-window {
     position: fixed;
-    width: calc(100vw - 40px);
+    width: calc(100dvw - 40px);
     height: 100vh;
     background-color: #0000007a;
     z-index: 30;

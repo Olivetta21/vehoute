@@ -7,6 +7,7 @@ import Gatekeeper from "../GateKeeper";
 import MainWS from "../Websockets/Main_Websocket";
 
 export default class Map {
+    static already_confirmed_fullscreen = false;
 
     static _tracker_id_to_start_viewing = null;
     static _tracker_selected_id = ref(null);

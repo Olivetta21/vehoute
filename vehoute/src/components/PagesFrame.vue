@@ -11,7 +11,22 @@
             </div>
 
             <div class="sidebar-nav">
-                <div class="nav-section" v-if="!isCollapsed">Acesso rápido</div>
+                <div class="nav-section" v-if="!isCollapsed">Acesso rápido
+                    <svg v-if="!isFullscren" class="toggle-fullscreen-btn" @click="toggleFullscreen"
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"/>
+                        <polyline points="9 21 3 21 3 15"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/>
+                        <line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                    <svg v-else class="toggle-fullscreen-btn" @click="toggleFullscreen"
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="4 14 10 14 10 20"/>
+                        <polyline points="20 10 14 10 14 4"/>
+                        <line x1="14" y1="10" x2="21" y2="3"/>
+                        <line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                </div>
                 <ul class="nav-list">
                     <li v-for="item in menuItems" :key="item.id" 
                         class="nav-link" 
@@ -47,6 +62,7 @@ export default {
     },
     data() {
         return {
+            isFullscren: false,
             isCollapsed: false,
             menuItems: PagesRoutes.filter(route => route.sidebarIcon)
         }
@@ -60,6 +76,18 @@ export default {
         },
         isActive(item) {
             return this.$route.name === item.name;
+        },
+        toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                this.isFullscren = true;
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                    this.isFullscren = false;
+                });
+            } else {
+                document.exitFullscreen();
+                this.isFullscren = false;
+            }
         }
     }
 }
@@ -68,8 +96,8 @@ export default {
 <style scoped>
     #pagesframe {
         display: flex;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         overflow: hidden;
         background-color: var(--colorA1);
     }
@@ -80,7 +108,7 @@ export default {
         background-color: var(--colorD1);
         color: var(--colorA1);
         width: 260px;
-        height: 100vh;
+        height: 100%;
         display: flex;
         flex-direction: column;
         transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -236,5 +264,6 @@ export default {
         background-color: #f7f9fc;
         display: flex;
         flex-direction: column;
+        height: 100%;
     }
 </style>
