@@ -10,11 +10,11 @@ if ($params = getRequestValue("get")) {
 }
 
 if ($filter = getRequestValue("getSimpleTabelas", "is_string")) {
-    returnJson(getSimpleTabelasAuditoria($filter));
+    returnJson(getSimpleTabelasAuditoria($credenciais, $filter));
 }
 
-} catch (Exception $e) {
-    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
+} catch (Throwable $e) {
+    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage() . " - " . $e->getLine() . " - " . $e->getFile())]);
 }
 
 returnJson(["error"=>"invalid_request"]);

@@ -45,8 +45,8 @@ if ($permissao = getRequestValue("removeVinculoPermissao", "is_array")) {
     returnJson(removeVinculoPermissao($credenciais, $permissao['vinculo_id'], $permissao['usuarioOuGrupoID'], $permissao['is_user'], $permissao['permissaoID']));
 }
 
-} catch (Exception $e) {
-    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
+} catch (Throwable $e) {
+    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage() . " - " . $e->getLine() . " - " . $e->getFile())]);
 }
 
 returnJson(["error"=>"invalid_request"]);

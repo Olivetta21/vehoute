@@ -79,8 +79,8 @@ if ($ur_id = getRequestValue("deletar_ouvinte", "is_int")) {
 }
 
 
-} catch (Exception $e) {
-    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
+} catch (Throwable $e) {
+    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage() . " - " . $e->getLine() . " - " . $e->getFile())]);
 }
 
 returnJson(["error"=>"invalid_request"]);

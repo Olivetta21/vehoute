@@ -60,8 +60,8 @@ if ($set_ouvintes = getRequestValue("set_ouvintes", "is_array")) {
     returnJson(setOuvintesLocOculta($credenciais, $set_ouvintes["lococulta_ids"], $set_ouvintes["usuario_rastreador_ids"], $set_ouvintes["rastreador_id"]));
 }
 
-} catch (Exception $e) {
-    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
+} catch (Throwable $e) {
+    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage() . " - " . $e->getLine() . " - " . $e->getFile())]);
 }
 
 returnJson(["error"=>"invalid_request"]);

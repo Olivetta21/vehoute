@@ -3,11 +3,14 @@ require __DIR__ . "/../include_me.php";
 require __DIR__ . "/f_login.php";
 
 
+try {
+
 if (getRequestValue("logoff")) {
     resetAccessToken();
     returnJson(["logoff" => true]);
 }
-else if ($login_data = getRequestValue("login", "is_array")) {
+
+if ($login_data = getRequestValue("login", "is_array")) {
     $login = $login_data["login"];
     $senha = $login_data["senha"];
 
@@ -21,9 +24,11 @@ else if ($login_data = getRequestValue("login", "is_array")) {
 
     returnJson($result);
 }
-else if ($access_token = getRequestValue("access_token", "is_string")) {
+
+if ($access_token = getRequestValue("access_token", "is_string")) {
     returnJson(testAccessToken($access_token));
 }
-else {
-    returnJson(["error" => errorMessage("Dados inválidos", [$_POST, $_COOKIE, $_REQUEST])]);
+
+} catch (Throwable $e) {
+    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage() . " - " . $e->getLine() . " - " . $e->getFile())]);
 }
