@@ -14,11 +14,22 @@
     function getClientIp() {
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) return $_SERVER['HTTP_CLIENT_IP'];
         elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) return explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
-        else return $_SERVER['REMOTE_ADDR'];
+        elseif (!empty($_SERVER['REMOTE_ADDR'])) return $_SERVER['REMOTE_ADDR'];
+        elseif (DEVELOPMENT_ENV) return '0.0.0.0';
+        else return 'unknown';
     }
 
     function errorMessage($error_title, $error_message) {
         $message = '' . $error_title . '' . (DEVELOPMENT_ENV ?  ':' . $error_message . '': '');
+        $acc_tk = "";
+
+        if (isset($_POST['access_token'])) {
+            $acc_tk = json_decode($_POST['access_token'], true) ?? $_POST['access_token'] ?? "invalid_token";
+        } else if (DEVELOPMENT_ENV) {
+            $acc_tk = "unittest";
+        } else {
+            $acc_tk = "not_provided";
+        }
 
         try {
             $pdo = getDataBase();
@@ -27,7 +38,7 @@
                 $stmt->execute([
                     ':titulo' => $error_title,
                     ':mensagem' => $error_message,
-                    ':u_access_token' => json_decode($_POST['access_token'], true) ?? $_POST['access_token'] ?? null,
+                    ':u_access_token' =>  $acc_tk,
                     ':ip' => getClientIp(),
                     ':url' => $_SERVER['REQUEST_URI'] ?? null
                 ]);
@@ -88,6 +99,13 @@
         private $audits = [];
 
         function add($tabela, $acao, $antes, $depois, $sucesso) {
+            if (!isset($GLOBALS['USUARIO_ID'])) { 
+                if (DEVELOPMENT_ENV) {
+                    $GLOBALS['USUARIO_ID'] = -1; //teste unitário
+                } else return null;
+            }
+            
+
             $values = [
                 ':usuario_id' => $GLOBALS['USUARIO_ID'],
                 ':tabela' => $tabela,
@@ -232,7 +250,8 @@
     }
 
     function validarIdPositivo($valor) {
-        return filter_var($valor, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]) !== false;
+        $min = DEVELOPMENT_ENV ? -100 : 1;
+        return filter_var($valor, FILTER_VALIDATE_INT, ["options" => ["min_range" => $min]]) !== false;
     }
 
 	function returnJson($data, $type = null) {

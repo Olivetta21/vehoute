@@ -19,8 +19,8 @@ create table legal_ident (
     created_at timestamp default now(),
     last_used timestamp default now(),
     FOREIGN KEY (tipo_id, regex) REFERENCES legal_ident_tipo(id, regex),
-    CONSTRAINT chk_identidade_match_regex CHECK (identidade ~ regex)
-    unique (tipo_id, identidade),
+    CONSTRAINT chk_identidade_match_regex CHECK (identidade ~ regex),
+    unique (tipo_id, identidade)
 );
 
 create table usuario_cadastrando (
@@ -251,7 +251,7 @@ create table vinc_grupo_rastreador (
     id serial primary key,
     rastreador_id integer not null references rastreador(id),
     grupo_id integer not null references grupo_rastreador(id),
-    unique (rastreador_id, grupo_id);
+    unique (rastreador_id, grupo_id)
 );
 create table vinc_perm_rastreador (
     id serial primary key,
@@ -825,46 +825,76 @@ CREATE TABLE audit_log (
 );
 
 
-insert into legal_ident_tipo (descricao, regex) values ('Geral', '.+');
-insert into legal_ident (tipo_id, identidade) values (1, '123456789');
 
-insert into usuario (nome, login, senha, legal_ident_id) values ('Ivan Luiz', 'donoexemplo', '123', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Kelvin Garcete', 'ouvinteexemplo', '123', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Maria Silva', 'mariasilva', 'senha456', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Carlos Pereira', 'carlospereira', 'senha789', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Ana Oliveira', 'anaoliveira', 'senha321', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Kaio Guerreiro', 'kaioguerreiro', 'senha321', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Matheus', 'matheus', 'senha321', 1); --7
-insert into usuario (nome, login, senha, legal_ident_id) values ('Guilherme', 'guilherme', 'senha321', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Rafael', 'rafael', 'senha321', 1);
-insert into usuario (nome, login, senha, legal_ident_id) values ('Caio Durks', 'caiodurks', 'senha321', 1);
+insert into legal_ident_tipo (id, descricao, regex) values (1, 'Geral', '.+');
+insert into legal_ident_tipo (id, descricao, regex) values (2, 'CPF', '^[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}$');
+insert into legal_ident (id, tipo_id, regex, identidade) values (1, 1, '.+', '123456789');
+insert into legal_ident (id, tipo_id, regex, identidade) values (2, 2, '^[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}$', '000.000.000-00');
 
-insert into usuario_access_token (token, usuario_id, expires_at) values ('tk1', 1, now() + interval '10 years');
-insert into usuario_access_token (token, usuario_id, expires_at) values ('tk2', 2, now() + interval '5 seconds');
+insert into classe_configuracao (id, nome) values (-1, 'Testes');
+insert into classe_configuracao (nome) values ('Notificações');
+insert into classe_configuracao (nome) values ('Outros Usuarios e Rastreadores');
 
-insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Exemplo', 'token123', 'token_publico123', 'senha123', 'Observações sobre o rastreador', 55, 1);
+insert into configuracao (id, classe_id, nome, var_type, padrao) values
+(-1, -1, 'Teste Boolean', 'boolean', 'false'),
+(-2, -1, 'Teste Text', 'text', '.'),
+(-3, -1, 'Teste integer', 'integer', '0'),
+(-4, -1, 'Teste double precision', 'double precision', '0.0'),
+(-5, -1, 'Teste real', 'real', '0.0'),
+(-6, -1, 'teste bigint', 'bigint', '0');
+
+insert into configuracao (classe_id, nome, var_type, padrao) values
+(1, 'Receber notificação por Email', 'boolean', 'false'),
+(1, 'Receber notificação PopUp', 'boolean', 'false'),
+(2, 'Usuarios podem pedir para rastrear seu rastreador', 'boolean', 'false'),
+(2, 'Usuarios podem te convidar a rastrear um rastreador', 'boolean', 'false');
+
+
+insert into usuario (id, nome, login, senha, legal_ident_id, email) values (-1, 'Usuario Unit Test1', 'usuariounittest1', crypt('Aa1#senha123', gen_salt('bf')), 1, 'usuariounittest1@com.com.com');
+insert into usuario (id, nome, login, senha, legal_ident_id, email) values (-2, 'Usuario Unit Test2', 'usuariounittest2', crypt('Aa1#senha123', gen_salt('bf')), 2, 'usuariounittest2@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Ivan Luiz', 'donoexemplo', 'noncrypted', 1, 'ivanluiz@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Kelvin Garcete', 'ouvinteexemplo', 'noncrypted', 1, 'kelvingarcete@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Maria Silva', 'mariasilva', 'noncrypted', 1, 'mariasilva@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Carlos Pereira', 'carlospereira', 'noncrypted', 1, 'carlospereira@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Ana Oliveira', 'anaoliveira', 'noncrypted', 1, 'anaoliveira@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Kaio Guerreiro', 'kaioguerreiro', 'noncrypted', 1, 'kaioguerreiro@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Matheus', 'matheus', 'noncrypted', 1, 'matheus@com.com.com'); --7
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Guilherme', 'guilherme', 'noncrypted', 1, 'guilherme@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Rafael', 'rafael', 'noncrypted', 1, 'rafael@com.com.com');
+insert into usuario (nome, login, senha, legal_ident_id, email) values ('Caio Durks', 'caiodurks', 'noncrypted', 1, 'caiodurks@com.com.com');
+
+insert into usuario_access_token (token, usuario_id, expires_at) values ('tk1', -1, now() + interval '10 years');
+insert into usuario_access_token (token, usuario_id, expires_at) values ('tk2', -2, now() + interval '5 seconds');
+
+insert into rastreador (id, hardware, token, token_publico, senha, obs, status, dono_id) values (-1, 'Rastreador Unit Test1', 'tokenunit1', 'token_publicounit1', 'senha123', 'Observações sobre o rastreador', 1, -1);
+insert into rastreador (id, hardware, token, token_publico, senha, obs, status, dono_id) values (-2, 'Rastreador Unit Test2', 'tokenunit2', 'token_publicounit2', 'senha123', 'Observações sobre o rastreador', 1, -2);
+insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Exemplo', 'token123', 'token_publico123', 'senha123', 'Observações sobre o rastreador', 1, 1);
 insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Alpha', 'tokenAlpha123', 'tokenPublicoAlpha123', 'senhaAlpha123', 'Rastreador de teste', 1, 2);
 insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Beta', 'tokenBeta456', 'tokenPublicoBeta456', 'senhaBeta456', 'Monitoramento em tempo real', 2, 3);
 insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Gamma', 'tokenGamma789', 'tokenPublicoGamma789', 'senhaGamma789', 'Acompanhamento de veículos', 2, 4);
 insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id) values ('Rastreador Charlie', 'tokenCharlie789', 'tokenPublicoCharlie789', 'senhaCharlie789', 'Acompanhamento de veículos', 2, 4);
 
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (1, 1, 'Meu Exemplo', 44);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (2, 1, 'Rastreador Exemplo do ivan', 44);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (2, 2, 'Meu Alpha', 12);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (1, 2, 'Rastreador Alpha do kelvin', 12);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (3, 3, 'Meu Beta', 10);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (4, 2, 'Rastreador Alpha Kervins', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (4, 4, 'Meu Gamma', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (6, 1, 'R Exe. Ivan', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (6, 2, 'R alpha. kelvin', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (6, 3, 'R beta. maria', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (1, 3, 'iR beta. maria', 9); --11
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (2, 3, 'kR beta. maria', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (7, 3, 'mR beta. maria', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (8, 3, 'gR beta. maria', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (9, 3, 'rR beta. maria', 9);
-insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (10, 3, 'cR beta. maria', 9);
+insert into usuario_rastreador (id, usuario_id, rastreador_id, nome, status) values (-1, -1, -1, 'Meu UnitTest', 1);
+insert into usuario_rastreador (id, usuario_id, rastreador_id, nome, status) values (-2, -1, -2, 'UnitTest do 2', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (1, 1, 'Meu Exemplo', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (2, 1, 'Rastreador Exemplo do ivan', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (2, 2, 'Meu Alpha', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (1, 2, 'Rastreador Alpha do kelvin', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (3, 3, 'Meu Beta', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (4, 2, 'Rastreador Alpha Kervins', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (4, 4, 'Meu Gamma', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (6, 1, 'R Exe. Ivan', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (6, 2, 'R alpha. kelvin', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (6, 3, 'R beta. maria', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (1, 3, 'iR beta. maria', 1); --11
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (2, 3, 'kR beta. maria', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (7, 3, 'mR beta. maria', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (8, 3, 'gR beta. maria', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (9, 3, 'rR beta. maria', 1);
+insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (10, 3, 'cR beta. maria', 1);
 
+insert into localizacao (id, rastreador_id, lat, lng, data) values (-1, -1, -23.55052, -46.633308, '2024-10-25 10:00:00');
+insert into localizacao (id, rastreador_id, lat, lng, data) values (-2, -2, -23.55052, -46.633308, '2024-10-25 10:00:00');
 insert into localizacao (rastreador_id, lat, lng, data) values (1, -23.55052, -46.633308, '2024-10-25 10:00:00');
 insert into localizacao (rastreador_id, lat, lng, data) values (1, -23.55052, -46.633308, '2024-11-01 10:00:00');
 insert into localizacao (rastreador_id, lat, lng, data) values (1, -23.55100, -46.634000, '2024-11-06 11:00:00');
@@ -916,6 +946,8 @@ insert into localizacao (rastreador_id, lat, lng, data) values (5, -23.55052, -4
 insert into localizacao (rastreador_id, lat, lng, data) values (5, -23.55052, -46.633308, '2024-12-31 10:30:00');
 insert into localizacao (rastreador_id, lat, lng, data) values (5, -23.55052, -46.633308, '2025-01-05 10:30:00');--
 
+insert into intervalo_loc_oculta (id, rastreador_id, identificacao, id_inicial, id_final) values (-1, -1, 'uintA', 2, 3);
+insert into intervalo_loc_oculta (id, rastreador_id, identificacao, data_inicial, data_final) values (-2, -1, 'udatB', '2024-12-01 00:00:00', '2024-12-31 23:59:59');
 insert into intervalo_loc_oculta (rastreador_id, identificacao, id_inicial, id_final) values     (1, 'intA', 2, 3);
 insert into intervalo_loc_oculta (rastreador_id, identificacao, data_inicial, data_final) values (2, 'intB', '2024-12-01 00:00:00', '2024-12-31 23:59:59');
 insert into intervalo_loc_oculta (rastreador_id, identificacao, data_inicial, data_final) values (2, 'intC', '2024-11-01 00:00:00', '2024-11-15 23:59:59');
@@ -923,13 +955,15 @@ insert into intervalo_loc_oculta (rastreador_id, identificacao, data_inicial, da
 insert into intervalo_loc_oculta (rastreador_id, identificacao, data_inicial, data_final) values (3, 'intE', '2024-12-01 00:00:00', '2024-12-15 23:59:59');
 insert into intervalo_loc_oculta (rastreador_id, identificacao, data_inicial, data_final) values (3, 'intF', '2024-12-05 00:00:00', '2024-12-10 23:59:59');
 
-insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, intervalo_loc_oculta_id) values (8, 1);
-insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, intervalo_loc_oculta_id) values (6, 2);
-insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, intervalo_loc_oculta_id) values (9, 3);
-insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, intervalo_loc_oculta_id) values (11, 4);
-insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, intervalo_loc_oculta_id) values (13, 5);
-insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, intervalo_loc_oculta_id) values (14, 5);
-insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, intervalo_loc_oculta_id) values (16, 6);
+insert into vinc_loc_oculta_usuario_rastreador (id, usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (-1, -1, -1, -1, -1);
+insert into vinc_loc_oculta_usuario_rastreador (id, usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (-2, -1, -1, -2, -1);
+insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (8, 1, 1, 1);
+insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (6, 2, 2, 2);
+insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (9, 2, 3, 2);
+insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (11, 3, 4, 3);
+insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (13, 3, 5, 3);
+insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (14, 3, 5, 3);
+insert into vinc_loc_oculta_usuario_rastreador (usuario_rastreador_id, usuario_rastreador_rastreador_id, intervalo_loc_oculta_id, intervalo_loc_oculta_rastreador_id) values (16, 3, 6, 3);
 
 
 insert into permissao_usuario (nome) values ('Login');
@@ -951,16 +985,26 @@ insert into permissao_rastreador (nome) values ('Resgistrável');
 insert into permissao_rastreador (nome) values ('Rastreável R.T');
 insert into permissao_rastreador (nome) values ('Rastreável');
 insert into permissao_rastreador (nome) values ('Ouvintes');
+insert into grupo_usuario (id, nome) values (-1, 'Unit Test Group1');
 insert into grupo_usuario (nome) values ('Grupo Usuario 1');
 insert into grupo_usuario (nome) values ('Grupo Usuario 2');
+insert into grupo_rastreador (id, nome) values (-1, 'Unit Test Group1');
 insert into grupo_rastreador (nome) values ('Grupo Rastreador A');
 insert into grupo_rastreador (nome) values ('Grupo Rastreador B');
+insert into vinc_grupo_usuario (id, usuario_id, grupo_id) values (-1, -1, -1);
+insert into vinc_grupo_usuario (id, usuario_id, grupo_id) values (-2, -2, -1);
 insert into vinc_grupo_usuario (usuario_id, grupo_id) values (1, 1); -- usuario 1 no grupo 1
 insert into vinc_grupo_usuario (usuario_id, grupo_id) values (1, 2); -- usuario 1 no grupo 2
 insert into vinc_grupo_usuario (usuario_id, grupo_id) values (3, 1); -- usuario 3 no grupo 1
 insert into vinc_grupo_usuario (usuario_id, grupo_id) values (3, 2); -- usuario 3 no grupo 2
 insert into vinc_grupo_usuario (usuario_id, grupo_id) values (5, 1); -- usuario 5 no grupo 1
+insert into vinc_grupo_rastreador (id, rastreador_id, grupo_id) values (-1, -1, 1);
+insert into vinc_grupo_rastreador (id, rastreador_id, grupo_id) values (-2, -2, 1);
 insert into vinc_grupo_rastreador (rastreador_id, grupo_id) values (1, 1); -- rastreador 1 no grupo 1
+
+insert into vinc_perm_usuario (id, grupo_id, perm_id, negado) values (-1, -1, 1, false);
+insert into vinc_perm_usuario (id, grupo_id, perm_id, negado) values (-2, -1, 3, false);
+insert into vinc_perm_usuario (id, grupo_id, perm_id, negado) values (-3, -1, 5, false);
 insert into vinc_perm_usuario (grupo_id, perm_id, negado) values (1, 1, false);
 insert into vinc_perm_usuario (grupo_id, perm_id, negado) values (1, 2, false);
 insert into vinc_perm_usuario (grupo_id, perm_id, negado) values (1, 3, false);
@@ -978,4 +1022,7 @@ insert into vinc_perm_usuario (usuario_id, perm_id, negado) values (5, 3, false)
 insert into vinc_perm_usuario (usuario_id, perm_id, negado) values (5, 4, false);
 insert into vinc_perm_usuario (usuario_id, perm_id, negado) values (5, 5, false);
 insert into vinc_perm_usuario (usuario_id, perm_id, negado) values (5, 6, false);
+insert into vinc_perm_rastreador (id, grupo_id, perm_id, negado) values (-1, -1, 1, false);
 insert into vinc_perm_rastreador (grupo_id, perm_id, negado) values (1, 1, false);
+
+

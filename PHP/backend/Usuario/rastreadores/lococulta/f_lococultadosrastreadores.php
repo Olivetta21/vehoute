@@ -129,8 +129,8 @@ function updateLocOcultaDoRastreador($credenciais, $rastreador_id, $lococulta_id
         return ["error" => errorMessage("Usuário não tem permissão para atualizar localizações ocultas do rastreador", $usuario_id . " - " . $rastreador_id)];
     }
 
-    if (!is_array($array_caracteristicas_novosvalores)) {
-        return ["error" => errorMessage("Array de características inválido", $array_caracteristicas_novosvalores)];
+    if (!is_array($array_caracteristicas_novosvalores) || count($array_caracteristicas_novosvalores) < 1) {
+        return ["error" => errorMessage("Array de características inválido", implode(", ", array_keys($array_caracteristicas_novosvalores)))];
     }
 
     $valid_caracteristicas = ["id_inicial", "id_final", "data_inicial", "data_final", "identificacao", "novos_ouvintes"];

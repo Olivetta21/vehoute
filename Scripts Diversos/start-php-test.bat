@@ -6,7 +6,7 @@ REM CONFIG
 set DEBUG_SCAN=0
 set INTERVAL=20
 set IGNORE_FILE=.watchignore
-set TEST_CMD=call "../PHP/php-sensitive/vendor/bin/phpunit.bat" "C:\SITE\DevProjs\Vehoute\PHP\testes"
+set TEST_CMD=call "../PHP/php-sensitive/vendor/bin/phpunit.bat" --display-warnings --display-skipped "C:\SITE\DevProjs\Vehoute\PHP\testes"
 
 REM Pastas monitoradas
 set WATCH_1=C:\SITE\DevProjs\Vehoute\PHP\backend

@@ -38,7 +38,7 @@ class RastreadoresDosUsuariosTest extends TestCase {
 			'nome' => $prefixo . ' ' . $sufixo,
 			'login' => 'login_' . $sufixo,
 			'senha' => 'Aa1#' . $sufixo,
-			'legal_ident_id' => 70,
+			'legal_ident_id' => 1,
 			'email' => 'temp_' . $sufixo . '@gmail.com'
 		]);
 		return ['id' => (int) $stmt->fetchColumn(), 'nome' => $prefixo . ' ' . $sufixo];
@@ -81,25 +81,25 @@ class RastreadoresDosUsuariosTest extends TestCase {
 
 	function test_get_rastreadores_do_usuario() {
 		$pdo = getDataBase();
-		$credenciais = ["pdo" => $pdo, "id" => 2];
-		$result = getRastreadoresDoUsuario($credenciais, 'Alpha');
+		$credenciais = ["pdo" => $pdo, "id" => -1];
+		$result = getRastreadoresDoUsuario($credenciais, 'Meu UnitTest');
 		$this->assertTrue($result['success']);
 		$this->assertIsArray($result['rastreadores']);
 
 		$this->assertEquals([[
-			'ur_id' => 3,
-			'ur_nome' => 'Meu Alpha',
-			'ur_usuario_id' => 2,
-			'ur_status' => 2,
+			'ur_id' => -1,
+			'ur_nome' => 'Meu UnitTest',
+			'ur_usuario_id' => -1,
+			'ur_status' => 1,
 			'ur_ativo' => true,
 			'ur_loc_temporeal' => true,
 			'ur_loc_salvos' => true,
-			'r_id' => 2,
-			'r_token_publico' => 'tokenPublicoAlpha123',
+			'r_id' => -1,
+			'r_token_publico' => 'token_publicounit1',
 			'r_status' => 1,
 			'r_ativo' => true,
-			'dono_id' => 2,
-			'dono_nome' => 'Kelvin Garcete'
+			'dono_id' => -1,
+			'dono_nome' => 'Usuario Unit Test1'
 		]], 
 		$result['rastreadores']
 		);
@@ -112,8 +112,8 @@ class RastreadoresDosUsuariosTest extends TestCase {
 
 	function test_check_rastreador_do_usuario() {
 		$pdo = getDataBase();
-		$credenciais = ["pdo" => $pdo, "id" => 2];
-		$result = checkRastreadorDoUsuario($credenciais, 'tokenPublicoAlpha123', '123');
+		$credenciais = ["pdo" => $pdo, "id" => -1];
+		$result = checkRastreadorDoUsuario($credenciais, 'token_publicounit1', 'senha123');
 		$this->assertIsArray($result);
 		$result_negativo = checkRastreadorDoUsuario($credenciais, 'tokenInvalido', 'senhaInvalida');
 		$this->assertArrayHasKey('error', $result_negativo);
@@ -121,37 +121,37 @@ class RastreadoresDosUsuariosTest extends TestCase {
 
 	function test_usuario_adiciona_um_rastreador() {
 		$pdo = getDataBase();
-		$credenciais = ["pdo" => $pdo, "id" => 2];
+		$credenciais = ["pdo" => $pdo, "id" => -2];
 		$uniqID = uniqid();
-		$result = usuarioAdicionaUmRastreador($credenciais, 24, 376, 'unittest', '123', 1, 'Teste ' . $uniqID);
-		$result_duplicado = usuarioAdicionaUmRastreador($credenciais, 24, 376, 'unittest', '123', 1, 'Teste ' . uniqid());
-		$this->assertEquals("Usuário já tem um rastreador com esse id:2 - 24", $result_duplicado['error']);
+		$result = usuarioAdicionaUmRastreador($credenciais, -1, -1, 'token_publicounit1', 'senha123', 1, 'Teste ' . $uniqID);
+		$result_duplicado = usuarioAdicionaUmRastreador($credenciais, -1, -1, 'token_publicounit1', 'senha123', 1, 'Teste ' . uniqid());
+		$this->assertEquals("Usuário já tem um rastreador com esse id:-2 - -1", $result_duplicado['error']);
 		if ($result !== null && isset($result['usuario_rastreador'])) {
 			$this->removerUsuarioRastreador($pdo, $result['usuario_rastreador']['ur_id']);
 		}
 		$this->assertEquals([
 			'ur_id' => $result['usuario_rastreador']['ur_id'],
 			'ur_nome' => "Teste $uniqID",
-			'ur_usuario_id' => 2,
+			'ur_usuario_id' => -2,
 			'ur_status' => 3,
 			'ur_ativo' => true,
 			'ur_loc_temporeal' => true,
 			'ur_loc_salvos' => true,
-			'r_id' => 24,
-			'r_token_publico' => 'unittest',
+			'r_id' => -1,
+			'r_token_publico' => 'token_publicounit1',
 			'r_status' => 1,
 			'r_ativo' => true,
-			'dono_id' => 376,
-			'dono_nome' => 'UsuarioFor UnitTest'
+			'dono_id' => -1,
+			'dono_nome' => 'Usuario Unit Test1'
 		], $result['usuario_rastreador']);
-		$result_negativo = usuarioAdicionaUmRastreador($credenciais, 999999, 3, 'token_fake', 'senha_fake', 2, 'Teste');
+		$result_negativo = usuarioAdicionaUmRastreador($credenciais, 999999, -1, 'token_fake', 'senha_fake', 2, 'Teste');
 		$this->assertThat($result_negativo, $this->logicalOr($this->isNull(), $this->arrayHasKey('error')));
 	}
 
 	function test_delete_usuario_rastreador() {
 		$pdo = getDataBase();
 		$temp_usuario = $this->criarUsuarioTemporario($pdo, 'Delete');
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 3, 'Del', 2);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Del', 2);
 		try {
 			$pdo->beginTransaction();
 			$result = deleteUsuarioRastreador($pdo, $temp_ur);
@@ -167,10 +167,10 @@ class RastreadoresDosUsuariosTest extends TestCase {
 		$pdo = getDataBase();
 		$temp_usuario = $this->criarUsuarioTemporario($pdo, 'Accept');
 		$credenciais = ["pdo" => $pdo, "id" => $temp_usuario['id']];
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 3, 'Prop', 4);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Prop', 4);
 		try {
 			$this->assertTrue(validarUsuarioCorretoForAcceptDecline($credenciais, $temp_ur));
-			$this->assertFalse(validarUsuarioCorretoForAcceptDecline(["pdo" => $pdo, "id" => 1], $temp_ur));
+			$this->assertFalse(validarUsuarioCorretoForAcceptDecline(["pdo" => $pdo, "id" => -1], $temp_ur));
 		} finally {
 			$this->removerUsuarioRastreador($pdo, $temp_ur);
 			$this->removerUsuario($pdo, $temp_usuario['id']);
@@ -181,7 +181,7 @@ class RastreadoresDosUsuariosTest extends TestCase {
 		$pdo = getDataBase();
 		$temp_usuario = $this->criarUsuarioTemporario($pdo, 'Aceita');
 		$credenciais = ["pdo" => $pdo, "id" => $temp_usuario['id']];
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 3, 'Prop', 4);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Prop', 4);
 		try {
 			$result = usuarioAceitaPropostaDeOuvinte($credenciais, $temp_ur);
 			$this->assertTrue($result['success']);
@@ -197,7 +197,7 @@ class RastreadoresDosUsuariosTest extends TestCase {
 		$pdo = getDataBase();
 		$temp_usuario = $this->criarUsuarioTemporario($pdo, 'Recusa');
 		$credenciais = ["pdo" => $pdo, "id" => $temp_usuario['id']];
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 3, 'Prop', 4);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Prop', 4);
 		try {
 			$result = usuarioRecusaPropostaDeOuvinte($credenciais, $temp_ur);
 			$this->assertTrue($result['success']);
@@ -211,11 +211,11 @@ class RastreadoresDosUsuariosTest extends TestCase {
 	function test_validar_usuario_correto_for_transferencia() {
 		$pdo = getDataBase();
 		$temp_rastreador = $this->criarRastreadorTemporario($pdo, 'Transfer', 3);
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, 2, $temp_rastreador['id'], 'Trans', 5);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, -2, $temp_rastreador['id'], 'Trans', 5);
 		$stmt = $pdo->prepare('update rastreador set status = 3 where id = :id');
 		$stmt->execute(['id' => $temp_rastreador['id']]);
 		try {
-			$rastreador_id = validarUsuarioCorretoForTransferencia(["pdo" => $pdo, "id" => 2], $temp_ur);
+			$rastreador_id = validarUsuarioCorretoForTransferencia(["pdo" => $pdo, "id" => -2], $temp_ur);
 			$this->assertEquals($temp_rastreador['id'], $rastreador_id);
 		} finally {
 			$this->removerUsuarioRastreador($pdo, $temp_ur);
@@ -226,11 +226,11 @@ class RastreadoresDosUsuariosTest extends TestCase {
 	function test_accept_transferencia_de_posse() {
 		$pdo = getDataBase();
 		$temp_rastreador = $this->criarRastreadorTemporario($pdo, 'Accept', 3);
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, 2, $temp_rastreador['id'], 'Acc', 5);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, -2, $temp_rastreador['id'], 'Acc', 5);
 		$stmt = $pdo->prepare('update rastreador set status = 3 where id = :id');
 		$stmt->execute(['id' => $temp_rastreador['id']]);
 		try {
-			$result = acceptTransferenciaDePosse(["pdo" => $pdo, "id" => 2], $temp_ur);
+			$result = acceptTransferenciaDePosse(["pdo" => $pdo, "id" => -2], $temp_ur);
 			$this->assertTrue($result['success']);
 			$this->assertSame('1', (string) $this->buscarStatusUsuarioRastreador($pdo, $temp_ur));
 		} finally {
@@ -243,11 +243,11 @@ class RastreadoresDosUsuariosTest extends TestCase {
 	function test_decline_transferencia_de_posse() {
 		$pdo = getDataBase();
 		$temp_rastreador = $this->criarRastreadorTemporario($pdo, 'Decline', 3);
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, 2, $temp_rastreador['id'], 'Dec', 5);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, -2, $temp_rastreador['id'], 'Dec', 5);
 		$stmt = $pdo->prepare('update rastreador set status = 3 where id = :id');
 		$stmt->execute(['id' => $temp_rastreador['id']]);
 		try {
-			$result = declineTransferenciaDePosse(["pdo" => $pdo, "id" => 2], $temp_ur);
+			$result = declineTransferenciaDePosse(["pdo" => $pdo, "id" => -2], $temp_ur);
 			$this->assertTrue($result['success']);
 			$this->assertSame('2', (string) $this->buscarStatusUsuarioRastreador($pdo, $temp_ur));
 		} finally {
@@ -261,10 +261,10 @@ class RastreadoresDosUsuariosTest extends TestCase {
 		$pdo = getDataBase();
 		$temp_usuario = $this->criarUsuarioTemporario($pdo, 'Ouvinte');
 		$credenciais = ["pdo" => $pdo, "id" => $temp_usuario['id']];
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 3, 'Ouv', 2);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Ouv', 2);
 		try {
 			$this->assertTrue(validarOuvinteCorretoForDeleteUR($credenciais, $temp_ur));
-			$this->assertFalse(validarOuvinteCorretoForDeleteUR(["pdo" => $pdo, "id" => 1], $temp_ur));
+			$this->assertFalse(validarOuvinteCorretoForDeleteUR(["pdo" => $pdo, "id" => -1], $temp_ur));
 		} finally {
 			$this->removerUsuarioRastreador($pdo, $temp_ur);
 			$this->removerUsuario($pdo, $temp_usuario['id']);
@@ -275,7 +275,7 @@ class RastreadoresDosUsuariosTest extends TestCase {
 		$pdo = getDataBase();
 		$temp_usuario = $this->criarUsuarioTemporario($pdo, 'Excluir');
 		$credenciais = ["pdo" => $pdo, "id" => $temp_usuario['id']];
-		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 3, 'Exc', 2);
+		$temp_ur = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Exc', 2);
 		try {
 			$result = excluirRastreadorDoOuvinte($credenciais, $temp_ur);
 			$this->assertTrue($result['success']);

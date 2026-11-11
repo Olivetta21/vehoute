@@ -13,15 +13,15 @@ class UsuariosDoSistemaTest extends TestCase {
 
         $usuario_2 = null;
         foreach ($result["usuarios"] as $usuario) {
-            if ($usuario["id"] == 2) {
+            if ($usuario["id"] == -2) {
                 $usuario_2 = $usuario;
                 break;
             }
         }
         $this->assertEquals([
-                "id"=>2,"adm"=>false,"nome"=>"Kelvin Garcete","ativo"=>true,
-                "email"=>"ouvinteexemplo@gmail.com","telefone"=>null,"legal_ident_id"=>1,"tipo_ident"=>1,
-                "identidade"=>"123456789","descricao_ident"=>"Geral","qnt_posse_rastr"=>1,"ouvinte_qnt_rastr"=>2
+                "id"=>-2,"adm"=>false,"nome"=>"Usuario Unit Test2","ativo"=>true,
+                "email"=>"usuariounittest2@com.com.com","telefone"=>null,"legal_ident_id"=>2,"tipo_ident"=>2,
+                "identidade"=>"000.000.000-00","descricao_ident"=>"CPF","qnt_posse_rastr"=>1,"ouvinte_qnt_rastr"=>0
             ],
             $usuario_2
         );
@@ -29,36 +29,36 @@ class UsuariosDoSistemaTest extends TestCase {
 
     function test_get_usuarios_por_nome() {
         $pdo = getDataBase();
-        $result = getUsuarios($pdo, 'Kelvin');
+        $result = getUsuarios($pdo, 'Usuario Unit Test');
 
         $this->assertTrue($result['success']);
-        $this->assertGreaterThanOrEqual(1, count($result['usuarios']));
+        $this->assertGreaterThanOrEqual(2, count($result['usuarios']));
     }
 
     function test_toggle_ativo_adm_e_adicionar_usuario() {
         $pdo = getDataBase();
 
-        $toggle_ativo = toggleUsuarioAtivo($pdo, 2);
+        $toggle_ativo = toggleUsuarioAtivo($pdo, -2);
         $this->assertTrue($toggle_ativo['success']);
         $this->assertFalse($toggle_ativo['usuario']['ativo']);
 
-        $toggle_ativo_volta = toggleUsuarioAtivo($pdo, 2);
+        $toggle_ativo_volta = toggleUsuarioAtivo($pdo, -2);
         $this->assertTrue($toggle_ativo_volta['success']);
         $this->assertTrue($toggle_ativo_volta['usuario']['ativo']);
 
-        $toggle_adm = toggleUsuarioAdm($pdo, 2);
+        $toggle_adm = toggleUsuarioAdm($pdo, -2);
         $this->assertTrue($toggle_adm['success']);
         $this->assertTrue($toggle_adm['usuario']['adm']);
 
-        $toggle_adm_volta = toggleUsuarioAdm($pdo, 2);
+        $toggle_adm_volta = toggleUsuarioAdm($pdo, -2);
         $this->assertTrue($toggle_adm_volta['success']);
         $this->assertFalse($toggle_adm_volta['usuario']['adm']);
 
         $novo_nome = 'Teste Admin';
         $novo_email = 'teste.admin.' . uniqid() . '@example.com.brasil';
-        $novo_identidade = '99887766';
+        $novo_identidade = '999.999.999-99';
 
-        $adicionado = adicionarUsuario($pdo, $novo_nome, $novo_email, $novo_identidade, 1, true);
+        $adicionado = adicionarUsuario($pdo, $novo_nome, $novo_email, $novo_identidade, 2, true);
         $this->assertTrue($adicionado['success']);
         $this->assertArrayHasKey('credenciais', $adicionado);
         $this->assertArrayHasKey('login', $adicionado['credenciais']);

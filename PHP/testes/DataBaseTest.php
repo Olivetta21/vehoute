@@ -6,7 +6,7 @@ class DataBaseTest extends TestCase {
     public function test_pegar_usuario_por_token() {
         $_POST['access_token'] = json_encode('tk1');
         $usuario = getCredentials();
-        $this->assertEquals(['id'=>1, 'nome'=>'Ivan Luiz'], array_intersect_key($usuario, ['id'=>1, 'nome'=>1]));
+        $this->assertEquals(['id'=>-1, 'nome'=>'Usuario Unit Test1'], array_intersect_key($usuario, ['id'=>-1, 'nome'=>1]));
         $this->assertInstanceOf(PDO::class, $usuario['pdo']);
     }
 }

@@ -6,8 +6,8 @@ require_once __DIR__ . '/../../backend/Login_Cadastro/f_login.php';
 class LoginTest extends TestCase {
 
     function test_fazer_login_sucesso() {
-        $login = 'donoexemplo';
-        $senha = '@Ivan123';
+        $login = 'usuariounittest1';
+        $senha = 'Aa1#senha123';
         $result = fazerLogin($login, $senha);
         $access_token = $result['usuario']['access_token'];
         $this->assertNotNull($access_token);
@@ -17,15 +17,15 @@ class LoginTest extends TestCase {
         }
         $result['usuario']['permissoes'] = $permissoes;
         $this->assertEquals(
-            ["success"=> true, "usuario"=>["id"=>1,"nome"=>"Ivan Luiz","login"=>"donoexemplo","access_token"=>$access_token,"permissoes"=>$permissoes]],
+            ["success"=> true, "usuario"=>["id"=>-1,"nome"=>"Usuario Unit Test1","login"=>"usuariounittest1","access_token"=>$access_token,"permissoes"=>$permissoes]],
             $result
         );
     }
 
     function test_fazer_login_falha() {
-        $result = fazerLogin("donoexemplo","senhaerrada");
+        $result = fazerLogin("usuariounittest1","senhaerrada");
         $this->assertEquals(
-            ["error"=>"Usuario não encontrado:login=donoexemplo"],
+            ["error"=>"Usuario não encontrado:login=usuariounittest1"],
             $result
         );
     }
@@ -39,7 +39,7 @@ class LoginTest extends TestCase {
         }
         $result['usuario']['permissoes'] = $permissoes;
         $this->assertEquals(
-            ["success"=> true, "usuario"=>["id"=>1,"nome"=>"Ivan Luiz","login"=>"donoexemplo","access_token"=>"tk1","permissoes"=>$permissoes]],
+            ["success"=> true, "usuario"=>["id"=>-1,"nome"=>"Usuario Unit Test1","login"=>"usuariounittest1","access_token"=>"tk1","permissoes"=>$permissoes]],
             $result
         );   
     }

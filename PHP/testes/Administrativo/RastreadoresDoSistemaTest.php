@@ -6,21 +6,21 @@ require_once __DIR__ . '/../../backend/Administrativo/rastreadores/f_rastreadore
 class RastreadoresDoSistemaTest extends TestCase {
     function test_get_rastreadores() {
         $pdo = getDataBase();
-        $result = getRastreadores($pdo, 'token_publico123');
+        $result = getRastreadores($pdo, 'token_publicounit1');
 
         $this->assertEquals(true, $result["success"]);
         $this->assertIsArray($result["rastreadores"]);
 
         $rastreador_1 = null;
         foreach ($result["rastreadores"] as $rastreador) {
-            if ($rastreador["id"] == 1) {
+            if ($rastreador["id"] == -1) {
                 $rastreador_1 = $rastreador;
                 break;
             }
         }
         $this->assertEquals([
-                "id"=>1,"hardware"=>"Rastreador Exemplo","token"=>"23456789abcdef0123456789abcdef01","token_publico"=>"token_publico123",
-                "obs"=>'Observações sobre o rastreador',"status"=>1,"ativo"=>true,"u_id"=>1,"nome"=>"Ivan Luiz","qnto"=>2
+                "id"=>-1,"hardware"=>"Rastreador Unit Test1","token"=>"tokenunit1","token_publico"=>"token_publicounit1",
+                "obs"=>'Observações sobre o rastreador',"status"=>1,"ativo"=>true,"u_id"=>-1,"nome"=>"Usuario Unit Test1","qnto"=>1
             ],
             $rastreador_1
         );
@@ -29,11 +29,11 @@ class RastreadoresDoSistemaTest extends TestCase {
     function test_toggle_ativo_rastreador() {
         $pdo = getDataBase();
 
-        $toggle_ativo = toggleRastreadorAtivo($pdo, 1);
+        $toggle_ativo = toggleRastreadorAtivo($pdo, -1);
         $this->assertTrue($toggle_ativo['success']);
         $this->assertFalse($toggle_ativo['rastreador']['ativo']);
 
-        $toggle_ativo_volta = toggleRastreadorAtivo($pdo, 1);
+        $toggle_ativo_volta = toggleRastreadorAtivo($pdo, -1);
         $this->assertTrue($toggle_ativo_volta['success']);
         $this->assertTrue($toggle_ativo_volta['rastreador']['ativo']);
     }
@@ -47,7 +47,7 @@ class RastreadoresDoSistemaTest extends TestCase {
         $nova_senha = "senha_teste_" . uniqid();
         $nova_obs = "Observações sobre o rastreador teste";
         $novo_status = 55;
-        $novo_dono_id = 1;
+        $novo_dono_id = -1;
 
         $result_add = adicionarRastreador($pdo, $novo_hardware, $novo_token, $novo_token_publico, $nova_senha, $nova_obs, $novo_status, $novo_dono_id);
         $this->assertTrue($result_add['success']);
@@ -66,7 +66,7 @@ class RastreadoresDoSistemaTest extends TestCase {
         }
         $this->assertEquals([
                 "id"=>$result_add['rastreador']['id'],"hardware"=>$novo_hardware,"token"=>$novo_token,"token_publico"=>$novo_token_publico,
-                "obs"=>$nova_obs,"status"=>$novo_status,"ativo"=>true,"u_id"=>$novo_dono_id,"nome"=>"Ivan Luiz","qnto"=>0
+                "obs"=>$nova_obs,"status"=>$novo_status,"ativo"=>true,"u_id"=>$novo_dono_id,"nome"=>"Usuario Unit Test1","qnto"=>0
             ],
             $rastreador_novo
         );

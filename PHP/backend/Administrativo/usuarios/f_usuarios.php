@@ -181,7 +181,7 @@ function adicionarUsuario($pdo, $nome, $email, $identidade, $tipo_ident, $adm = 
 
         $senha = gerarSenhaUsuario();
 
-        $stmt = $pdo->prepare("insert into legal_ident (tipo_id, regex, identidade) values (:tipo_ident, :regex, :identidade) returning id");
+        $stmt = $pdo->prepare("insert into legal_ident (tipo_id, regex, identidade) values (:tipo_ident, :regex, :identidade) on conflict (tipo_id, identidade) DO UPDATE SET last_used = NOW() returning id");
         $stmt->execute([
             "tipo_ident" => $tipo_ident,
             "regex" => $regex,

@@ -59,7 +59,9 @@ class CadastroTest extends TestCase {
             "11999999999",
             "Testelogin",
             "senha123A#",
-            $otp
+            $otp,
+            'identidade123',
+            1
         );
 
         $this->assertEquals(["success"=>true], $finalisar_result);
@@ -80,6 +82,12 @@ class CadastroTest extends TestCase {
         $stmt->execute($users);
 
         $this->assertGreaterThan(0 , $stmt->rowCount());
+    }
+
+    function test_get_simple_legal_ident_tipo() {
+        $result = getSimpleLegalIdentTipoCadastro();
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('success', $result);
     }
 
 

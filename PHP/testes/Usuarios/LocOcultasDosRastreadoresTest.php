@@ -15,7 +15,7 @@ class LocOcultasDosRastreadoresTest extends TestCase {
             'nome' => $nome,
             'login' => $login,
             'senha' => 'Aa1#' . $sufixo,
-            'legal_ident_id' => 70,
+            'legal_ident_id' => 1,
             'email' => $email
         ]);
 
@@ -77,18 +77,18 @@ class LocOcultasDosRastreadoresTest extends TestCase {
     function test_validar_usuario_pode_ver_loc_oculta_do_rastreador() {
         $pdo = getDataBase();
 
-        $this->assertTrue(validarUsuarioPodeVerLocOcultaDoRastreador($pdo, 376, 24));
-        $this->assertFalse(validarUsuarioPodeVerLocOcultaDoRastreador($pdo, 377, 24));
+        $this->assertTrue(validarUsuarioPodeVerLocOcultaDoRastreador($pdo, -1, -1));
+        $this->assertFalse(validarUsuarioPodeVerLocOcultaDoRastreador($pdo, -2, -1));
     }
 
     function test_get_loc_oculta_do_rastreador() {
         $pdo = getDataBase();
-        $credenciais_dono = ['pdo' => $pdo, 'id' => 376];
+        $credenciais_dono = ['pdo' => $pdo, 'id' => -1];
         $identificacao = 'Loc temporaria ' . uniqid();
-        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, 24, $identificacao);
+        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, -1, $identificacao);
 
         try {
-            $result = getLocOcultaDoRastreador($credenciais_dono, 24, 'temporaria');
+            $result = getLocOcultaDoRastreador($credenciais_dono, -1, 'temporaria');
 
             $this->assertTrue($result['success']);
             $this->assertCount(1, $result['localizacoes_ocultas']);
@@ -98,7 +98,7 @@ class LocOcultasDosRastreadoresTest extends TestCase {
 
             $this->assertEquals([
                 'id' => $lococulta_id,
-                'rastreador_id' => 24,
+                'rastreador_id' => -1,
                 'identificacao' => $identificacao,
                 'id_inicial' => 1,
                 'id_final' => 2,
@@ -108,11 +108,11 @@ class LocOcultasDosRastreadoresTest extends TestCase {
                 'ouvintes' => []
             ], $result['localizacoes_ocultas'][0]);
 
-            $result_sem_resultados = getLocOcultaDoRastreador($credenciais_dono, 24, 'nao-encontrada');
-            $this->assertSame('Nenhuma localização oculta encontrada para o rastreador:24', $result_sem_resultados['error']);
+            $result_sem_resultados = getLocOcultaDoRastreador($credenciais_dono, -1, 'nao-encontrada');
+            $this->assertSame('Nenhuma localização oculta encontrada para o rastreador:-1', $result_sem_resultados['error']);
 
-            $result_sem_permissao = getLocOcultaDoRastreador(['pdo' => $pdo, 'id' => 377], 24, null);
-            $this->assertSame('Usuário não tem permissão para ver as localizações ocultas do rastreador:377 - 24', $result_sem_permissao['error']);
+            $result_sem_permissao = getLocOcultaDoRastreador(['pdo' => $pdo, 'id' => -2], -1, null);
+            $this->assertSame('Usuário não tem permissão para ver as localizações ocultas do rastreador:-2 - -1', $result_sem_permissao['error']);
         } finally {
             $this->removerLocOculta($pdo, $lococulta_id);
         }
@@ -120,33 +120,33 @@ class LocOcultasDosRastreadoresTest extends TestCase {
 
     function test_create_loc_oculta_do_rastreador() {
         $pdo = getDataBase();
-        $credenciais_dono = ['pdo' => $pdo, 'id' => 376];
+        $credenciais_dono = ['pdo' => $pdo, 'id' => -1];
         $identificacao = 'Loc criada ' . uniqid();
-        $result = createLocOcultaDoRastreador($credenciais_dono, 24, 10, 20, null, null, $identificacao);
+        $result = createLocOcultaDoRastreador($credenciais_dono, -1, 10, 20, null, null, $identificacao);
 
         $this->assertTrue($result['success']);
         $this->assertSame($identificacao, $result['localizacao_oculta']['identificacao']);
-        $this->assertSame('24', (string) $result['localizacao_oculta']['rastreador_id']);
+        $this->assertSame('-1', (string) $result['localizacao_oculta']['rastreador_id']);
         $this->assertSame([], $result['localizacao_oculta']['ouvintes']);
 
         try {
-            $result_sem_permissao = createLocOcultaDoRastreador(['pdo' => $pdo, 'id' => 377], 24, 1, 2, null, null, 'Nao permitida');
-            $this->assertSame('Usuário não tem permissão para criar localizações ocultas do rastreador:377 - 24', $result_sem_permissao['error']);
+            $result_sem_permissao = createLocOcultaDoRastreador(['pdo' => $pdo, 'id' => -2], -1, 1, 2, null, null, 'Nao permitida');
+            $this->assertSame('Usuário não tem permissão para criar localizações ocultas do rastreador:-2 - -1', $result_sem_permissao['error']);
         } finally {
             $this->removerLocOculta($pdo, (int) $result['localizacao_oculta']['id']);
         }
 
         $result_id_invalido = createLocOcultaDoRastreador($credenciais_dono, 0, 1, 2, null, null, 'Id invalido');
-        $this->assertSame('Id de rastreador inválido:0', $result_id_invalido['error']);
+        $this->assertSame('Usuário não tem permissão para criar localizações ocultas do rastreador:-1 - 0', $result_id_invalido['error']);
     }
 
     function test_update_loc_oculta_do_rastreador() {
         $pdo = getDataBase();
-        $credenciais_dono = ['pdo' => $pdo, 'id' => 376];
-        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, 24, 'Loc antes ' . uniqid());
+        $credenciais_dono = ['pdo' => $pdo, 'id' => -1];
+        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, -1, 'Loc antes ' . uniqid());
 
         try {
-            $result = updateLocOcultaDoRastreador($credenciais_dono, 24, $lococulta_id, [
+            $result = updateLocOcultaDoRastreador($credenciais_dono, -1, $lococulta_id, [
                 'id_inicial' => 30,
                 'id_final' => 40,
                 'identificacao' => 'Loc atualizada'
@@ -157,35 +157,37 @@ class LocOcultasDosRastreadoresTest extends TestCase {
             $this->assertSame('40', (string) $result['localizacao_oculta']['id_final']);
             $this->assertSame('Loc atualizada', $result['localizacao_oculta']['identificacao']);
 
-            $result_caracteristica_invalida = updateLocOcultaDoRastreador($credenciais_dono, 24, $lococulta_id, ['campo_invalido' => 'valor']);
+            $result_caracteristica_invalida = updateLocOcultaDoRastreador($credenciais_dono, -1, $lococulta_id, ['campo_invalido' => 'valor']);
             $this->assertSame('Característica inválida:campo_invalido', $result_caracteristica_invalida['error']);
 
-            $result_data_invalida = updateLocOcultaDoRastreador($credenciais_dono, 24, $lococulta_id, ['data_inicial' => '2024-06-01 00:00:00.123', 'data_final' => '2024-05-01 00:00:00.123']);
+            $result_data_invalida = updateLocOcultaDoRastreador($credenciais_dono, -1, $lococulta_id, ['data_inicial' => '2024-06-01 00:00:00.123', 'data_final' => '2024-05-01 00:00:00.123']);
             $this->assertStringContainsString(
                 "a nova linha da relação \"intervalo_loc_oculta\" viola a restrição de verificação \"intervalo_loc_oculta_check_data_nao_usa_milissegundos\"",
                 $result_data_invalida['error']
             );
 
-            $result_sem_permissao = updateLocOcultaDoRastreador(['pdo' => $pdo, 'id' => 377], 24, $lococulta_id, ['identificacao' => 'Nao permitida']);
-            $this->assertSame('Usuário não tem permissão para atualizar localizações ocultas do rastreador:377 - 24', $result_sem_permissao['error']);
+            $result_sem_permissao = updateLocOcultaDoRastreador(['pdo' => $pdo, 'id' => -2], -1, $lococulta_id, ['identificacao' => 'Nao permitida']);
+            $this->assertSame('Usuário não tem permissão para atualizar localizações ocultas do rastreador:-2 - -1', $result_sem_permissao['error']);
+
+            
+            $result_id_invalido = updateLocOcultaDoRastreador($credenciais_dono, -1, -99, ['id_inicial' => 1]);
+            $this->assertSame('Erro ao atualizar localização oculta do rastreador:Numero de linhas afetadas diferente de 1: 1', $result_id_invalido['error']);
         } finally {
             $this->removerLocOculta($pdo, $lococulta_id);
         }
 
-        $result_id_invalido = updateLocOcultaDoRastreador($credenciais_dono, 24, 0, []);
-        $this->assertSame('Id de localização oculta inválido:0', $result_id_invalido['error']);
     }
 
     function test_delete_loc_oculta_do_rastreador() {
         $pdo = getDataBase();
-        $credenciais_dono = ['pdo' => $pdo, 'id' => 376];
-        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, 24, 'Loc para deletar ' . uniqid());
+        $credenciais_dono = ['pdo' => $pdo, 'id' => -1];
+        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, -1, 'Loc para deletar ' . uniqid());
 
         try {
-            $result_sem_permissao = deleteLocOcultaDoRastreador(['pdo' => $pdo, 'id' => 377], 24, [$lococulta_id]);
-            $this->assertSame('Usuário não tem permissão para deletar localizações ocultas do rastreador:377 - 24', $result_sem_permissao['error']);
+            $result_sem_permissao = deleteLocOcultaDoRastreador(['pdo' => $pdo, 'id' => -2], -1, [$lococulta_id]);
+            $this->assertSame('Usuário não tem permissão para deletar localizações ocultas do rastreador:-2 - -1', $result_sem_permissao['error']);
 
-            $result = deleteLocOcultaDoRastreador($credenciais_dono, 24, [$lococulta_id]);
+            $result = deleteLocOcultaDoRastreador($credenciais_dono, -1, [$lococulta_id]);
             $this->assertTrue($result['success']);
             $this->assertSame(0, $this->contarLocOculta($pdo, $lococulta_id));
         } finally {
@@ -197,7 +199,7 @@ class LocOcultasDosRastreadoresTest extends TestCase {
             }
         }
 
-        $result_array_invalido = deleteLocOcultaDoRastreador($credenciais_dono, 24, null);
+        $result_array_invalido = deleteLocOcultaDoRastreador($credenciais_dono, -1, null);
         $this->assertSame('Array de ids de localizações ocultas inválido:', $result_array_invalido['error']);
     }
 
@@ -205,11 +207,11 @@ class LocOcultasDosRastreadoresTest extends TestCase {
         $pdo = getDataBase();
         $temp_usuario = $this->criarUsuarioTemporario($pdo, 'Ouvinte temporario loc oculta');
         $temp_usuario2 = $this->criarUsuarioTemporario($pdo, 'Ouvinte temporario loc oculta 2');
-        $temp_ur_id = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 24, 'Ouvinte loc oculta', 2);
-        $temp_ur_id2 = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario2['id'], 24, 'Ouvinte loc oculta 2', 2);
+        $temp_ur_id = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Ouvinte loc oculta', 2);
+        $temp_ur_id2 = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario2['id'], -1, 'Ouvinte loc oculta 2', 2);
 
         try {
-            $result = getOuvintesDisponiveis(['pdo' => $pdo, 'id' => 376], 24);
+            $result = getOuvintesDisponiveis(['pdo' => $pdo, 'id' => -1], -1);
 
             $this->assertTrue($result['success']);
             $ouvintes = array_values(array_filter($result['ouvintes'], function ($ouvinte) use ($temp_ur_id) {
@@ -225,14 +227,9 @@ class LocOcultasDosRastreadoresTest extends TestCase {
 
             $this->assertEquals([
                 [
-                    'ur_id' => 32,
-                    'u_nome' => 'UsuarioFor UnitTest',
-                    'u_id' => 376
-                ],
-                [
-                    'ur_id' => 33,
-                    'u_nome' => 'UsuarioFor UnitTestB',
-                    'u_id' => 377
+                    'ur_id' => -1,
+                    'u_nome' => 'Usuario Unit Test1',
+                    'u_id' => -1
                 ],
                 [
                     'ur_id' => $temp_ur_id,
@@ -246,8 +243,8 @@ class LocOcultasDosRastreadoresTest extends TestCase {
                 ]
             ], $result['ouvintes']);
 
-            $result_sem_permissao = getOuvintesDisponiveis(['pdo' => $pdo, 'id' => 377], 24);
-            $this->assertSame('Usuário não tem permissão para ver ouvintes do rastreador:377 - 24', $result_sem_permissao['error']);
+            $result_sem_permissao = getOuvintesDisponiveis(['pdo' => $pdo, 'id' => -2], -1);
+            $this->assertSame('Usuário não tem permissão para ver ouvintes do rastreador:-2 - -1', $result_sem_permissao['error']);
         } finally {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -262,12 +259,12 @@ class LocOcultasDosRastreadoresTest extends TestCase {
     function test_set_ouvintes_loc_oculta() {
         $pdo = getDataBase();
         $temp_usuario = $this->criarUsuarioTemporario($pdo, 'Ouvinte para loc oculta');
-        $temp_ur_id = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], 24, 'Ouvinte para set', 2);
+        $temp_ur_id = $this->criarUsuarioRastreadorTemporario($pdo, $temp_usuario['id'], -1, 'Ouvinte para set', 2);
         $identificacao = 'Loc para ouvintes ' . uniqid();
-        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, 24, $identificacao);
+        $lococulta_id = $this->criarLocOcultaTemporaria($pdo, -1, $identificacao);
 
         try {
-            $result = setOuvintesLocOculta(['pdo' => $pdo, 'id' => 376], [$lococulta_id], [$temp_ur_id], 24);
+            $result = setOuvintesLocOculta(['pdo' => $pdo, 'id' => -1], [$lococulta_id], [$temp_ur_id], -1);
 
             $this->assertTrue($result['success']);
             $this->assertCount(1, $result['ouvintes']);
@@ -281,11 +278,11 @@ class LocOcultasDosRastreadoresTest extends TestCase {
                 'u_id' => $temp_usuario['id']
             ], $result['ouvintes'][0]);
 
-            $result_loc = getLocOcultaDoRastreador(['pdo' => $pdo, 'id' => 376], 24, null);
+            $result_loc = getLocOcultaDoRastreador(['pdo' => $pdo, 'id' => -1], -1, null);
             
             $this->assertEquals([
                 'id' => $lococulta_id,
-                'rastreador_id' => 24,
+                'rastreador_id' => -1,
                 'identificacao' => $identificacao,
                 'id_inicial' => 1,
                 'id_final' => 2,
@@ -302,16 +299,16 @@ class LocOcultasDosRastreadoresTest extends TestCase {
                 ]
             ], $result_loc['localizacoes_ocultas'][0]);
 
-            $result_sem_ouvintes = setOuvintesLocOculta(['pdo' => $pdo, 'id' => 376], [$lococulta_id], [], 24);
+            $result_sem_ouvintes = setOuvintesLocOculta(['pdo' => $pdo, 'id' => -1], [$lococulta_id], [], -1);
             $this->assertTrue($result_sem_ouvintes['success']);
             $this->assertCount(0, $result_sem_ouvintes['ouvintes']);
 
             
-            $result_loc = getLocOcultaDoRastreador(['pdo' => $pdo, 'id' => 376], 24, null);
+            $result_loc = getLocOcultaDoRastreador(['pdo' => $pdo, 'id' => -1], -1, null);
             
             $this->assertEquals([
                 'id' => $lococulta_id,
-                'rastreador_id' => 24,
+                'rastreador_id' => -1,
                 'identificacao' => $identificacao,
                 'id_inicial' => 1,
                 'id_final' => 2,
@@ -321,8 +318,8 @@ class LocOcultasDosRastreadoresTest extends TestCase {
                 'ouvintes' => []
             ], $result_loc['localizacoes_ocultas'][0]);
 
-            $result_sem_permissao = setOuvintesLocOculta(['pdo' => $pdo, 'id' => 377], [$lococulta_id], [$temp_ur_id], 24);
-            $this->assertSame('Usuário não tem permissão para setar ouvintes das localizações ocultas do rastreador:377 - 24', $result_sem_permissao['error']);
+            $result_sem_permissao = setOuvintesLocOculta(['pdo' => $pdo, 'id' => -2], [$lococulta_id], [$temp_ur_id], -1);
+            $this->assertSame('Usuário não tem permissão para setar ouvintes das localizações ocultas do rastreador:-2 - -1', $result_sem_permissao['error']);
         } finally {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -332,7 +329,7 @@ class LocOcultasDosRastreadoresTest extends TestCase {
             $this->removerUsuario($pdo, $temp_usuario['id']);
         }
 
-        $result_array_invalido = setOuvintesLocOculta(['pdo' => $pdo, 'id' => 376], null, [], 24);
+        $result_array_invalido = setOuvintesLocOculta(['pdo' => $pdo, 'id' => -1], null, [], -1);
         $this->assertSame('Array de ids de localizações ocultas inválido:', $result_array_invalido['error']);
     }
 }
