@@ -21,4 +21,22 @@ export default class Perfil {
         return null;
     }
 
+    static async getSimpleLegalIdentTipos() {
+        const response = await fetch_('/usuario/perfil/perfil.php', [{ getSimpleLegalIdentTipo: true }]);
+        if (response && response.success) {
+            return response.legal_ident_tipo;
+        }
+        console.error("Erro ao buscar tipos de identidade legal");
+        return [];
+    }
+
+    static async atualizarIdentidadeLegal(identidade, tipo_id) {
+        const response = await fetch_('/usuario/perfil/perfil.php', [{ updateLegalIdent: { identidade, tipo_id } }]);
+        if (response && response.success) {
+            return response.legal_ident;
+        }
+        console.error("Erro ao atualizar identidade legal");
+        return null;
+    }
+
 }

@@ -7,13 +7,20 @@ create table legal_ident_tipo   (
     id serial primary key,
     descricao varchar(100) not null,
     regex varchar(200) not null,
-    invalido boolean not null default false
+    invalido boolean not null default false,
+    unique (id, regex)
 );
 
 create table legal_ident (
     id serial primary key,
-    tipo_id integer not null references legal_ident_tipo(id),
-    identidade varchar(100) not null
+    tipo_id integer not null,
+    regex varchar(200) not null,
+    identidade varchar(100) not null,
+    created_at timestamp default now(),
+    last_used timestamp default now(),
+    FOREIGN KEY (tipo_id, regex) REFERENCES legal_ident_tipo(id, regex),
+    CONSTRAINT chk_identidade_match_regex CHECK (identidade ~ regex)
+    unique (tipo_id, identidade),
 );
 
 create table usuario_cadastrando (
@@ -29,7 +36,7 @@ create table usuario (
     id serial primary key,
     nome varchar(100) not null,
     login varchar(100) unique not null,
-    senha varchar(100) not null, --sem criptografia por enquanto
+    senha varchar(100) not null,
     legal_ident_id integer not null references legal_ident(id),
     ativo boolean not null default true,
     email varchar(100) unique not null,
@@ -326,7 +333,7 @@ $$;
 
 
 CREATE FUNCTION finalizarCadastroUsuario(
-    p_nome varchar, p_email varchar, p_telefone varchar, p_login varchar, p_senha varchar, p_otp varchar
+    p_nome varchar, p_email varchar, p_telefone varchar, p_login varchar, p_senha varchar, p_otp varchar, p_identidade varchar, p_tipo_ident_id integer
 )
 RETURNS TABLE (
     sucesso BOOLEAN,
@@ -337,6 +344,8 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     var_usuario_id INT;
+    var_new_legal_ident_id INT;
+    var_ident_regex varchar(200);
     var_ja_cadastrado_info TEXT;
     var_ja_cadastrado_tipo TEXT;
 BEGIN
@@ -352,6 +361,26 @@ BEGIN
         RETURN QUERY SELECT FALSE, 'OTP inválido ou cadastro não encontrado', p_otp::TEXT;
         RETURN;
     END IF;
+    
+    -- Obtém o regex para o tipo de identidade
+    SELECT regex
+    FROM legal_ident_tipo
+    WHERE id = p_tipo_ident_id
+      AND p_identidade ~ regex
+      INTO var_ident_regex;
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Identidade inválida para o tipo fornecido', p_identidade::TEXT;
+        RETURN; 
+    END IF;
+
+    -- Cria uma identidade para usar no usuário
+    INSERT INTO
+        legal_ident (tipo_id, regex, identidade)
+        VALUES (p_tipo_ident_id, var_ident_regex, p_identidade)
+        ON CONFLICT (tipo_id, identidade)
+        DO UPDATE SET last_used = NOW()
+        RETURNING id INTO var_new_legal_ident_id;
 
     -- Verifica se o email ou login já está cadastrado
     select (email = p_email)::TEXT, (login = p_login)::TEXT
@@ -373,7 +402,7 @@ BEGIN
 
     -- Insere usuário
     INSERT INTO usuario (legal_ident_id, nome, email, telefone, login, senha)
-    VALUES (1, p_nome, p_email, p_telefone, p_login, crypt(p_senha, gen_salt('bf')))
+    VALUES (var_new_legal_ident_id, p_nome, p_email, p_telefone, p_login, crypt(p_senha, gen_salt('bf')))
     RETURNING id INTO var_usuario_id;
 
     IF var_usuario_id IS NULL THEN

@@ -114,3 +114,15 @@ export function compararObjetos(obj1, obj2) {
 
     return 0;
 }
+
+
+export function validarRegex(valor, regex) {
+    if (!regex) return false;
+    try {
+        const regexObj = new RegExp(regex);
+        return regexObj.test(valor);
+    } catch (e) {
+        console.error("Erro ao validar regex:", e);
+        return false;
+    }
+}

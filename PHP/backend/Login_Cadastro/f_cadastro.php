@@ -89,7 +89,7 @@ function verificarOTP($otp) {
     }
 }
 
-function finalizarCadastro($nome, $email, $telefone, $login, $senha, $otp) {
+function finalizarCadastro($nome, $email, $telefone, $login, $senha, $otp, $identidade, $tipo_ident_id) {
     if (!validarNomeUsuario($nome)) {
         return ["error" => errorMessage("Nome de usuário inválido", $nome)];
     }
@@ -114,14 +114,16 @@ function finalizarCadastro($nome, $email, $telefone, $login, $senha, $otp) {
     try {
         $pdo = getDataBase();
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare("select * from finalizarCadastroUsuario(:nome, :email, :telefone, :login, :senha, :otp)");
+        $stmt = $pdo->prepare("select * from finalizarCadastroUsuario(:nome, :email, :telefone, :login, :senha, :otp, :identidade, :tipo_ident_id)");
         $stmt->execute([
             "nome"=>$nome,
             "email"=>$email,
             "telefone"=>$telefone,
             "login"=>$login,
             "senha"=> $senha,
-            "otp"=>$otp
+            "otp"=>$otp,
+            "identidade"=>$identidade,
+            "tipo_ident_id"=>$tipo_ident_id
         ]);
         
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -139,4 +141,13 @@ function finalizarCadastro($nome, $email, $telefone, $login, $senha, $otp) {
         }
         return ["error" => errorMessage("Error in finalizarCadastro", $e->getMessage())];
     }
+}
+
+
+function getSimpleLegalIdentTipoCadastro() {
+    $pdo = $pdo = getDataBase();
+    $stmt = $pdo->query("SELECT id, descricao as nome, regex FROM legal_ident_tipo WHERE invalido = false");
+    $idents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    return ["success" => true, "legal_ident_tipo" => $idents];
 }

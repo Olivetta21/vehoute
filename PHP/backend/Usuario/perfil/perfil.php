@@ -13,9 +13,16 @@ if ($update = getRequestValue("update", "is_array")) {
     returnJson(updatePerfilUsuario($credenciais, $update));
 }
 
+if (getRequestValue("getSimpleLegalIdentTipo")) {
+    returnJson(getSimpleLegalIdentTipo($credenciais));
+}
 
-} catch (Exception $e) {
-    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
+if ($ident = getRequestValue("updateLegalIdent", "is_array")) {
+    returnJson(updateLegalIdentUsuario($credenciais, $ident["identidade"], $ident["tipo_id"]));
+}
+
+} catch (Throwable $e) {
+    returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage() . " - " . $e->getLine() . " - " . $e->getFile())]);
 }
 
 returnJson(["error"=>"invalid_request"]);

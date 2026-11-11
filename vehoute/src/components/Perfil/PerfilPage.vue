@@ -22,6 +22,20 @@
                         <input id="user-pass" type="password" v-model="userProfile.v_model_senha">
                     </div>
                 </div>
+                <div class="info">
+                    <label>
+                        <p>Identidade</p>
+                        <SelectInput
+                            :searchFn="getLegalIdentTipos"
+                            :searchAll="true"
+                            :selectedId="this.userProfile.liv_model_li_tipo_id"
+                            @update:value="[this.userProfile.liv_model_regex, this.userProfile.liv_model_li_tipo_id] = [$event?.regex || null, $event?.id || null]"
+                        />
+                        <input type="text" v-model="userProfile.liv_model_identidade" placeholder="Identidade">
+                        <p v-if="!validarRegex(userProfile.liv_model_identidade, this.userProfile.liv_model_regex)" class="regex"> inválido </p>
+                        <button v-if="userProfileIdentidadeChanged" @click="salvarIdentidadeLegal">Salvar Identidade</button>
+                    </label>
+                </div>
                 <div>
                     <p>Rastreadores: {{ userProfile.total_rastreadores }}</p>
                     <p>Rastreadores Registrados: {{ userProfile.total_rastreadores_registrados }}</p>
@@ -53,13 +67,15 @@
 import Perfil from '../../scripts/PerfilPage/Perfil';
 import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
-import { compararVariaveis } from '../../scripts/utils';
+import { compararVariaveis, validarRegex } from '../../scripts/utils';
+import SelectInput from '../utils/SelectInput.vue';
 
 export default {
     name: 'PerfilPage',
     data() {
         return {
             PagesRoutes,
+            validarRegex,
             Perfil,
             userProfile: null
         };
@@ -72,7 +88,10 @@ export default {
                 v_model_login: p.login,
                 v_model_senha: p.senha,
                 v_model_email: p.email,
-                v_model_telefone: p.telefone
+                v_model_telefone: p.telefone,
+                liv_model_identidade: p.identidade,
+                liv_model_li_tipo_id: p.li_tipo_id,
+                liv_model_regex: p.regex
             };
         },
         async fetchUserProfile() {
@@ -102,11 +121,25 @@ export default {
             if (updatedProfile) {
                 this.setUserProfileInfos(updatedProfile);
             }
+        },
+        async salvarIdentidadeLegal() {
+            const updatedProfile = await Perfil.atualizarIdentidadeLegal(
+                this.userProfile.liv_model_identidade,
+                this.userProfile.liv_model_li_tipo_id
+            );
+            if (updatedProfile) {
+                this.userProfile.li_tipo_id = updatedProfile.tipo_id;
+                this.userProfile.identidade = updatedProfile.identidade;
+            }
+        },
+        async getLegalIdentTipos() {
+            const tipos = await Perfil.getSimpleLegalIdentTipos();
+            console.log("Tipos de Identidade Legal:", tipos);
+            return tipos;
         }
     },
     computed: {
         userProfileInfosChanged() {
-            console.log("Checking if user profile infos changed...");
             if (!this.userProfile) return false;
 
             return Object.keys(this.userProfile).some(key => {
@@ -116,13 +149,20 @@ export default {
                 }
                 return false;
             });
+        },
+        userProfileIdentidadeChanged() {
+            if (!this.userProfile) return false;
+
+            return compararVariaveis(this.userProfile.liv_model_identidade, this.userProfile.identidade) != 0 ||
+                   compararVariaveis(this.userProfile.liv_model_li_tipo_id, this.userProfile.li_tipo_id) != 0;
         }
     },
     mounted() {
         this.fetchUserProfile();
     },
     components: {
-        HeaderTelas
+        HeaderTelas,
+        SelectInput
     },
 };
 </script>
@@ -156,5 +196,14 @@ export default {
         flex-direction: row;
         justify-content: space-between;
         gap: 10px;
+    }
+
+    .regex {
+        font-size: 0.8rem;
+        color: red;
+    }
+
+    .regex.valid {
+        color: green;
     }
 </style>

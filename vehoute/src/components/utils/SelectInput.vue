@@ -2,7 +2,7 @@
     <div>
         <p v-if="placeholder">{{ placeholder }}</p>
         <div class="select-input-container">
-            <template v-if="searchFn">
+            <template v-if="searchFn && !searchAll">
                 <input v-if="is_searching" type="text" v-model="searchText" :placeholder="searchPlaceholder" @input="search" class="search-input"/>
                 <button v-else @click="startSearch" class="search-bttn"> {{ searchBttnText }} </button>
             </template>
@@ -71,6 +71,11 @@ export default {
             type: Function,
             required: false
         },
+        searchAll: {
+            type: Boolean,
+            required: false,
+            default: false
+        }
     },
     emits: ['update:value'],
     data() {
@@ -83,8 +88,13 @@ export default {
             real_data: null
         };
     },
-    mounted() {
-        this.updateRealData(this.data || []);
+    async mounted() {
+        if (this.searchAll && this.searchFn) {
+            this.updateRealData(await this.searchFn('%%%') || []);
+        } else {
+            this.updateRealData(this.data || []);
+        }
+
         if (this.preSelectedValue) {
             this.updateRealData([this.preSelectedValue]);
             this.selected_value = this.preSelectedValue.id;
@@ -97,6 +107,18 @@ export default {
                 this.$emit('update:value', selectedItem);
             }
         }
+    },
+    watch: {
+        selectedId(newVal) {
+            console.log("selectedId changed:", newVal);
+            if (newVal) {
+                const selectedItem = this.real_data.find(item => item.id === newVal);
+                if (selectedItem) {
+                    this.selected_value = selectedItem.id;
+                    this.$emit('update:value', selectedItem);
+                }
+            }
+        },
     },
     methods: {
         handleChange(event) {
@@ -120,6 +142,11 @@ export default {
         },
         async search() {
             if (this.searchFn) {
+                if (this.searchAll) {
+                    this.updateRealData(await this.searchFn('%%%'));
+                    return;
+                }
+
                 this.updateRealData([]);
                 this.selected_value = "";
 

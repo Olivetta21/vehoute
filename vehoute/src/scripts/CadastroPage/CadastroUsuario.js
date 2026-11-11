@@ -17,10 +17,18 @@ export default class CadastroUsuario {
         return response;
     }
 
-    static async finalizarCadastro(nome, email, otp, telefone, login, senha) {
+    static async finalizarCadastro(nome, email, otp, telefone, login, senha, identidade, tipo_ident_id) {
         const response = await fetch_("/login_cadastro/cadastro.php", [
-            { "cadastro_data": { "nome": nome, "email": email, "otp": otp, "telefone": telefone, "login": login, "senha": senha } }
+            { "cadastro_data": { "nome": nome, "email": email, "otp": otp, "telefone": telefone, "login": login, "senha": senha, "identidade": identidade, "tipo_ident_id": tipo_ident_id } }
         ]);
         return response;
+    }
+
+    static async getLegalIdentTipos() {
+        const response = await fetch_("/login_cadastro/cadastro.php", [{ "getLegalIdentTipos": true }]);
+        if (response && response.success) {
+            return response.legal_ident_tipo;
+        }
+        return [];        
     }
 }

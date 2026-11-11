@@ -3,7 +3,7 @@
 function getPerfilUsuario($credenciais) {
     $Audit = (new Auditoria())->add('usuario|usuario_rastreador', 'getPerfilUsuario', null, null, false);
     $pdo = $credenciais["pdo"];
-    $stmt = $pdo->prepare("SELECT id, nome, login, email, telefone FROM usuario WHERE id = :usuario_id");
+    $stmt = $pdo->prepare("SELECT u.id, u.nome, login, email, telefone, legal_ident_id, li.identidade, li.tipo_id li_tipo_id, li.regex FROM usuario u LEFT JOIN legal_ident li ON u.legal_ident_id = li.id WHERE u.id = :usuario_id");
     $stmt->execute(['usuario_id' => $credenciais["id"]]);
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -66,4 +66,91 @@ function updatePerfilUsuario($credenciais, $valores) {
     $pdo->commit();
     $Audit->sucesso(true);
     return getPerfilUsuario($credenciais);
+}
+
+
+function getSimpleLegalIdentTipo($credenciais) {
+    $Audit = (new Auditoria())->add('legal_ident_tipo', 'getSimpleLegalIdentTipo', null, null, false);
+    $pdo = $credenciais["pdo"];
+    $stmt = $pdo->query("SELECT id, descricao as nome, regex FROM legal_ident_tipo WHERE invalido = false");
+    $idents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $Audit->depois(["qnt_idents" => count($idents)]);
+    $Audit->sucesso(true);
+    return ["success" => true, "legal_ident_tipo" => $idents];
+}
+
+function getLegalIdentUsuario($credenciais) {
+    $Audit = (new Auditoria())->add('legal_ident', 'getLegalIdentUsuario', null, null, false);
+    $pdo = $credenciais["pdo"];
+    $stmt = $pdo->prepare("SELECT id, tipo_id, identidade, regex FROM legal_ident WHERE usuario_id = :usuario_id");
+    $stmt->execute(['usuario_id' => $credenciais["id"]]);
+    $identidade = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    $Audit->depois(["identidade" => $identidade]);
+    $Audit->sucesso(true);
+    return ["success" => true, "legal_ident" => $identidade];
+}
+
+function validarLegalIdent($ident, $regex) {
+    if (!$regex || !preg_match("/$regex/", $ident)) return false;
+    return true;
+}
+
+function updateLegalIdentUsuario($credenciais, $identidade, $tipo) {
+    $Audit = (new Auditoria())->add('legal_ident', 'updateLegalIdentUsuario', ["usuario" => ["id" => $credenciais["id"]]], $identidade, false);
+    
+    try {
+        $pdo = $credenciais["pdo"];
+        
+        $stmt = $pdo->prepare("SELECT u.id u_id, li.tipo_id li_tipo_id, li.identidade li_identidade FROM usuario u join legal_ident li ON u.legal_ident_id = li.id WHERE u.id = :usuario_id");
+        $stmt->execute(['usuario_id' => $credenciais["id"]]);
+        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $Audit->antes(["usuario" => ["identidade" => $usuario["li_identidade"]]]);
+
+        $stmt = $pdo->prepare("SELECT regex FROM legal_ident_tipo WHERE id = :tipo_id");
+        $stmt->execute(['tipo_id' => $tipo]);
+        $tipo_regex = $stmt->fetchColumn();
+
+        if (!$tipo_regex) {
+            return ["error" => errorMessage("Tipo de identidade inválido", $tipo)];
+        }
+
+        if (!validarLegalIdent($identidade, $tipo_regex)) {
+            return ["error" => errorMessage("Identidade inválida", $identidade)];
+        }
+
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("INSERT INTO
+        legal_ident (tipo_id, regex, identidade)
+        VALUES (:tipo_id, :regex, :identidade)
+        ON CONFLICT (tipo_id, identidade)
+        DO UPDATE SET last_used = NOW()
+        RETURNING id, tipo_id, identidade, regex");
+
+        $stmt->execute([
+            'tipo_id' => $tipo,
+            'regex' => $tipo_regex,
+            'identidade' => $identidade
+        ]);
+
+        $legal_ident = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("UPDATE usuario SET legal_ident_id = :legal_ident_id WHERE id = :usuario_id");
+        $stmt->execute([
+            'legal_ident_id' => $legal_ident['id'],
+            'usuario_id' => $credenciais["id"]
+        ]);
+        
+        $pdo->commit();
+        $Audit->sucesso(true);
+        return ["success" => true, "legal_ident" => $legal_ident];
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return ["error" => errorMessage("Erro ao atualizar identidade legal", $e->getMessage())];
+    }
 }
