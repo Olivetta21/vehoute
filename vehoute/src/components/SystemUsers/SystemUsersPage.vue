@@ -8,21 +8,32 @@
         @pesquisa="fetchUsers"
         @adicionar="alternarFormulario"
     />
-    <section v-if="mostrarFormulario" class="new-user-panel">
-        <h2>Novo usuário</h2>
-        <form class="new-user-form" @submit.prevent="criarUsuario">
-            <input v-model="novoUsuario.nome" type="text" placeholder="Nome" required />
-            <input v-model="novoUsuario.email" type="email" placeholder="Email" required />
-            <input v-model="novoUsuario.identidade" type="text" placeholder="Identidade" required />
-            <input v-model.number="novoUsuario.tipoIdent" type="number" min="1" placeholder="Tipo de identificação" required />
-            <label class="check-field">
-                <input v-model="novoUsuario.adm" type="checkbox" />
-                Administrador
-            </label>
-            <button type="submit">Adicionar</button>
-        </form>
-        <p v-if="mensagem" class="feedback-message">{{ mensagem }}</p>
-    </section>
+    <GenericModalWindow v-if="mostrarFormulario" @close="alternarFormulario">
+        <div class="modal-container">
+            <form class="modal-form" @submit.prevent="criarUsuario">
+                <div class="modal-heading">
+                    <h2>Novo usuário</h2>
+                </div>
+                <input v-model="novoUsuario.nome" type="text" placeholder="Nome" required />
+                <input v-model="novoUsuario.email" type="email" placeholder="Email" required />
+                <input v-model="novoUsuario.identidade" type="text" placeholder="Identidade" required />
+                <SelectInput
+                    :searchFn="getLegalIdentTipos"
+                    :searchAll="true"
+                    placeholder="Tipo de identidade"
+                    @update:value="novoUsuario.tipoIdent = $event?.id || null"
+                />
+                <SwitchButtonInput
+                    :value="novoUsuario.adm"
+                    label="Administrador"
+                    :required="false"
+                    @update:value="novoUsuario.adm = $event"
+                />
+                <button type="submit">Adicionar usuário</button>
+                <p v-if="mensagem" class="feedback-message">{{ mensagem }}</p>
+            </form>
+        </div>
+    </GenericModalWindow>
     <div class="user-cards-container">
         <div class="user-card" v-for="user in users" :key="user.id">
             <div class="user-card-content">
@@ -51,8 +62,12 @@
 
 <script>
 import SystemUser from '../../scripts/SystemUserPage/SystemUser';
+import CadastroUsuario from '../../scripts/CadastroPage/CadastroUsuario';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import PagesRoutes from '../../scripts/PagesRoutes.js';
+import GenericModalWindow from '../utils/GenericModalWindow.vue';
+import SelectInput from '../utils/SelectInput.vue';
+import SwitchButtonInput from '../utils/SwitchButtonInput.vue';
 
 export default {
     name: 'SystemUsersPage',
@@ -67,7 +82,7 @@ export default {
                 nome: '',
                 email: '',
                 identidade: '',
-                tipoIdent: 1,
+                tipoIdent: null,
                 adm: false
             }
         }
@@ -83,6 +98,9 @@ export default {
         async fetchUsers(pesquisa = '%') {
             this.termoPesquisa = pesquisa ?? '';
             this.users = await SystemUser.getUsuarios(this.termoPesquisa);
+        },
+        async getLegalIdentTipos() {
+            return await CadastroUsuario.getLegalIdentTipos();
         },
         async toggleAtivo(id) {
             const response = await SystemUser.toggleAtivo(id);
@@ -109,7 +127,7 @@ export default {
                     nome: '',
                     email: '',
                     identidade: '',
-                    tipoIdent: 1,
+                    tipoIdent: null,
                     adm: false
                 };
                 this.mostrarFormulario = false;
@@ -121,7 +139,10 @@ export default {
         }
     },
     components: {
-        HeaderTelas
+        HeaderTelas,
+        GenericModalWindow,
+        SelectInput,
+        SwitchButtonInput
     }
 }
 
@@ -129,26 +150,45 @@ export default {
 
 <style scoped>
 
-.new-user-panel {
+.modal-container {
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-form {
+    pointer-events: all;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    background: #f9f9f9;
+    gap: 14px;
+    width: min(440px, calc(100vw - 40px));
+    padding: 26px;
+    background: var(--colorA1);
+    border: 1px solid var(--colorA2);
+    border-radius: 16px;
+    box-shadow: 0 18px 45px rgb(22 22 22 / 18%);
 }
 
-.new-user-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 8px;
-    align-items: center;
-}
-
-.check-field {
+.modal-heading {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.modal-heading h2 {
+    margin: 0;
+    color: var(--colorA3);
+}
+
+.modal-form input:not([type="checkbox"]) {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #d8dce2;
+    border-radius: 8px;
 }
 
 .feedback-message {
@@ -158,41 +198,91 @@ export default {
 
 .user-cards-container {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 22px;
     overflow: auto;
 }
 
 .user-card {
     display: flex;
     flex-direction: column;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 6px;
+    gap: 16px;
+    width: clamp(240px, 100%, 360px);
+    min-height: 190px;
+    padding: 18px;
+    border: 1px solid #e1e5eb;
+    border-radius: 16px;
+    background: var(--colorA1);
+    box-shadow: 0 8px 22px rgb(22 22 22 / 7%);
+    box-sizing: border-box;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.user-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgb(22 22 22 / 12%);
 }
 
 .user-card-content {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
 }
 
 .user-card-stats {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #687281;
+    font-size: 0.85rem;
+}
+
+.user-card-stats p,
+.user-card-posses p,
+.user-card-footer p {
+    margin: 0;
 }
 
 .user-card-name {
-    flex: 1;
-    font-weight: bold;
+    overflow: hidden;
+    color: var(--colorA3);
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-card-posses {
+    display: flex;
+    gap: 14px;
+    color: #687281;
+    font-size: 0.9rem;
 }
 
 .user-card-footer {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    overflow: auto;
-    text-wrap: nowrap;
+    gap: 8px 12px;
+    margin-top: auto;
+    color: #687281;
+    font-size: 0.85rem;
+}
+
+.user-card-footer p {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-card-footer button {
+    flex: 1;
+    min-width: 110px;
 }
 
 </style>

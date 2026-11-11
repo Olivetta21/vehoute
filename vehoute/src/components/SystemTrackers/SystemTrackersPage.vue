@@ -40,14 +40,16 @@
                     <LeftArrow/>
                     <div>{{ tracker.hardware }}</div>
                 </div>
-                <p>{{ tracker.obs }}</p>
+                <p>Token Publico: {{ tracker.token_publico }}</p>
+                <p>Token Privado: {{ tracker.token }}</p>
+                <p>Observações: {{ tracker.obs }}</p>
             </div>
             <template v-else>
                 <div class="tracker-card-content">
                     <div class="tracker-card-stats">
-                        <p>{{ tracker.id }}</p>
-                        <p>{{ tracker.ativo ? '🟢' : '🔴' }}</p>
-                        <p>#{{ tracker.status }}</p>
+                        <p>#{{ tracker.id }}</p>
+                        <p>{{ tracker.ativo ? '🟢ativo' : '🔴desativado' }}</p>
+                        <p>{{ statusOptions.find(s => s.id === tracker.status)?.short || 'Desconhecido' }}</p>
                     </div>
                     <div class="tracker-card-name">{{ tracker.hardware }}</div>
                     <div class="tracker-card-posses">
@@ -57,9 +59,7 @@
                 </div>
                 <div class="tracker-card-footer-wrapper">
                     <div class="tracker-card-footer">
-                        <p>{{ tracker.token_publico }}</p>
-                        <p>{{ tracker.token }}</p>
-                        <button @click="toggleObservacao(index)">OBS</button>
+                        <button @click="toggleObservacao(index)">Infos</button>
                         <button type="button" @click="toggleAtivo(tracker.id)">{{ tracker.ativo ? 'Desativar' : 'Ativar' }}</button>
                     </div>
                 </div>
@@ -96,10 +96,10 @@ export default {
             },
 
             statusOptions: [
-                {'id': 1, 'nome': 'Operando normalmente'},
-                {'id': 2, 'nome': 'O dono desligou o salvamento de novas localizações'},
-                {'id': 3, 'nome': 'O dono iniciou o processo de transferência, algumas funções são desligadas'},
-                {'id': 4, 'nome': 'O dono desativou, o sistema age como se não existisse'}
+                {'id': 1, 'nome': 'Operando normalmente', 'short': 'Normal'},
+                {'id': 2, 'nome': 'Novas localizações desativadas', 'short': 'Loc. desligado'},
+                {'id': 3, 'nome': 'Em processo de transferência', 'short': 'Transferência'},
+                {'id': 4, 'nome': 'O dono desativou', 'short': 'Desativado'}
             ]
         };
     },
@@ -182,59 +182,76 @@ export default {
 
 .modal-form {
     pointer-events: all;
-    background: white;
+    width: min(470px, calc(100vw - 40px));
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background: var(--colorA1);
     border: 1px solid var(--colorA2);
-    padding: 20px;
-    border-radius: 5px;
+    padding: 26px;
+    border-radius: 16px;
+    box-shadow: 0 18px 45px rgb(22 22 22 / 18%);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
 }
 
 .feedback-message {
+    margin: 0;
     font-size: 0.95rem;
 }
 
 .tracker-cards-container {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     overflow: auto;
-    gap: 5px;
+    gap: 18px;
+    padding: 22px;
 }
 
 .tracker-card {
     display: flex;
     flex-direction: column;
-    border: 1px solid #ccc;
-    border-radius: 14px;
-    padding: 10px;
-    background: #fff;
-    box-shadow: 0 6px 18px rgb(0 0 0 / 6%);
+    gap: 16px;
+    border: 1px solid #e1e5eb;
+    border-radius: 16px;
+    padding: 18px;
+    background: var(--colorA1);
+    box-shadow: 0 8px 22px rgb(22 22 22 / 7%);
 
-    width: clamp(0px, 100%, 350px);
-    min-width: min-content;
+    width: clamp(240px, 100%, 360px);
+    min-height: 180px;
+    box-sizing: border-box;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.tracker-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgb(22 22 22 / 12%);
 }
 
 .tracker-cards-container > :last-child {
-    margin-bottom: 40px;
+    margin-bottom: 18px;
 }
 
 
 .tracker-card-content {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 12px;
 }
 
 .tracker-card-stats {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
+    justify-content: space-between;
+    gap: 8px;
+    color: #687281;
+    font-size: 0.85rem;
 }
 
 .tracker-obs-name, .tracker-card-name {
-    flex: 1;
     font-weight: 700;
     font-size: 1.05rem;
 }
@@ -250,14 +267,22 @@ export default {
 
 .tracker-card-posses {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    text-align: right;
-    color: #555;
+    justify-content: space-between;
+    gap: 10px;
+    color: #687281;
+    font-size: 0.9rem;
+}
+
+.tracker-card-posses p {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .tracker-card-footer-wrapper {
     display: flex;
+    margin-top: auto;
 }
 
 .tracker-card-footer {

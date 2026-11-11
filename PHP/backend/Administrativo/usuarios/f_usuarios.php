@@ -156,12 +156,13 @@ function adicionarUsuario($pdo, $nome, $email, $identidade, $tipo_ident, $adm = 
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare("select 1 from legal_ident_tipo where id = :tipo_ident and invalido = false");
-        $stmt->execute(["tipo_ident" => $tipo_ident]);
+        $stmt = $pdo->prepare("select regex from legal_ident_tipo where id = :tipo_ident and invalido = false and :identidade ~ regex");
+        $stmt->execute(["tipo_ident" => $tipo_ident, "identidade" => $identidade]);
+        $regex = $stmt->fetchColumn();
 
-        if ($stmt->fetchColumn() === false) {
+        if (!$regex) {
             $pdo->rollBack();
-            return ["error" => errorMessage("Tipo de identificação não encontrado", $tipo_ident)];
+            return ["error" => errorMessage("Identificação inválida", $tipo_ident . " - " . $identidade)];
         }
 
         $stmt = $pdo->prepare("select 1 from usuario where email = :email");
@@ -180,9 +181,10 @@ function adicionarUsuario($pdo, $nome, $email, $identidade, $tipo_ident, $adm = 
 
         $senha = gerarSenhaUsuario();
 
-        $stmt = $pdo->prepare("insert into legal_ident (tipo_id, identidade) values (:tipo_ident, :identidade) returning id");
+        $stmt = $pdo->prepare("insert into legal_ident (tipo_id, regex, identidade) values (:tipo_ident, :regex, :identidade) returning id");
         $stmt->execute([
             "tipo_ident" => $tipo_ident,
+            "regex" => $regex,
             "identidade" => $identidade
         ]);
         $legal_ident_id = $stmt->fetchColumn();
