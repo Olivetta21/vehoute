@@ -4,6 +4,8 @@ require __DIR__ . "/f_rastreadores.php";
 $credenciais = getCredentials();
 
 try {
+userHasPermission("Administrador");
+
 if ($name_filter = getRequestValue("get", "is_string")) {
 	returnJson(getRastreadores($credenciais["pdo"], $name_filter));
 }
@@ -29,7 +31,7 @@ if ($dados = getRequestValue("add_rastreador", "is_array")) {
 	));
 }
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
 	returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
 }
 

@@ -13,6 +13,7 @@ if ($search = getRequestValue("get", "is_array")) {
 
 //dono adicionando um rastreador a um usuario(ouvinte);
 if ($dados = getRequestValue("dono_envia_proposta_ouvinte", "is_array")) {
+    userHasPermission(["Gerenciar ouvintes", "Proposta Rastreio"]);
     returnJson(donoEnviaPropostaDeOuvinteAUmUsuario(
         $credenciais,
         $dados["rastreador_id"] ?? null,
@@ -23,6 +24,7 @@ if ($dados = getRequestValue("dono_envia_proposta_ouvinte", "is_array")) {
 
 //dono enviando uma proposta de transferência de posse de um rastreador a um usuario(ouvinte);
 if ($ur_id = getRequestValue("proposta_transferencia_de_posse", "is_int")) {
+    userHasPermission("Transferir Posse");
     returnJson(donoEnviaPropostaDeTransferenciaDePosse(
         $credenciais,
         $ur_id ?? null
@@ -39,6 +41,7 @@ if ($ur_id = getRequestValue("cancelar_transferencia_de_posse", "is_int")) {
 
 //dono pausando um rastreamento de um usuario(ouvinte) a um rastreador seu;
 if ($switch = getRequestValue("pause_tracking", "is_int")) {
+    userHasPermission("Gerenciar ouvintes");
     returnJson(pauseTrackingForOuvinte(
         $credenciais,
         $switch ?? null
@@ -47,6 +50,7 @@ if ($switch = getRequestValue("pause_tracking", "is_int")) {
 
 //dono resumindo um rastreamento de um usuario(ouvinte) a um rastreador seu;
 if ($switch = getRequestValue("resume_tracking", "is_int")) {
+    userHasPermission("Gerenciar ouvintes");
     returnJson(resumeTrackingForOuvinte(
         $credenciais,
         $switch ?? null
@@ -55,6 +59,7 @@ if ($switch = getRequestValue("resume_tracking", "is_int")) {
 
 //dono mudando o valor das configurações de localizacao de um usuario(ouvinte) a um rastreador seu;
 if ($new_value = getRequestValue("change_loc_state", "is_array")) {
+    userHasPermission("Gerenciar ouvintes");
     returnJson(changeLocStateForOuvinte(
         $credenciais,
         $new_value["loc_type"] ?? null,
@@ -65,6 +70,7 @@ if ($new_value = getRequestValue("change_loc_state", "is_array")) {
 
 //dono aceitando um pedido de inclusão de um usuario(ouvinte) a um rastreador seu;
 if ($ur_id = getRequestValue("aceitar_novo_ouvinte", "is_int")) {
+    userHasPermission("Gerenciar ouvintes");
     returnJson(donoAceitaNovoOuvinte($credenciais, $ur_id));
 }
 
@@ -75,6 +81,7 @@ if ($ur_id = getRequestValue("recusar_novo_ouvinte", "is_int")) {
 
 //dono deleta um ouvinte de um rastreador seu;
 if ($ur_id = getRequestValue("deletar_ouvinte", "is_int")) {
+    userHasPermission("Gerenciar ouvintes");
     returnJson(donoDeletaOuvinte($credenciais, $ur_id));
 }
 

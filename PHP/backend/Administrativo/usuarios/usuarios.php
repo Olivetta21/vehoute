@@ -3,6 +3,10 @@ require __DIR__ . "/../../include_me.php";
 require __DIR__ . "/f_usuarios.php";
 $credenciais = getCredentials();
 
+
+try {
+userHasPermission("Administrador");
+
 if ($name_filter = getRequestValue("get", "is_string")) {    
     returnJson(getUsuarios($credenciais["pdo"], $name_filter));
 }
@@ -31,4 +35,8 @@ if ($dados = getRequestValue("add_usuario", "is_array")) {
     ));
 }
 
-returnJson(["error"=>"invalid_request"]);
+} catch (Throwable $e) {
+	returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage())]);
+}
+
+returnJson(["error" => "invalid_request"]);

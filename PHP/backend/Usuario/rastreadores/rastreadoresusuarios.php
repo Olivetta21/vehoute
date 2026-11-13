@@ -21,6 +21,7 @@ if ($dados_for_check = getRequestValue("check_rastreador", "is_array")) {
 
 //usuario tentando adicionar um rastreador a si mesmo;
 if ($dados_for_add = getRequestValue("add_rastreador", "is_array")) {
+    userHasPermission("Registrar Rastreador");
     returnJson(usuarioAdicionaUmRastreador(
         $credenciais,
         $dados_for_add["rastreador_id"] ?? null,
@@ -34,6 +35,7 @@ if ($dados_for_add = getRequestValue("add_rastreador", "is_array")) {
 
 //usuario(ouvinte) aceitando um pedido de inclusão de um rastreador a ele por um dono;
 if ($ur_id = getRequestValue("aceitar_proposta_ouvinte", "is_int")) {
+    userHasPermission("Registrar Rastreador");
     returnJson(usuarioAceitaPropostaDeOuvinte($credenciais, $ur_id));
 }
 
@@ -44,6 +46,7 @@ if ($ur_id = getRequestValue("recusar_proposta_ouvinte", "is_int")) {
 
 //usuario(ouvinte) aceitando um pedido de transferência de um rastreador a ele por um dono;
 if ($ur_id = getRequestValue("aceitar_transferencia_posse", "is_int")) {
+    userHasPermission("Modificar Rastreador");
     returnJson(acceptTransferenciaDePosse($credenciais, $ur_id));
 }
 
@@ -54,11 +57,13 @@ if ($ur_id = getRequestValue("recusar_transferencia_posse", "is_int")) {
 
 //usuario(ouvinte) deletando o proprio UR;
 if ($ur_id = getRequestValue("excluir_rastreador", "is_int")) {
+    userHasPermission("Modificar Rastreador");
     returnJson(excluirRastreadorDoOuvinte($credenciais, $ur_id));
 }
 
 //usuario(ouvinte) atualizando o proprio UR;
 if ($update = getRequestValue("update_ur", "is_array")) {
+    userHasPermission("Modificar Rastreador");
     returnJson(updateVinculoUsuarioRastreador(
         $credenciais,
         $update["ur_id"],
@@ -69,6 +74,7 @@ if ($update = getRequestValue("update_ur", "is_array")) {
 
 //usuario(dono) atualizando seu rastreador;
 if ($update = getRequestValue("update_rastreador", "is_array")) {
+    userHasPermission("Modificar Rastreador");
     returnJson(updateRastreadorDoDono(
         $credenciais,
         $update["r_id"],

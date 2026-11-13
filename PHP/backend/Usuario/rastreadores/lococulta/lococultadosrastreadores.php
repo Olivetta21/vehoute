@@ -25,6 +25,7 @@ require __DIR__ . "/f_lococultadosrastreadores.php";
 $credenciais = getCredentials();
 
 try {
+userHasPermission("Intervalo Oculto");
 
 //usuario requisitando suas localizações ocultas de rastreadores;
 if ($search = getRequestValue("get", "is_array")) {    

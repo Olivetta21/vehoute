@@ -5,6 +5,8 @@ $credenciais = getCredentials();
 
 try {
 
+userHasPermission("Administrador");
+
 if ($params = getRequestValue("get")) {
     returnJson(getAuditoriaDoSistema($credenciais, $params['tabela'] ?? null, $params['filtro'] ?? null, $params['data_inicio'] ?? null, $params['data_fim'] ?? null, $params['sucesso'] ?? null));
 }

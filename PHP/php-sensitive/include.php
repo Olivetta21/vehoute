@@ -323,7 +323,10 @@
         try {
             if (isset($_POST['access_token'])) {
                 $access_token = json_decode($_POST['access_token'], true);
-                $sql = "SELECT * from getUsuarioByToken(:access_token)";
+                $sql = "SELECT u.*, (adm.id is not null) as is_adm from
+                        getUsuarioByToken(:access_token) u
+                        left join administrador adm on adm.id = u.id";
+                $perms_sql = "SELECT pu.nome from getPermissoesDoUsuario(:usuario_id) p join permissao_usuario pu on pu.id = p.perm_id where p.negado = false";
 
                 $pdo = getDataBase();
 
@@ -333,10 +336,25 @@
                 ]);
 
                 if ($stmt->rowCount() === 1) {
-                    $usuario = $stmt->fetchAll(PDO::FETCH_ASSOC)[0];
-                    $GLOBALS['USUARIO_ID'] = $usuario['id'];
-                    $usuario['pdo'] = $pdo;
-                    return $usuario;
+                    $credenciais = $stmt->fetchAll(PDO::FETCH_ASSOC)[0];
+
+                    $stmt = $pdo->prepare($perms_sql);
+                    $stmt->execute([
+                        "usuario_id" => '{' . $credenciais['id'] . '}'
+                    ]);
+
+                    if ($stmt->rowCount() > 0) {
+                        $permissoes = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+                        $credenciais['permissoes'] = array_map('trim', $permissoes);
+                    } else {
+                        $credenciais['permissoes'] = [];
+                    }
+
+                    $GLOBALS['USUARIO_ID'] = $credenciais['id'];
+                    $GLOBALS['USUARIO_PERMS'] = $credenciais['permissoes'];
+                    $GLOBALS['USUARIO_ISADMIN'] = $credenciais['is_adm'];
+                    $credenciais['pdo'] = $pdo;
+                    return $credenciais;
                 }
             }
         } catch (Exception) {
@@ -345,6 +363,30 @@
 
         usleep(rand(1000, 10000) * 1000);
         returnJson(["invalid_token" => errorMessage("invalid_token", $_POST['access_token'] ?? "not_provided")]);
+    }
+
+    function userHasPermission($perm, $credenciais = null, $throw_error = true) {
+        $permissions = [];
+        if (isset($GLOBALS['USUARIO_PERMS'])) {
+            $permissions = $GLOBALS['USUARIO_PERMS'];
+        } else if ($credenciais && isset($credenciais['permissoes'])) {
+            $permissions = $credenciais['permissoes'];
+        }
+        if (isset($GLOBALS['USUARIO_ISADMIN']) && $GLOBALS['USUARIO_ISADMIN'] === true) {
+            $permissions[] = "Administrador";
+        } else if ($credenciais && isset($credenciais['is_adm']) && $credenciais['is_adm'] === true) {
+            $permissions[] = "Administrador";
+        }
+        $r = false;
+        if (is_array($perm)) {
+            $r = count(array_intersect($permissions, $perm)) == count($perm);
+        } else {
+            $r = in_array($perm, $permissions);
+        }
+        if ($throw_error && !$r) {
+            throw new Exception("Usuario não possui permissão: " . (is_array($perm) ? implode(',', $perm) : $perm));
+        }
+        return $r;
     }
 
 ?>

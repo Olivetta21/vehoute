@@ -7,7 +7,8 @@ try {
 
 
 //usuario requisitando suas localizações de rastreadores;
-if ($rastreador_id = getRequestValue("rastreador_id", "is_int")) {    
+if ($rastreador_id = getRequestValue("rastreador_id", "is_int")) {
+    userHasPermission("Rastreio Salvo");
     returnJson(getLocalizacoesDoRastreador($credentials, $rastreador_id));
 }
 

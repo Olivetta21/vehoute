@@ -4,6 +4,7 @@ require __DIR__ . "/f_permissoes_rastreador.php";
 $credenciais = getCredentials();
 
 try {
+userHasPermission("Administrador");
 
 if ($permissoes = getRequestValue("permissoes", "is_array")) {
     returnJson(getPermissoesRastreador($credenciais, $permissoes['agrupar_por'], $permissoes['filter']));

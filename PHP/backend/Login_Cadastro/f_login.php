@@ -29,7 +29,11 @@ function insertAccess_Token($pdo, $usuario_id) {
 }
 
 function selectPermissoesDoUsuario($pdo, $usuario_id) {
-    $stmt = $pdo->prepare("select perm_id from getPermissoesDoUsuario(:usuario_id) where negado = false");
+    $stmt = $pdo->prepare("SELECT
+    pu.nome from getPermissoesDoUsuario(:usuario_id) p join permissao_usuario pu on pu.id = p.perm_id where p.negado = false
+    UNION
+    SELECT case when id is not null then 'Administrador' else null end as nome from administrador where id = ANY(CAST(:usuario_id AS INTEGER[]))
+    ");
     $stmt->execute([
         "usuario_id"=> '{' . $usuario_id . '}'
     ]);
