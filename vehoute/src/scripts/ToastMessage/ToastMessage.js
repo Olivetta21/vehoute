@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import Notification from "../NotificationPage/Notification";
 
 export default class ToastMessage {
     static _toasts = ref([]);
@@ -25,6 +26,7 @@ export default class ToastMessage {
         const id = Date.now();
         
         ToastMessage.toasts.unshift({id, title, message, type});
+        Notification.insertNotification(`[${type.toUpperCase()}] ${title} - ${message}`);
 
         if (_console){
             if (typeof console[type] === 'function') console[type](title, message);
