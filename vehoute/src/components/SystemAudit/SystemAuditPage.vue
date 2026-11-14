@@ -1,6 +1,6 @@
 <template>
         <HeaderTelas
-            :titulo="PagesRoutes.find(r => r.name === this.$route.name)?.pageName"
+            :titulo="PagesRoutes.all.find(r => r.name === this.$route.name)?.pageName"
             :mostrarVoltar="true"
             @voltar="this.$router.back()"
         />

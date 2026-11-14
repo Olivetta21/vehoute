@@ -6,10 +6,12 @@
 
                 <h3 class="tracker-name">{{ (trackerVModel) ? '' : tracker.ur_nome || 'Rastreador sem nome' }}</h3>
                 
-                <span v-if="!trackerVModel" @click="startEditingTracker"> ✏️ </span>
-                <template v-else>
-                    <button v-if="someInfoIsEdited" type="button" class="action-accept" @click="saveAllChanges"> ✓ </button>
-                    <button type="button" class="action-decline" @click="cancelEditingTracker"> ✕ </button>
+                <template v-if="Usuario.hasPermission('Modificar Rastreador')">
+                    <span v-if="!trackerVModel" @click="startEditingTracker"> ✏️ </span>
+                    <template v-else>
+                        <button v-if="someInfoIsEdited" type="button" class="action-accept" @click="saveAllChanges"> ✓ </button>
+                        <button type="button" class="action-decline" @click="cancelEditingTracker"> ✕ </button>
+                    </template>
                 </template>
                 
                 <span class="expand-indicator" @click.stop="detailed = !detailed">{{ detailed ? '−' : '+' }}</span>
@@ -36,7 +38,7 @@
                 <div class="tracker-info-row">
                     <span class="info-label">Equipamento</span>
                     <div class="info-value">
-                        <template v-if="trackerVModel">
+                        <template v-if="trackerVModel && tracker.dono_id == Usuario.id">
                             <SelectInput
                                 :data="r_statuses"
                                 :selectedId="trackerVModel.r_status"
@@ -60,21 +62,23 @@
 
             <div class="tracker-token">
                 <span class="info-label">Token público</span>
-                <input v-if="trackerVModel" type="text" v-model="trackerVModel.r_token_publico" placeholder="Token público">
+                <input v-if="trackerVModel && tracker.dono_id == Usuario.id" type="text" v-model="trackerVModel.r_token_publico" placeholder="Token público">
                 <span v-else class="token-value">{{ tracker.r_token_publico || 'Não informado' }}</span>
             </div>
             
             <div class="tracker-token">
                 <span class="info-label">Senha</span>
-                <input v-if="trackerVModel" type="text" v-model="trackerVModel.r_senha" placeholder="Nova senha">
+                <input v-if="trackerVModel && tracker.dono_id == Usuario.id" type="text" v-model="trackerVModel.r_senha" placeholder="Nova senha">
                 <span v-else class="token-value"> ********** </span>
             </div>
         </div>
 
         <div :class="{'tracker-detailed': true,'hide': !detailed}">
             <div class="tracker-detailed-actions">
-                <button type="button" @click="$emit('ouvintes')"> Ouvintes </button>
-                <button type="button" @click="$emit('lococulta')"> Localização oculta </button>
+                <template v-if="tracker.dono_id == Usuario.id">
+                    <button v-if="Usuario.hasPermission('Gerenciar Ouvintes')" type="button" @click="$emit('ouvintes')"> Ouvintes </button>
+                    <button v-if="Usuario.hasPermission('Intervalo Oculto')" type="button" @click="$emit('lococulta')"> Localização oculta </button>
+                </template>
                 <button type="button" @click="$emit('rastrear')"> Rastrear </button>
             </div>
 
@@ -96,6 +100,7 @@
 </template>
 
 <script>
+import Usuario from '../../scripts/LoginPage/Usuario.js';
 import UserTrackers from '../../scripts/UserTracker/UserTrackers.js';
 import { compararObjetos, compararVariaveis } from '../../scripts/utils.js';
 import SelectInput from '../utils/SelectInput.vue';
@@ -106,6 +111,7 @@ export default {
     data() {
         return {
             UserTrackers,
+            Usuario,
             detailed: false,
             ur_statuses: [
                 {id: 1, for_ouvinte: 'Operante', color: 'green'},

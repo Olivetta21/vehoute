@@ -20,7 +20,7 @@ export default {
   data() {
     return {
       HomePage,
-      home_cardIcon: PagesRoutes.filter(r => r.home_cardIcon)
+      home_cardIcon: PagesRoutes.byCaracteristic('home_cardIcon')
     };
   }
 }

@@ -1,6 +1,6 @@
 <template>
     <HeaderTelas
-        :titulo="PagesRoutes.find(r => r.name === this.$route.name)?.pageName + ' ' + (TrackerLocOculta.tracker?.ur_nome || '')"
+        :titulo="PagesRoutes.all.find(r => r.name === this.$route.name)?.pageName + ' ' + (TrackerLocOculta.tracker?.ur_nome || '')"
         :mostrarVoltar="true"
         :mostrarPesquisa="true"
         :mostrarAdicionar="true"

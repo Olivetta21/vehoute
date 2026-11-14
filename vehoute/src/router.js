@@ -38,7 +38,7 @@ import Notification from './scripts/NotificationPage/Notification.js'
 
 function constructRoute(name, aditional) {
   //Para reutilizar o mesmo vetor
-  const route = PagesRoutes.find(r => r.name === name);
+  const route = PagesRoutes.all.find(r => r.name === name);
   if (!route) {
     console.error("constructRoute", "Nenhuma rota encontrada com o nome: " + name);
     return null;

@@ -20,7 +20,7 @@ export default {
   },
   data() {
     return {
-      userandperms_cardIcon: PagesRoutes.filter(r => r.userandperms_cardIcon)
+      userandperms_cardIcon: PagesRoutes.byCaracteristic('userandperms_cardIcon')
     };
   }
 }

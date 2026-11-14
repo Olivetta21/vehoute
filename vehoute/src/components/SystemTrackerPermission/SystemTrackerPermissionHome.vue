@@ -20,7 +20,7 @@ export default {
   },
   data() {
     return {
-      trackerandperms_cardIcon: PagesRoutes.filter(r => r.trackerandperms_cardIcon)
+      trackerandperms_cardIcon: PagesRoutes.byCaracteristic('trackerandperms_cardIcon')
     };
   }
 }

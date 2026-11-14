@@ -60,7 +60,7 @@ export default {
         return {
             isFullscren: false,
             isCollapsed: false,
-            menuItems: PagesRoutes.filter(route => route.sidebarIcon)
+            menuItems: PagesRoutes.byCaracteristic('sidebarIcon')
         }
     },
     methods: {

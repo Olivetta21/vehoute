@@ -378,6 +378,8 @@
             $permissions[] = "Administrador";
         }
         $r = false;
+        $permissions = array_map('strtolower', $permissions);
+        $perm = is_array($perm) ? array_map('strtolower', $perm) : strtolower($perm);
         if (is_array($perm)) {
             $r = count(array_intersect($permissions, $perm)) == count($perm);
         } else {

@@ -20,7 +20,7 @@ export default {
   },
   data() {
     return {
-      admin_cardIcon: PagesRoutes.filter(r => r.admin_cardIcon)
+      admin_cardIcon: PagesRoutes.byCaracteristic('admin_cardIcon')
     };
   }
 }

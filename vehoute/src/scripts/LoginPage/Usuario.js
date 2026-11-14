@@ -32,6 +32,15 @@ export default class Usuario {
         this.permissoes = null;
     }
 
+    static hasPermission(permission) {
+        permission = permission.toLowerCase();
+        if (!this.permissoes || !Array.isArray(this.permissoes)) {
+            return false;
+        }
+        this.permissoes = this.permissoes.map(p => p.toLowerCase());
+        return this.permissoes.includes(permission);
+    }
+
     static disconnectWebSockets() {
         console.log("Desconectando WebSockets do usuário:", this.nome);
     }
