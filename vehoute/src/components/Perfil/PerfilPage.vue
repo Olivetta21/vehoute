@@ -7,7 +7,7 @@
 
         <div class="perfil-page" v-if="userProfile">
             <div>
-                <h1>Dados Pessoais</h1>
+                <h1>#{{Usuario.id}} - Dados Pessoais</h1>
                 <div class="info">
                     <label for="user-nome">Nome</label>
                     <input id="user-nome" type="text" v-model="userProfile.v_model_nome">
@@ -69,12 +69,14 @@ import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import { compararVariaveis, validarRegex } from '../../scripts/utils';
 import SelectInput from '../utils/SelectInput.vue';
+import Usuario from '../../scripts/LoginPage/Usuario';
 
 export default {
     name: 'PerfilPage',
     data() {
         return {
             PagesRoutes,
+            Usuario,
             validarRegex,
             Perfil,
             userProfile: null
