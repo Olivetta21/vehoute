@@ -1,7 +1,7 @@
 <?php
 
 function enviarEmailOTP($nome, $email, $otp) {
-    $host = $_SERVER['HTTP_HOST'];
+    $host = $_SERVER['HTTP_HOST'] ?? 'olivetta';
     $host = explode('.', $host)[0];
 
     $data = [

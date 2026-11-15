@@ -11,7 +11,7 @@ class LoginTest extends TestCase {
         $result = fazerLogin($login, $senha);
         $access_token = $result['usuario']['access_token'];
         $this->assertNotNull($access_token);
-        $permissoes = [1, 3, 5];
+        $permissoes = ['Login', 'Modificar Perfil', 'Registrar Rastreador'];
         foreach ($result['usuario']['permissoes'] as $permissao) {
             $this->assertContains($permissao, $permissoes);
         }
@@ -33,7 +33,7 @@ class LoginTest extends TestCase {
     function test_verifica_access_token() {
         $access_token = "tk1";
         $result = testAccessToken($access_token);
-        $permissoes = [1, 3, 5];
+        $permissoes = ['Login', 'Modificar Perfil', 'Registrar Rastreador'];
         foreach ($result['usuario']['permissoes'] as $permissao) {
             $this->assertContains($permissao, $permissoes);
         }

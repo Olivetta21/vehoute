@@ -11,28 +11,30 @@ class CadastroTest extends TestCase {
     }
 
     function test_enviar_email_otp() {
-        $this->assertTrue(enviarEmailOTP("Teste da Silva", "teste@example.com.brasil", "otptest"));
+        $mail = "test@" . uniqid() . ".com.brasiltest";
+        $this->assertIsArray(enviarEmailOTP("Teste da Silva", $mail, "otpteste"));
     }
 
     function test_gerar_otp_e_enviar_email_e_validar_otp() {
         $pdo = getDataBase();
         $this->assertNull($pdo->errorCode());
 
-        $result = gerarOTPeEnviarEmail("Teste da Silva", "Teste@example.com.brasil");
-        $stmt = $pdo->prepare("select otp from usuario_cadastrando where email = 'Teste@example.com.brasil'");
-        $stmt->execute();
+        $mail = "test@" . uniqid() . ".com.brasiltest";
+        $result = gerarOTPeEnviarEmail("Teste da Silva", $mail);
+        $stmt = $pdo->prepare("select otp from usuario_cadastrando where email = ?");
+        $stmt->execute([$mail]);
         $otp = $stmt->fetchColumn();
         
         $this->assertEquals(["success"=>true, "otp"=>$otp], $result);
 
         $validar_result = verificarOTP($otp);
         $this->assertEquals(
-            ["success"=>true, "dados"=>["nome"=> "Teste da Silva", "email"=> "Teste@example.com.brasil", "otp"=> $otp]],
+            ["success"=>true, "dados"=>["nome"=> "Teste da Silva", "email"=> $mail, "otp"=> $otp]],
             $validar_result
         );
 
-        $stmt = $pdo->prepare("delete from usuario_cadastrando where email = 'Teste@example.com.brasil'");
-        $stmt->execute();
+        $stmt = $pdo->prepare("delete from usuario_cadastrando where email = ?");
+        $stmt->execute([$mail]);
 
         $this->assertEquals(1, $stmt->rowCount());
     }
@@ -41,21 +43,22 @@ class CadastroTest extends TestCase {
         $pdo = getDataBase();
         $this->assertNull($pdo->errorCode());
         
-        $result = gerarOTPeEnviarEmail("Teste da Silva", "Teste@example.com.brasil");
-        $stmt = $pdo->prepare("select otp from usuario_cadastrando where email = 'Teste@example.com.brasil'");
-        $stmt->execute();
+        $mail = "test@" . uniqid() . ".com.brasiltest";
+        $result = gerarOTPeEnviarEmail("Teste da Silva", $mail);
+        $stmt = $pdo->prepare("select otp from usuario_cadastrando where email = ?");
+        $stmt->execute([$mail]);
         $otp = $stmt->fetchColumn();
         $this->assertEquals(["success"=>true, "otp"=>$otp], $result);
 
         $validar_otp_result = verificarOTP($otp);
         $this->assertEquals(
-            ["success"=>true, "dados"=>["nome"=> "Teste da Silva", "email"=> "Teste@example.com.brasil", "otp"=> $otp]],
+            ["success"=>true, "dados"=>["nome"=> "Teste da Silva", "email"=> $mail, "otp"=> $otp]],
             $validar_otp_result
         );
 
         $finalisar_result = finalizarCadastro(
             "Teste da Silva",
-            "Teste@example.com.brasil",
+            $mail,
             "11999999999",
             "Testelogin",
             "senha123A#",
@@ -66,7 +69,7 @@ class CadastroTest extends TestCase {
 
         $this->assertEquals(["success"=>true], $finalisar_result);
         
-        $stmt = $pdo->prepare("select id from usuario where nome like 'Teste%' and email like 'Teste%@example.com.brasil' and login like 'Teste%login' and telefone = '11999999999'");
+        $stmt = $pdo->prepare("select id from usuario where nome like 'Teste%' and email like '%@%brasiltest' and login like 'Teste%login' and telefone = '11999999999'");
         $stmt->execute();
         $users = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $this->assertGreaterThan(0 , $stmt->rowCount());
