@@ -66,3 +66,37 @@ class DataBase:
         except Exception as e:
             LogService.log(f"[DB] Erro ao obter conexão: {e}")
             raise
+
+    @staticmethod
+    def tracker_has_permission(tracker_id, permission_id):
+        with DataBase.get() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select exists (
+                        select 1
+                        from getPermissoesDoRastreador(%s)
+                        where perm_id = %s and negado = false
+                    )
+                    """,
+                    ([tracker_id], permission_id),
+                )
+                result = cur.fetchone()
+                return bool(result and result[0])
+
+    @staticmethod
+    def user_has_permission(user_id, permission_id):
+        with DataBase.get() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select exists (
+                        select 1
+                        from getPermissoesDoUsuario(%s)
+                        where perm_id = %s and negado = false
+                    )
+                    """,
+                    ([user_id], permission_id),
+                )
+                result = cur.fetchone()
+                return bool(result and result[0])

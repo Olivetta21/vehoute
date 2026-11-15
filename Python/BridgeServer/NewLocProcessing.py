@@ -24,7 +24,7 @@ class NewLocProcessing:
 
     @staticmethod
     def trackerCanSendLoc(tracker_id):
-        return True
+        return DataBase.tracker_has_permission(tracker_id, 2)
 
     @staticmethod
     def processNewLocation():
@@ -78,6 +78,15 @@ class NewLocProcessing:
                         if cid not in WebSocketServer.CLIENTS:
                             continue
                         client = WebSocketServer.CLIENTS[cid]
+
+                    if not DataBase.user_has_permission(
+                        client.identidade,
+                        WebSocketServer.USER_PERMISSION_REALTIME_TRACKING,
+                    ):
+                        NewLocProcessing.log(
+                            f"[!] Cliente({client.CID}) sem permissão de rastreio em tempo real. Ignorando..."
+                        )
+                        continue
                     
                     with DataBase.get() as conn:
                         with conn.cursor() as cur:

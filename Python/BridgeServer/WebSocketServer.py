@@ -10,6 +10,7 @@ class AuthError(Exception):
     pass
 
 class WebSocketServer:
+    USER_PERMISSION_REALTIME_TRACKING = 9
     CLIENTS = {}
     CLIENTS_LOCK = threading.Lock()
     TRACKERS = {}
@@ -94,8 +95,18 @@ class WebSocketServer:
     @staticmethod
     async def checkClientHasTracker(identidade, tracker_id):
         res = await WebSocketServer.db_execute(
-            "SELECT 1 from usuario_rastreador where rastreador_id = %s and usuario_id = %s",
-            (tracker_id, identidade)
+            """
+            select 1
+            from usuario_rastreador
+            where rastreador_id = %s
+              and usuario_id = %s
+              and exists (
+                  select 1
+                  from getPermissoesDoUsuario(%s)
+                  where perm_id = %s and negado = false
+              )
+            """,
+            (tracker_id, identidade, [identidade], WebSocketServer.USER_PERMISSION_REALTIME_TRACKING)
         )
         return res and res[0][0] == 1
 
@@ -215,4 +226,3 @@ class WebSocketServer:
 
     def start(self):
         asyncio.run(self.start_())
-

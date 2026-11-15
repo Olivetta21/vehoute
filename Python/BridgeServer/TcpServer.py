@@ -14,6 +14,8 @@ class AuthError(Exception):
     pass
 
 class TcpServer:
+    TRACKER_PERMISSION_CONNECTION = 1
+    TRACKER_PERMISSION_SEND_LOCATION = 2
     # RESPONSE TABLE
     R_OK = b"receb\n"
     R_PLAIN_TOKEN_OK = b'plain\n'
@@ -104,7 +106,19 @@ class TcpServer:
                         )
                         result = cur.fetchone()
 
+                if not result:
+                    raise AuthError(f"Rastreador({self.CID}) não encontrado.")
+
                 self.tracker_id = result[0]
+                if not DataBase.tracker_has_permission(
+                    self.tracker_id,
+                    TcpServer.TRACKER_PERMISSION_CONNECTION,
+                ):
+                    TcpServer.log(
+                        f"[!] Rastreador({self.CID}) sem permissão de conexão. Desconectando..."
+                    )
+                    return False
+
                 result_byte = TcpServer.converter(result[1])
                 TcpServer.log(f"[$][Private] Rastreador({self.CID}): {result}")
 
@@ -185,6 +199,15 @@ class TcpServer:
 
                     tracker.conn.sendall(TcpServer.R_OK)
                     TcpServer.log(f"[Loc] Rastreador({tracker.CID}) {tracker.tracker_id} {len(DATA)}b Lat:{lat:.6f} Lng:{lng:.6f}")
+
+                    if not DataBase.tracker_has_permission(
+                        tracker.tracker_id,
+                        TcpServer.TRACKER_PERMISSION_SEND_LOCATION,
+                    ):
+                        TcpServer.log(
+                            f"[!] Rastreador({tracker.CID}) sem permissão para enviar localização. Ignorando..."
+                        )
+                        continue
                     
                     # Envia nova localização para o WebSocket
                     NewLocProcessing.FILA_NEW_LOC.put(TrackerLocation(tracker.tracker_id, lat, lng))
