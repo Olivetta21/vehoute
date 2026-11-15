@@ -102,7 +102,7 @@ export default class PagesRoutes {
     static byPermission() {
         return statics_routes.filter(page => {
             if (!page.permissions) return true;
-            return page.permissions.some(perm => getUserPermissions().includes(perm));
+            return page.permissions.map(p => p.toLowerCase()).some(perm => getUserPermissions().map(p => p.toLowerCase()).includes(perm));
         });
     }
 
