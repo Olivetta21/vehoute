@@ -29,7 +29,8 @@ create table usuario_cadastrando (
     email varchar(100) unique not null,
     verificado boolean not null default false,
     otp varchar(256),
-    expires_at timestamp with time zone not null
+    expires_at timestamp with time zone not null,
+    ip varchar(100) not null
 );
 
 create table usuario (
@@ -42,6 +43,124 @@ create table usuario (
     email varchar(100) unique not null,
     telefone varchar(15)
 );
+
+
+create table usuario_recuperacao_senha(
+    id serial primary key,
+    email varchar(100) unique not null,
+    verificado boolean not null default false,
+    otp varchar(256),
+    expires_at timestamp with time zone not null,
+    ip varchar(100) not null
+);
+
+
+create function inserirUsuarioRecuperacaoSenha (
+    p_email varchar, p_otp varchar, p_ip varchar
+)
+RETURNS TABLE (
+    sucesso BOOLEAN,
+    mensagem TEXT,
+    detalhes TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    var_recuperacao_id INT;
+BEGIN
+    -- Bloqueia a execução da função para o mesmo email e ip, evitando race conditions
+    PERFORM pg_advisory_xact_lock(
+        hashtext(concat('recuperando_senha', p_email::TEXT, p_ip::TEXT))
+    );
+
+    -- Verifica cadastro prévio
+    PERFORM 1 
+    FROM usuario 
+    WHERE email = p_email;
+    
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Nenhum cadastro encontrado para o email informado', p_email::TEXT;
+        RETURN;
+    END IF;
+
+    -- Impedir cadastros múltiplos em um curto período de tempo (metade da expiração)
+    PERFORM 1
+    FROM usuario_recuperacao_senha 
+    WHERE email = p_email 
+      AND ip = p_ip
+      AND expires_at > now() + interval '2 minutes';
+    
+    IF FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Já foi enviado um email recentemente. Aguarde alguns minutos antes de tentar novamente.', p_email::TEXT;
+        RETURN;
+    END IF;
+
+    -- Insere ou atualiza cadastro prévio
+    INSERT INTO usuario_recuperacao_senha (email, otp, expires_at, ip)
+    VALUES (p_email, p_otp, now() + interval '4 minutes', p_ip)
+    ON CONFLICT (email) DO UPDATE SET otp = p_otp, expires_at = now() + interval '4 minutes', ip = p_ip, verificado = false
+    RETURNING id INTO var_recuperacao_id;
+
+    IF var_recuperacao_id IS NOT NULL THEN
+        RETURN QUERY SELECT true, 'Solicitação de recuperação de senha realizada com sucesso', p_email::TEXT;
+    ELSE
+        RETURN QUERY SELECT false, 'Falha ao registrar solicitação de recuperação de senha', p_email::TEXT;
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN QUERY SELECT false, 'Erro ao registrar solicitação de recuperação de senha', SQLERRM;
+END;
+$$;
+
+
+create function salvarNovaSenhaRecuperada(
+    p_email varchar, p_otp varchar, p_nova_senha varchar
+)
+RETURNS TABLE (
+    sucesso BOOLEAN,
+    mensagem TEXT,
+    detalhes TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    var_recuperacao_id INT;
+BEGIN
+    -- Bloqueia a execução da função para o mesmo email e otp, evitando race conditions
+    PERFORM pg_advisory_xact_lock(
+        hashtext(concat('recuperando_senha', p_email::TEXT, p_otp::TEXT))
+    );
+
+    -- Verifica se o código de recuperação é válido e ja foi verificado
+    PERFORM 1
+    FROM usuario_recuperacao_senha
+    WHERE email = p_email
+      AND otp = p_otp
+      AND verificado = true
+      AND expires_at > now();
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Codigo de recuperação inválido ou expirado', p_email::TEXT;
+        RETURN;
+    END IF;
+
+    -- Atualiza a senha do usuário e marca o código como verificado
+    UPDATE usuario_recuperacao_senha
+    SET verificado = true
+    WHERE email = p_email AND otp = p_otp;
+
+    -- Atualiza a senha do usuário no banco de dados
+    UPDATE usuario
+    SET senha = crypt(p_nova_senha, gen_salt('bf'))
+    WHERE email = p_email;
+
+    RETURN QUERY SELECT true, 'Nova senha salva com sucesso', p_email::TEXT;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN QUERY SELECT false, 'Erro ao salvar nova senha', SQLERRM;
+END;
+$$;
+
 
 create table usuario_access_token(
     token varchar(256) not null primary key,
@@ -292,7 +411,7 @@ create table auditoria (
 );
 
 create function inserirUsuarioCadastrando(
-    p_nome varchar, p_email varchar, p_otp varchar
+    p_nome varchar, p_email varchar, p_otp varchar, p_ip varchar
 )
 RETURNS TABLE (
     sucesso BOOLEAN,
@@ -304,6 +423,11 @@ AS $$
 DECLARE
     var_usuario_cadastrando_id INT;
 BEGIN
+    -- Bloqueia a execução da função para o mesmo email e ip, evitando race conditions
+    PERFORM pg_advisory_xact_lock(
+        hashtext(concat('usuario_cadastrando', p_email::TEXT, p_ip::TEXT))
+    );
+
     -- Verifica cadastro prévio
     PERFORM 1 
     FROM usuario 
@@ -314,10 +438,22 @@ BEGIN
         RETURN;
     END IF;
 
+    -- Impedir cadastros múltiplos em um curto período de tempo (metade da expiração)
+    PERFORM 1
+    FROM usuario_cadastrando 
+    WHERE email = p_email 
+      AND ip = p_ip
+      AND expires_at > now() + interval '2 minutes';
+    
+    IF FOUND THEN
+        RETURN QUERY SELECT FALSE, 'Já foi enviado um email recentemente. Aguarde alguns minutos antes de tentar novamente.', p_email::TEXT;
+        RETURN;
+    END IF;
+
     -- Insere ou atualiza cadastro prévio
-    INSERT INTO usuario_cadastrando (nome, email, otp, expires_at)
-    VALUES (p_nome, p_email, p_otp, now() + interval '4 minutes')
-    ON CONFLICT (email) DO UPDATE SET nome = p_nome, otp = p_otp, expires_at = now() + interval '4 minutes'
+    INSERT INTO usuario_cadastrando (nome, email, otp, expires_at, ip)
+    VALUES (p_nome, p_email, p_otp, now() + interval '4 minutes', p_ip)
+    ON CONFLICT (email) DO UPDATE SET nome = p_nome, otp = p_otp, expires_at = now() + interval '4 minutes', ip = p_ip, verificado = false
     RETURNING id INTO var_usuario_cadastrando_id;
 
     IF var_usuario_cadastrando_id IS NOT NULL THEN
@@ -349,6 +485,11 @@ DECLARE
     var_ja_cadastrado_info TEXT;
     var_ja_cadastrado_tipo TEXT;
 BEGIN
+    -- Bloqueia a execução da função para o mesmo email e otp, evitando race conditions
+    PERFORM pg_advisory_xact_lock(
+        hashtext(concat('finalizar_cadastro_usuario', p_email::TEXT, p_otp::TEXT))
+    );
+
     -- Verifica cadastro prévio
     PERFORM 1 
     FROM usuario_cadastrando 

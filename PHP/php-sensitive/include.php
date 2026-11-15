@@ -391,4 +391,33 @@
         return $r;
     }
 
+  
+    function enviarEmail($data) {
+        if (!$data['destinatario'] || !$data['mensagem'] || !$data['assunto']) {
+            return ["resp"=>3,"msg"=>"incorrect mail parameters"];
+        }
+
+        try {
+            $ch = curl_init($_ENV['MAIL_URL']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+
+            $response = curl_exec($ch);
+            curl_close($ch);
+
+            $resp = json_decode($response, true);
+
+            if ($resp['status'] === "sucesso") {
+                return ["resp"=>0,"msg"=>"success"];
+            }
+
+            return ["resp"=>1,"msg"=>"Servidor de emails fora do ar"];
+        }
+        catch (Exception $e) {        
+            return ["resp"=>2,"msg"=>$e->getMessage()];
+        }
+    }  
+
 ?>

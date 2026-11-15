@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from './components/Pagina_Inicial/HomePage.vue'
 import CadastroUsuarioPage from './components/Login_Cadastro/CadastroUsuario.vue'
 import FinalizarCadastroUsuarioPage from './components/Login_Cadastro/FinalizarCadastroUsuarioPage.vue'
+import RecuperacaoSenhaPage from './components/Login_Cadastro/RecuperacaoSenhaPage.vue'
 import LoginPage from './components/Login_Cadastro/LoginPage.vue'
 import PagesFrame from './components/PagesFrame.vue'
 import MapPage from './components/MapaRastreamento/MapPage.vue'
@@ -53,7 +54,8 @@ const routes = [
     path: '/cadastro',
     children: [
       { path: 'fazendo', name: 'cadastro', component: CadastroUsuarioPage },
-      { path: 'finalizando', name: 'finalizar-cadastro', component: FinalizarCadastroUsuarioPage }
+      { path: 'finalizando', name: 'finalizar-cadastro', component: FinalizarCadastroUsuarioPage },
+      { path: 'recuperacao', name: 'recuperacao-senha', component: RecuperacaoSenhaPage }
     ]
   },
   {

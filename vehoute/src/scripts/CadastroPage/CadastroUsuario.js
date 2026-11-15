@@ -31,4 +31,34 @@ export default class CadastroUsuario {
         }
         return [];        
     }
+
+    static async enviarCodigoRecuperacao(email) {
+        const response = await fetch_("/login_cadastro/cadastro.php", [
+            { "recuperar_senha": email }
+        ]);
+        if (response && response.success) {
+            return true;
+        }
+        return false;
+    }
+
+    static async testarCodigoRecuperacao(otp) {
+        const response = await fetch_("/login_cadastro/cadastro.php", [
+            { "recuperar_senha_check": otp }
+        ]);
+        if (response && response.success) {
+            return response.recuperacao_data;
+        }
+        return false;
+    }
+
+    static async salvarNovaSenhaRecuperada(email, otp, senha) {
+        const response = await fetch_("/login_cadastro/cadastro.php", [
+            { "recuperar_senha_save": { "email": email, "otp": otp, "senha": senha } }
+        ]);
+        if (response && response.success) {
+            return true;
+        }
+        return false;
+    }
 }

@@ -43,6 +43,21 @@ if ($getLegalIdentTipos = getRequestValue("getLegalIdentTipos")) {
     returnJson(getSimpleLegalIdentTipoCadastro());
 }
 
+if ($email = getRequestValue("recuperar_senha", "is_string")) {
+    returnJson(enviarCodigoRecuperacao($email));
+}
+
+if ($otp = getRequestValue("recuperar_senha_check", "is_string")) {
+    returnJson(testarCodigoRecuperacao($otp));
+}
+
+if ($nova = getRequestValue("recuperar_senha_save", "is_array")) {
+    $email = $nova['email'];
+    $otp = $nova['otp'];
+    $senha = $nova['senha'];
+    returnJson(salvarNovaSenhaRecuperada($email, $otp, $senha));
+}
+
 } catch (Throwable $e) {
     returnJson(["error" => errorMessage("Erro ao processar requisição", $e->getMessage() . " - " . $e->getLine() . " - " . $e->getFile())]);
 }
