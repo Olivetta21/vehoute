@@ -10,6 +10,7 @@
     //DOTENV CONFIG #
 
     define("DEVELOPMENT_ENV", $_ENV['DEVELOPMENT_ENV'] === 'true');
+    define("SITE_URL", $_ENV['SITE_URL'] ?? "http://localhost");
     
     function getClientIp() {
         if (!empty($_SERVER['HTTP_CLIENT_IP'])) return $_SERVER['HTTP_CLIENT_IP'];
@@ -393,10 +394,7 @@
 
   
     function enviarEmail($data) {
-        if (!$data['destinatario'] || !$data['mensagem'] || !$data['assunto']) {
-            return ["resp"=>3,"msg"=>"incorrect mail parameters"];
-        }
-
+        //Retorna json: {"status":<string>, "mensagem":<string>}
         try {
             $ch = curl_init($_ENV['MAIL_URL']);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -409,14 +407,15 @@
 
             $resp = json_decode($response, true);
 
-            if ($resp['status'] === "sucesso") {
-                return ["resp"=>0,"msg"=>"success"];
+            //cofirma se a resposta é válida
+            if (!is_array($resp) || !isset($resp['status']) || !isset($resp['mensagem'])) {
+                return ["status"=>"erro","mensagem"=>"Resposta inválida do serviço de envio de email: " . $response];
             }
 
-            return ["resp"=>1,"msg"=>"Servidor de emails fora do ar"];
+            return $resp;
         }
         catch (Exception $e) {        
-            return ["resp"=>2,"msg"=>$e->getMessage()];
+            return ["status"=>"erro","mensagem"=>$e->getMessage()];
         }
     }  
 

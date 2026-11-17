@@ -30,8 +30,8 @@ function getLogsDoSistema($credenciais, $titulo = null, $mensagem = null, $ip = 
     $pdo = $credenciais["pdo"];
     $sql = "SELECT el.id, el.titulo, el.mensagem, u.id u_id, u.nome u_nome, el.url, el.ip, el.data
 	from errors_log el
-	join usuario_access_token uat on uat.token = el.u_access_token
-	join usuario u on u.id = uat.usuario_id
+	left join usuario_access_token uat on uat.token = el.u_access_token
+	left join usuario u on u.id = uat.usuario_id
     " . (empty($where) ? "" : "WHERE " . implode(" AND ", $where)) . " ORDER BY el.data DESC"; 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

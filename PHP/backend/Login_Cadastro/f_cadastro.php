@@ -1,22 +1,23 @@
 <?php
 
 function enviarEmailOTP($nome, $email, $otp) {
-    $host = $_SERVER['HTTP_HOST'] ?? 'olivetta';
-    $host = explode('.', $host)[0];
-
     $data = [
         "destinatario" => $email,
-        "assunto" => "Vehoute - Código de Acesso",
-        "mensagem" => "<h1 style='color: blue;'> Olá " . $nome . "! <br> esse é o seu código para acessar o site <em><a href='/cadastro/finalizando?otp=" . $otp . "'>". $host ."</a></em></h1>
-                        <p style='font-size: 4em; color: red;'><strong>". $otp ."</strong></p>"
+        "assunto" => "Vehoute - Crie sua conta",
+        "provedor" => "resend",
+        "template" => [
+            "id" => "criar-conta",
+            "variables" => [
+                "first_name" => $nome,
+                "website" => "Vehoute",
+                "website_url" => SITE_URL,
+                "reset_url" => SITE_URL . "/cadastro/finalizando?otp=$otp",
+                "otp" => $otp
+            ]
+        ]
     ];
-    $res_email = enviarEmail($data);
 
-    if ($res_email["resp"] === 0) {
-        return ["success" => true];
-    } else {
-        return ["error" => errorMessage("Erro ao enviar email", $res_email["msg"])];
-    }
+    return enviarEmail($data);
 }
 
 function gerarOTPeEnviarEmail($nome_usuario, $email) {
@@ -47,7 +48,8 @@ function gerarOTPeEnviarEmail($nome_usuario, $email) {
         
         if ($cadastrando_result["sucesso"] === true) {
             $send_mail_result = enviarEmailOTP($nome_usuario, $email, $otp);
-            if ($send_mail_result) {
+            
+            if ($send_mail_result["status"] === "sucesso") {
                 $pdo->commit();
 
                 $result = ["success" => true];
@@ -55,7 +57,7 @@ function gerarOTPeEnviarEmail($nome_usuario, $email) {
                 return $result;
             } else {
                 $pdo->rollBack();
-                return ["error" => errorMessage("Não foi possivel enviar o email","nome_usuario: $nome_usuario, email: $email, otp: $otp")];
+                return ["error" => errorMessage("Erro ao enviar email de criação de conta", $send_mail_result["mensagem"])];
             }
         } 
 
@@ -170,23 +172,24 @@ function getSimpleLegalIdentTipoCadastro() {
 }
 
 
-function enviarEmailRecuperacao($nome, $email, $otp) {
-    $host = $_SERVER['HTTP_HOST'];
-    $host = explode('.', $host)[0];
-
+function enviarEmailRecuperacao($email, $otp) {
     $data = [
         "destinatario" => $email,
         "assunto" => "Vehoute - Código de Recuperação de Senha",
-        "mensagem" => "<h1 style='color: blue;'> Olá " . $nome . "! <br> esse é o seu código para recuperar a senha do site <em><a href='/cadastro/recuperacao?otp=" . $otp . "'>". $host ."</a></em></h1>
-                        <p style='font-size: 4em; color: red;'><strong>". $otp ."</strong></p>"
+        "provedor" => "resend",
+        "template" => [
+            "id" => "redefinir-senha",
+            "variables" => [
+                "first_name" => "usuário",
+                "website" => "Vehoute",
+                "website_url" => SITE_URL,
+                "reset_url" => SITE_URL . "/cadastro/recuperacao?otp=$otp",
+                "otp" => $otp
+            ]
+        ]
     ];
-    $res_email = enviarEmail($data);
 
-    if ($res_email["resp"] === 0) {
-        return ["success" => true];
-    } else {
-        return ["error" => errorMessage("Erro ao enviar email", $res_email["msg"])];
-    }
+    return enviarEmail($data);
 }
 
 function enviarCodigoRecuperacao($email) {
@@ -212,8 +215,9 @@ function enviarCodigoRecuperacao($email) {
         $recuperacao_result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($recuperacao_result["sucesso"] === true) {
-            $send_mail_result = enviarEmailRecuperacao($recuperacao_result["nome"], $email, $otp);
-            if ($send_mail_result) {
+            $send_mail_result = enviarEmailRecuperacao($email, $otp);
+
+            if ($send_mail_result["status"] === "sucesso") {
                 $pdo->commit();
 
                 $result = ["success" => true];
@@ -221,7 +225,7 @@ function enviarCodigoRecuperacao($email) {
                 return $result;
             } else {
                 $pdo->rollBack();
-                return ["error" => errorMessage("Não foi possivel enviar o email","email: $email, otp: $otp")];
+                return ["error" => errorMessage("Erro ao enviar email de recuperação", $send_mail_result["mensagem"])];
             }
         } 
 
