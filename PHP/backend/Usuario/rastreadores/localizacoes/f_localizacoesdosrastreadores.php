@@ -6,7 +6,7 @@ function getLocalizacoesDoRastreador($credentials, $rastreador_id) {
     $pdo = null;
     try {
         $pdo = $credentials["pdo"];
-        $stmt = $pdo->prepare("select l_id, l_lat, l_lng, l_data from getLocDoRastreadorParaOuvinte(:rastreador_id, :usuario_id) where is_oculto = false");
+        $stmt = $pdo->prepare("select l_id, l_lat, l_lng, l_data from getLocDoRastreadorParaOuvinte(:rastreador_id, :usuario_id, 'salvos') where is_oculto = false");
         $stmt->execute([
             "rastreador_id"=>$rastreador_id,
             "usuario_id"=>$credentials["id"]

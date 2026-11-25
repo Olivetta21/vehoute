@@ -148,14 +148,35 @@ function donoCancelaTransferenciaDePosse($credenciais, $ur_id) {
     }
 }
 
+function checkOuvintePermiteAlguemAdicionarUmRastreadorNele($credenciais, $ouvinte_id) {
+    $Audit = (new Auditoria())->add('rastreador', 'checkOuvintePermiteAlguemAdicionarUmRastreadorNele', null, ["ouvinte_id" => $ouvinte_id], false);
+ 
+    if ($credenciais["id"] === $ouvinte_id) {
+        $Audit->sucesso(true);
+        return true;
+    }
 
-function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nome, $usuario_id_destino) {
-    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoEnviaPropostaDeOuvinteAUmUsuario', NULL, ["usuario_rastreador" => ["rastreador_id" => $rastreador_id, "nome" => $nome, "usuario_id" => $usuario_id_destino]], false);
+    $stmt = $credenciais["pdo"]->prepare("SELECT variavel from getConfiguracoesDoUsuario(:ouvinte_id) where nome = 'Usuarios podem te convidar a rastrear um rastreador'");
+    $stmt->execute(["ouvinte_id" => $ouvinte_id]);
+    $permite = $stmt->fetchColumn();
+    $permite = $permite === 'true' ? true : false;
+
+    $Audit->depois(["permite" => $permite]);
+    $Audit->sucesso(true);
+    return $permite;
+}
+
+function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $usuario_id_destino) {
+    $Audit = (new Auditoria())->add('usuario_rastreador', 'donoEnviaPropostaDeOuvinteAUmUsuario', NULL, ["usuario_rastreador" => ["rastreador_id" => $rastreador_id, "usuario_id" => $usuario_id_destino]], false);
 
     $pdo = $credenciais["pdo"];
 
-    if (!$rastreador_id || !$nome || !$usuario_id_destino) {
-        return ["error" => errorMessage("Id do rastreador, nome ou usuário destino não fornecidos", $rastreador_id . " - " . $usuario_id_destino)];
+    if (!$rastreador_id || !$usuario_id_destino) {
+        return ["error" => errorMessage("Id do rastreador ou usuário destino não fornecidos", $rastreador_id . " - " . $usuario_id_destino)];
+    }
+
+    if (!checkOuvintePermiteAlguemAdicionarUmRastreadorNele($credenciais, $usuario_id_destino)) {
+        return ["error" => errorMessage("O usuário destino não permite que outros usuários adicionem rastreadores a ele", $usuario_id_destino)];
     }
 
     try {
@@ -171,7 +192,7 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
         $stmt->execute([
             "usuario_id" => $usuario_id_destino,
             "rastreador_id" => $rastreador_id,
-            "nome" => $nome
+            "nome" => "Novo Rastreador " . substr(uniqid(), -5)
         ]);
 
         if ($stmt->rowCount() !== 1) {

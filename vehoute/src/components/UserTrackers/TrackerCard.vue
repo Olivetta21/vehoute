@@ -79,7 +79,9 @@
                     <button v-if="Usuario.hasPermission('Gerenciar Ouvintes')" type="button" @click="$emit('ouvintes')"> Ouvintes </button>
                     <button v-if="Usuario.hasPermission('Intervalo Oculto')" type="button" @click="$emit('lococulta')"> Localização oculta </button>
                 </template>
-                <button type="button" @click="$emit('rastrear')"> Rastrear </button>
+                <button type="button"
+                    v-if="tracker.ur_status == 1 && tracker.r_status == 1 && tracker.ur_ativo == true && tracker.r_ativo == true && (tracker.ur_loc_temporeal == true || tracker.ur_loc_salvos == true)"
+                @click="$emit('rastrear')"> Rastrear </button>
             </div>
 
             <div class="tracker-ouvinte-actions">
@@ -201,6 +203,11 @@ export default {
             return (
                 compararObjetos(this.trackerVModel, this.extractVModelOfTracker()) !== 0
             );
+        }
+    },
+    mounted() {
+        if (this.tracker.ur_status === 4 || this.tracker.ur_status === 5) {
+            this.detailed = true;
         }
     }
 }

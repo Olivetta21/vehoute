@@ -17,7 +17,6 @@ if ($dados = getRequestValue("dono_envia_proposta_ouvinte", "is_array")) {
     returnJson(donoEnviaPropostaDeOuvinteAUmUsuario(
         $credenciais,
         $dados["rastreador_id"] ?? null,
-        $dados["nome"] ?? null,
         $dados["usuario_id_destino"] ?? null
     ));
 }

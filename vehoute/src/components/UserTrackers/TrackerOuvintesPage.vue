@@ -13,7 +13,6 @@
             <form class="add-ouvinte-form" @submit.prevent="salvarNovoOuvinte">
                 <h2>Novo ouvinte</h2>
                 <p>Envie uma proposta de inclusão para um usuário do sistema.</p>
-                <input v-model.trim="newOuvinte.nome" type="text" placeholder="Nome do ouvinte" required />
                 <input v-model.number="newOuvinte.usuario_id_destino" type="number" min="1" placeholder="ID do usuário destino" required />
                 <div class="add-ouvinte-actions">
                     <button type="submit">Adicionar</button>
@@ -61,7 +60,6 @@ export default {
             TrackerOuvintes,
             showAddOuvinteForm: false,
             newOuvinte: {
-                nome: '',
                 usuario_id_destino: null,
             },
             ouvintes: []
@@ -77,14 +75,12 @@ export default {
         async handleAdicionar() {
             this.showAddOuvinteForm = true;
             this.newOuvinte = {
-                nome: '',
                 usuario_id_destino: null,
             };
         },
         fecharModalNovoOuvinte() {
             this.showAddOuvinteForm = false;
             this.newOuvinte = {
-                nome: '',
                 usuario_id_destino: null,
             };
         },
@@ -94,14 +90,13 @@ export default {
                 return;
             }
 
-            if (!this.newOuvinte.nome || !this.newOuvinte.usuario_id_destino) {
-                ToastMessage.add('Informe o nome do ouvinte e o ID do usuário destino', '', 'error', true);
+            if (!this.newOuvinte.usuario_id_destino) {
+                ToastMessage.add('Informe o ID do usuário destino', '', 'error', true);
                 return;
             }
 
             const ok = await UserTrackers.donoEnviaPropostaDeNovoOuvinte(
                 TrackerOuvintes.tracker.r_id,
-                this.newOuvinte.nome,
                 Number(this.newOuvinte.usuario_id_destino)
             );
 

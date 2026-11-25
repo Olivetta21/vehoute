@@ -25,8 +25,8 @@ export default {
     },
     data() {
         return {
-            login: 'donoexemplo',
-            senha: '123'
+            login: '',
+            senha: ''
         }
     },
     methods: {

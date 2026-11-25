@@ -32,8 +32,8 @@ export default class UserTrackers {
         return null;
     }
 
-    static async donoEnviaPropostaDeNovoOuvinte(rastreador_id, nome, usuario_id_destino) {
-        const response = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ dono_envia_proposta_ouvinte: { rastreador_id, nome, usuario_id_destino } }]);
+    static async donoEnviaPropostaDeNovoOuvinte(rastreador_id, usuario_id_destino) {
+        const response = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ dono_envia_proposta_ouvinte: { rastreador_id, usuario_id_destino } }]);
         if (response && response.success) {
             return true;
         }

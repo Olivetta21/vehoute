@@ -12,14 +12,14 @@
 
             <div class="sidebar-nav">
                 <div class="nav-section" v-if="!isCollapsed">Acesso rápido
-                    <svg v-if="!isFullscren" class="toggle-fullscreen-btn" @click="toggleFullscreen"
+                    <svg v-if="!FullScreenController.is_fullscreen" class="toggle-fullscreen-btn" @click="FullScreenController.toggleFullScreen"
                         xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 3 21 3 21 9"/>
                         <polyline points="9 21 3 21 3 15"/>
                         <line x1="21" y1="3" x2="14" y2="10"/>
                         <line x1="3" y1="21" x2="10" y2="14"/>
                     </svg>
-                    <svg v-else class="toggle-fullscreen-btn" @click="toggleFullscreen"
+                    <svg v-else class="toggle-fullscreen-btn" @click="FullScreenController.toggleFullScreen"
                         xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="4 14 10 14 10 20"/>
                         <polyline points="20 10 14 10 14 4"/>
@@ -48,6 +48,7 @@
 </template>
 
 <script>
+import FullScreenController from '../scripts/PagesFrame/FullScreenController.js';
 import PagesRoutes from '../scripts/PagesRoutes.js';
 import LeftArrow from './utils/LeftArrow.vue';
 
@@ -58,7 +59,7 @@ export default {
     },
     data() {
         return {
-            isFullscren: false,
+            FullScreenController,
             isCollapsed: false,
             menuItems: PagesRoutes.byCaracteristic('sidebarIcon')
         }
@@ -72,18 +73,6 @@ export default {
         },
         isActive(item) {
             return this.$route.name === item.name;
-        },
-        toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                this.isFullscren = true;
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-                    this.isFullscren = false;
-                });
-            } else {
-                document.exitFullscreen();
-                this.isFullscren = false;
-            }
         }
     }
 }

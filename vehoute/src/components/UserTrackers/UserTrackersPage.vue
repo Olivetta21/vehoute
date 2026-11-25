@@ -9,7 +9,7 @@
             @adicionar="showAddTrackerForm = true"
         />
 
-        <GenericModalWindow v-if="this.showAddTrackerForm" @close="showAddTrackerForm = false">
+        <GenericModalWindow v-if="this.showAddTrackerForm" @close="showAddTrackerForm = false; newTracker.checked = false; newTracker.validated = false;">
             <div class="add-tracker-form-container">
                 <form class="add-tracker-form" @submit.prevent>
                     <template v-if="!newTracker.checked || !newTracker.validated">

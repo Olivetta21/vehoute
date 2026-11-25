@@ -43,6 +43,7 @@
 </template>
 
 <script>
+import FullScreenController from '../../scripts/PagesFrame/FullScreenController';
 import MapPagina from '../../scripts/MapPage/Map';
 import MapController from '../../scripts/MapPage/MapController';
 import { getDateWithOffset } from '../../scripts/utils';
@@ -53,6 +54,7 @@ export default {
         return { 
             MapPagina,
             MapController,
+            FullScreenController,
             filtered_localizacao: [],
             getDateWithOffset,
             date_filter: MapPagina._date_filter,
@@ -78,12 +80,11 @@ export default {
             console.error("Failed to initialize map");
             return;
         }
-        if (!MapPagina.already_confirmed_fullscreen && !document.fullscreenElement && confirm("Deseja entrar em tela cheia para melhor visualização do mapa?")) {
-            MapPagina.already_confirmed_fullscreen = true;
-            document.documentElement.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
+        console.log("Fullscreen: ", FullScreenController.is_fullscreen);
+        if (!Map.already_confirmed_fullscreen && !FullScreenController.is_fullscreen && confirm("Deseja entrar em tela cheia para melhor visualização do mapa?")) {
+            FullScreenController.toggleFullScreen();
         }
+        Map.already_confirmed_fullscreen = true;
     },
     methods: {
         filtrarLocalizacoes() {

@@ -253,6 +253,20 @@ CREATE TABLE vinculo_configuracao (
     UNIQUE (config_id, usuario_id)
 );
 
+
+create function getConfiguracoesDoUsuario(
+    var_usuario_id integer
+)
+returns table (
+    id integer, classe_id integer, nome varchar, var_type varchar, usuario_id integer, variavel varchar
+) as $$
+    select c.id, c.classe_id, c.nome, c.var_type, vc.usuario_id, coalesce(vc.variavel, c.padrao) as variavel
+    from configuracao c
+    left join vinculo_configuracao vc on vc.config_id = c.id and vc.usuario_id = var_usuario_id
+    order by c.id;
+$$ language sql;
+
+
 create table rastreador (
     id serial primary key,
     hardware varchar(100) not null,
@@ -767,7 +781,8 @@ $$ language sql;
 --Pegar localizações do rastreador para um ouvinte, marcar as localizações ocultas para ele
 create function getLocDoRastreadorParaOuvinte(
     var_rastreador_id integer,
-    var_usuario_id integer
+    var_usuario_id integer,
+    var_tipo varchar default 'todos' -- 'todos', 'tpreal', 'salvos'
 ) returns table (
     l_id integer, l_rastreador_id integer, l_lat numeric(9,6), l_lng numeric(9,6), l_data timestamp, is_oculto boolean
 ) as $$
@@ -786,8 +801,14 @@ create function getLocDoRastreadorParaOuvinte(
         limit 1
     ) then true else false end as is_oculto	
     from usuario_rastreador ur
+    join rastreador r on r.id = ur.rastreador_id
     join localizacao l on l.rastreador_id = ur.rastreador_id
-    where ur.rastreador_id = var_rastreador_id and ur.usuario_id = var_usuario_id and l.invalida = false
+    where ur.rastreador_id = var_rastreador_id and ur.usuario_id = var_usuario_id and l.invalida = false and ur.status = 1 and ur.ativo = true and r.ativo = true and r.status = 1
+    and (
+        (var_tipo = 'todos') or
+        (var_tipo = 'tpreal' and ur.loc_temporeal = true) or
+        (var_tipo = 'salvos' and ur.loc_salvos = true)
+    )
     order by l.id
 $$ language sql;
 

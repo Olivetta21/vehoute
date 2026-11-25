@@ -91,8 +91,8 @@ class NewLocProcessing:
                     with DataBase.get() as conn:
                         with conn.cursor() as cur:
                             cur.execute(
-                                "select l_id, l_data from getLocDoRastreadorParaOuvinte(%s, %s) where is_oculto = false and l_id = %s",
-                                (new_loc.tracker, client.identidade, result[0],)
+                                "select l_id, l_data from getLocDoRastreadorParaOuvinte(%s, %s, %s) where is_oculto = false and l_id = %s",
+                                (new_loc.tracker, client.identidade, "tpreal", result[0],)
                             )
                             loc_recuperada = cur.fetchone()
                     if not loc_recuperada:

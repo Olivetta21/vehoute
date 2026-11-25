@@ -30,18 +30,46 @@ function getRastreadoresDoUsuario($credenciais, $name_filter) {
     return ["success" => true, "rastreadores" => $rastreadores];
 }
 
+function checkDonoPermiteOuvinteCadastrarSeuRastreador($credenciais, $rastreador_id) {
+    $Audit = (new Auditoria())->add('rastreador', 'checkDonoPermiteOuvinteCadastrarSeuRastreador', null, ["rastreador_id" => $rastreador_id], false);
+    
+    $sql = "SELECT dono_id from rastreador where id = :rastreador_id";
+    $stmt = $credenciais["pdo"]->prepare($sql);
+    $stmt->execute(["rastreador_id" => $rastreador_id]);
+    $dono_id = $stmt->fetchColumn();
+
+    if (!$dono_id || $dono_id === $credenciais["id"]) {
+        $Audit->sucesso(true);
+        return true;
+    }
+
+    $stmt = $credenciais["pdo"]->prepare("SELECT variavel from getConfiguracoesDoUsuario(:dono_id) where nome = 'Usuarios podem pedir para rastrear seu rastreador'");
+    $stmt->execute(["dono_id" => $dono_id]);
+    $permite = $stmt->fetchColumn();
+    $permite = $permite === 'true' ? true : false;
+
+    $Audit->depois(["permite" => $permite]);
+    $Audit->sucesso(true);
+    return $permite;
+}
+
 
 function checkRastreadorDoUsuario($credenciais, $token, $senha) {
     $Audit = (new Auditoria())->add('rastreador', 'checkRastreadorDoUsuario', null, ["token" => $token], false);
     if (!$token || !$senha) {
         return ["error" => errorMessage("Token ou senha não fornecidos", null)];
     }
-
+    
     $stmt = $credenciais["pdo"]->prepare("select id, dono_id, token_publico, status from rastreador where token_publico = :token and senha = :senha and status in (1, 2) and ativo = true");
     $stmt->execute(["token" => $token, "senha" => $senha]);
 
     if ($stmt->rowCount() === 1) {
         $rastreador = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!checkDonoPermiteOuvinteCadastrarSeuRastreador($credenciais, $rastreador["id"])) {
+            return ["error" => errorMessage("Dono do rastreador não permite que ouvintes adicionem seu rastreador", $rastreador["id"] . " - " . $token)];
+        }
+        
         $Audit->depois($rastreador);
         $Audit->sucesso(true);
         return ["success" => true, "rastreador" => $rastreador];
@@ -60,6 +88,10 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
 
     if (!existsExactR_WithIdDonoTKStatusSenha($pdo, $rastreador_id, $dono_id, $token, $status, $senha)) {
         return ["error" => errorMessage("Rastreador não encontrado ou status do rastreador não confere para adição", $rastreador_id . " - " . $token)];
+    }
+
+    if (!checkDonoPermiteOuvinteCadastrarSeuRastreador($credenciais, $rastreador_id)) {
+        return ["error" => errorMessage("Dono do rastreador não permite que ouvintes adicionem seu rastreador", $rastreador_id . " - " . $token)];
     }
 
     $ur_status = ($dono_id === null || $dono_id === $credenciais["id"]) ? 1 : 3;
