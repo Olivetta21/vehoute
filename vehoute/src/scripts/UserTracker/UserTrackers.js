@@ -6,7 +6,7 @@ export default class UserTrackers {
         if (!nome?.trim()) {
             nome = '%';
         }
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ get: nome }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ get: nome }]);
         if (response.success) {
             return response.rastreadores;
         }
@@ -15,7 +15,7 @@ export default class UserTrackers {
     }
 
     static async checkRastreador(token, senha) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ check_rastreador: { token, senha } }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ check_rastreador: { token, senha } }]);
         if (response.success) {
             return response.rastreador;
         }
@@ -24,7 +24,7 @@ export default class UserTrackers {
     }
 
     static async addRastreador(rastreador_id, dono_id, token, senha, status, nome) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ add_rastreador: { rastreador_id, dono_id, token, senha, status, nome } }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ add_rastreador: { rastreador_id, dono_id, token, senha, status, nome } }]);
         if (response.success) {
             return response.usuario_rastreador;
         }
@@ -42,7 +42,7 @@ export default class UserTrackers {
     }
 
     static async aceitarPropostaOuvinte(ur_id) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ aceitar_proposta_ouvinte: ur_id }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ aceitar_proposta_ouvinte: ur_id }]);
         if (response && response.success) {
             return response.usuario_rastreador ?? true;
         }
@@ -51,7 +51,7 @@ export default class UserTrackers {
     }
 
     static async recusarPropostaOuvinte(ur_id) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ recusar_proposta_ouvinte: ur_id }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ recusar_proposta_ouvinte: ur_id }]);
         if (response && response.success) {
             return true;
         }
@@ -60,7 +60,7 @@ export default class UserTrackers {
     }
 
     static async aceitarTransferencia(ur_id) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ aceitar_transferencia_posse: ur_id }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ aceitar_transferencia_posse: ur_id }]);
         if (response && response.success) {
             return true;
         }
@@ -69,7 +69,7 @@ export default class UserTrackers {
     }
 
     static async recusarTransferencia(ur_id) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ recusar_transferencia_posse: ur_id }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ recusar_transferencia_posse: ur_id }]);
         if (response && response.success) {
             return true;
         }
@@ -78,7 +78,7 @@ export default class UserTrackers {
     }
 
     static async excluirRastreador(ur_id) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ excluir_rastreador: ur_id }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ excluir_rastreador: ur_id }]);
         if (response && response.success) {
             return true;
         }
@@ -87,7 +87,7 @@ export default class UserTrackers {
     }
 
     static async atualizarRastreador(r_id, r_token_publico, r_status, new_values) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ update_rastreador: { r_id, r_token_publico, r_status, new_values } }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ update_rastreador: { r_id, r_token_publico, r_status, new_values } }]);
         if (response && response.success) {
             return response.rastreador;
         }
@@ -96,7 +96,7 @@ export default class UserTrackers {
     }
 
     static async atualizaVinculoUsuarioRastreador(ur_id, ur_status, new_values) {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ update_ur: { ur_id, ur_status, new_values } }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ update_ur: { ur_id, ur_status, new_values } }]);
         if (response && response.success) {
             return response.usuario_rastreador;
         }

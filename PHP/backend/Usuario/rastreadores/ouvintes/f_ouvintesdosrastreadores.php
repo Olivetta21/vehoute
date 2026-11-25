@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . "/../f_RastreadoresUsuarios.php";
+require_once __DIR__ . "/../f_rastreadoresusuarios.php";
 
 function validarUsuarioPodeVerOuvintesDoRastreador($pdo, $usuario_id, $rastreador_id) {
     $sql = "select id from rastreador where dono_id = :usuario_id and id = :rastreador_id";

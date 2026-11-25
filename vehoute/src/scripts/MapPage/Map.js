@@ -74,7 +74,7 @@ export default class Map {
     }
 
     static async fetchTrackers() {
-        const response = await fetch_('/usuario/rastreadores/RastreadoresUsuarios.php', [{ get: '%' }]);
+        const response = await fetch_('/usuario/rastreadores/rastreadoresusuarios.php', [{ get: '%' }]);
         if (response.success) {
             return response.rastreadores;
         }

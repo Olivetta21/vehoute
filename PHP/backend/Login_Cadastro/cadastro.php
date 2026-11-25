@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . "/../include_me.php";
 require __DIR__ . "/f_cadastro.php";
-require_once __DIR__ . '/../../backend/Login_Cadastro/f_login.php';
+require_once __DIR__ . '/../../backend/login_cadastro/f_login.php';
 
 
 try {

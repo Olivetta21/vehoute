@@ -1,6 +1,7 @@
 from PackagesInstaller import testar_bibliotecas
 testar_bibliotecas("./BridgeServerPythonLibs.txt")
 
+import sys
 from DataBase import DataBase
 from TcpServer import TcpServer, HeartBeat
 from WebSocketServer import WebSocketServer
@@ -27,8 +28,8 @@ def adminActions():
                 msg = msg[5:]
                 if msg.startswith("tcp "):
                     TcpServer.sendToAllClients(msg[4:])
-    except:
-        ProgramStop.set("Admin action error")
+    except Exception as e:
+        ProgramStop.set(f"[ADMIN] Erro: {e}")
 
 if __name__ == "__main__":
     threading.Thread(target=LogService.service, daemon=True).start()
@@ -37,7 +38,8 @@ if __name__ == "__main__":
     threading.Thread(target=WebSocketServer().start, daemon=True).start()
     threading.Thread(target=TcpServer().start, daemon=True).start()
     threading.Thread(target=HeartBeat().start, daemon=True).start()
-    threading.Thread(target=adminActions, daemon=True).start()
+    if sys.stdin.isatty():
+        threading.Thread(target=adminActions, daemon=True).start()
     
     msg = None
     try:
