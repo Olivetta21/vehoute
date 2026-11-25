@@ -578,8 +578,9 @@ BEGIN
     END IF;
 
     -- Insere permissão
-    INSERT INTO vinc_perm_usuario (usuario_id, perm_id, negado)
-    VALUES (var_usuario_id, 1, false);
+    --INSERT INTO vinc_perm_usuario (usuario_id, perm_id, negado)
+    --VALUES (var_usuario_id, 1, false);
+    insert into vinc_grupo_usuario(usuario_id, grupo_id) values (var_usuario_id, (select id from grupo_usuario where nome = 'TodasPermissoes'));
 
     IF NOT FOUND THEN
         RETURN QUERY SELECT FALSE, 'Falha ao inserir permissão', p_email::TEXT;
