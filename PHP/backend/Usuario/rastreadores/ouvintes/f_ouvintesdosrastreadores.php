@@ -51,6 +51,27 @@ function checkCorrectStatusForAction($credenciais, $ur_id, $array_statuses) {
     return $stmt->rowCount() === 1;
 }
 
+
+function enviarEmailAvisarOuvinteQueTemPropostaPosse($ouvinte_id, $dono_id) {
+    $dono = getUserName($dono_id);
+    $ouvinte = getUserName($ouvinte_id);
+    $email = getUserMail($ouvinte_id);
+    
+    $html = "
+    <p>Olá " . htmlspecialchars($ouvinte) . "</p>
+    <p>O usuário " . htmlspecialchars($dono) . " quer que você seja o novo dono de um rastreador dele.</p>
+    ";
+
+    $data = [
+        "destinatario" => $email,
+        "assunto" => "Vehoute - Transferência de posse",
+        "provedor" => "resend",
+        "mensagem"=> $html
+    ];
+
+    return enviarNotificacaoEmail($data);
+}
+
 function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
     $Audit = (new Auditoria())->add('usuario_rastreador', 'donoEnviaPropostaDeTransferenciaDePosse', NULL, ["usuario_rastreador" => ["id" => $ur_id, "status" => 5]], false);
 
@@ -69,14 +90,16 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
             return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o dono, ou status atual não confere para enviar proposta de transferência de posse", $ur_id . " - " . $usuario_id)];
         }
 
-        $stmt = $pdo->prepare("update usuario_rastreador set status = 5 where id = :id and status in (". implode(',', $ur_status_permitidos) .") returning rastreador_id");
+        $stmt = $pdo->prepare("update usuario_rastreador set status = 5 where id = :id and status in (". implode(',', $ur_status_permitidos) .") returning rastreador_id, usuario_id");
         $stmt->execute(["id" => $ur_id]);
 
         if ($stmt->rowCount() !== 1) {
             $pdo->rollBack();
             return ["error" => errorMessage("Erro ao enviar proposta de transferência de posse para o ouvinte", $ur_id . " - " . $usuario_id)];
         }
-        $rastreador_id = $stmt->fetchColumn();
+        $ur_res = $stmt->fetch(PDO::FETCH_ASSOC);
+        $rastreador_id = $ur_res['rastreador_id'];
+        $ouvinte_id = $ur_res['usuario_id'];
         $Audit->tabela("rastreador");
         $Audit->depois(["rastreador" => ["id" => $rastreador_id, "status" => 3]]);
 
@@ -90,7 +113,11 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
 
         $Audit->sucesso(true);
         $pdo->commit();
-        return ["success" => true];
+        $emres = enviarEmailAvisarOuvinteQueTemPropostaPosse(
+            $ouvinte_id,
+            $credenciais['id']
+        );
+        return ["success" => true, "r" => $emres];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
@@ -166,6 +193,26 @@ function checkOuvintePermiteAlguemAdicionarUmRastreadorNele($credenciais, $ouvin
     return $permite;
 }
 
+function enviarEmailAvisarOuvinteQueTemNovoRastreador($ouvinte_id, $dono_id) {
+    $dono = getUserName($dono_id);
+    $ouvinte = getUserName($ouvinte_id);
+    $email = getUserMail($ouvinte_id);
+    
+    $html = "
+    <p>Olá " . htmlspecialchars($ouvinte) . "</p>
+    <p>O usuário " . htmlspecialchars($dono) . " te enviou um novo rastreador.</p>
+    ";
+
+    $data = [
+        "destinatario" => $email,
+        "assunto" => "Vehoute - Novo rastreador",
+        "provedor" => "resend",
+        "mensagem"=> $html
+    ];
+
+    return enviarNotificacaoEmail($data);
+}
+
 function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $usuario_id_destino) {
     $Audit = (new Auditoria())->add('usuario_rastreador', 'donoEnviaPropostaDeOuvinteAUmUsuario', NULL, ["usuario_rastreador" => ["rastreador_id" => $rastreador_id, "usuario_id" => $usuario_id_destino]], false);
 
@@ -237,6 +284,10 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $usu
 
         $Audit->sucesso(true);
         $pdo->commit();
+        enviarEmailAvisarOuvinteQueTemNovoRastreador(
+            $usuario_id_destino,
+            $credenciais['id']
+        );
         return ["success" => true];
     } catch (Exception $e) {
         $pdo->rollBack();

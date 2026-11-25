@@ -78,6 +78,23 @@ function checkRastreadorDoUsuario($credenciais, $token, $senha) {
     }
 }
 
+
+function enviarEmailAvisarDonoQueTemNovoOuvinte($email, $dono, $rastreador, $ouvinte) {
+    $html = "
+    <p>Olá " . htmlspecialchars($dono) . "</p>
+    <p>O usuário " . htmlspecialchars($ouvinte) . " solicitou para ser ouvinte do seu rastreador " . htmlspecialchars($rastreador) . ".</p>
+    ";
+
+    $data = [
+        "destinatario" => $email,
+        "assunto" => "Vehoute - Um novo Ouvinte aguarda sua resposta",
+        "provedor" => "resend",
+        "mensagem"=> $html
+    ];
+
+    return enviarNotificacaoEmail($data);
+}
+
 function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $token, $senha, $status, $nome) {
     $Audit = (new Auditoria())->add('usuario_rastreador|vinc_loc_oculta_usuario_rastreador', 'usuarioAdicionaUmRastreador', null, ["rastreador_id" => $rastreador_id, "nome" => $nome, "status" => $status], false);
     $pdo = $credenciais["pdo"];
@@ -163,6 +180,14 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
         $pdo->commit();
         $Audit->depois(["usuario_rastreador" => $new_ur]);
         $Audit->sucesso(true);
+
+        enviarEmailAvisarDonoQueTemNovoOuvinte(
+            getUserMail($dono_id),
+            getUserName($dono_id),
+            getURNameOfOwnerByTrackerID($rastreador_id),
+            getUserName($credenciais["id"])
+        );
+
         return ["success" => true, "usuario_rastreador" => $new_ur];
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -298,7 +323,28 @@ function validarUsuarioCorretoForTransferencia($credenciais, $ur_id) {
     }
     return null;
 }
-//
+
+function enviarEmailAvisarDonoResultadoTransfPosse($dono_id, $rastreador, $ouvinte_id, $aceitou) {
+    
+    $email = getUserMail($dono_id);
+    $dono = getUserName($dono_id);
+    $ouvinte = getUserName($ouvinte_id);
+
+
+    $html = "
+    <p>Olá " . htmlspecialchars($dono) . "</p>
+    <p>O usuário " . htmlspecialchars($ouvinte) . " " . ($aceitou ? "aceitou" : "recusou") . " a solicitação para ser o dono do seu rastreador " . htmlspecialchars($rastreador) . ".</p>
+    ";
+
+    $data = [
+        "destinatario" => $email,
+        "assunto" => "Vehoute - Transferência de posse de rastreador " . ($aceitou ? "aceita" : "recusada"),
+        "provedor" => "resend",
+        "mensagem"=> $html
+    ];
+
+    return enviarNotificacaoEmail($data);
+}
 function acceptTransferenciaDePosse($credenciais, $ur_id) {
     $Audit = (new Auditoria())->add('rastreador|usuario_rastreador', 'acceptTransferenciaDePosse', ["usuario_rastreador_id" => $ur_id, "status" => 5], ["status" => 1], false);
     $pdo = $credenciais["pdo"];
@@ -310,10 +356,16 @@ function acceptTransferenciaDePosse($credenciais, $ur_id) {
     $rastreador_id = validarUsuarioCorretoForTransferencia($credenciais, $ur_id);
     if (!$rastreador_id) {
         return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o usuário correto, ou status atual não confere ao aceitar transferência de posse", $credenciais["id"] . " - " .$ur_id)];
-    }  
+    }
+    $rastreador = getURNameOfOwnerByTrackerID($rastreador_id);
 
     try {
         $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("select dono_id from rastreador where id = :id");
+        $stmt->execute(["id" => $rastreador_id]);
+        $dono_id = $stmt->fetchColumn();
+
         $stmt = $pdo->prepare("update usuario_rastreador set status = 1 where id = :id and status = 5");
         $stmt->execute(["id" => $ur_id]);
 
@@ -332,6 +384,12 @@ function acceptTransferenciaDePosse($credenciais, $ur_id) {
 
         $pdo->commit();
         $Audit->sucesso(true);
+        enviarEmailAvisarDonoResultadoTransfPosse(
+            $dono_id,
+            $rastreador,
+            $credenciais['id'],
+            true
+        );
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -353,9 +411,15 @@ function declineTransferenciaDePosse($credenciais, $ur_id) {
     if (!$rastreador_id) {
         return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o usuário correto, ou status atual não confere ao aceitar transferência de posse", $credenciais["id"] . " - " .$ur_id)];
     }
+    $rastreador = getURNameOfOwnerByTrackerID($rastreador_id);
 
     try {
         $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("select dono_id from rastreador where id = :id");
+        $stmt->execute(["id" => $rastreador_id]);
+        $dono_id = $stmt->fetchColumn();
+
         $stmt = $pdo->prepare("update usuario_rastreador set status = 2 where id = :id and status = 5");
         $stmt->execute(["id" => $ur_id]);
 
@@ -374,6 +438,12 @@ function declineTransferenciaDePosse($credenciais, $ur_id) {
 
         $pdo->commit();
         $Audit->sucesso(true);
+        enviarEmailAvisarDonoResultadoTransfPosse(
+            $dono_id,
+            $rastreador,
+            $credenciais['id'],
+            false
+        );
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {

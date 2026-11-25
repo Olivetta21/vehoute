@@ -395,6 +395,10 @@
   
     function enviarEmail($data) {
         //Retorna json: {"status":<string>, "mensagem":<string>}
+        if (!isset($data) || !isset($data['destinatario']) || !validarEmail($data['destinatario'])) {
+            return ["status"=>"erro","mensagem"=>"dados inválidos"];
+        }
+
         try {
             $ch = curl_init($_ENV['MAIL_URL']);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -417,6 +421,98 @@
         catch (Exception $e) {        
             return ["status"=>"erro","mensagem"=>$e->getMessage()];
         }
-    }  
+    }
+
+
+    function getUserMail($user_id) {
+        try {
+            $pdo = getDataBase();
+            $stmt = $pdo->prepare("SELECT email FROM usuario WHERE id = :user_id");
+            $stmt->execute([':user_id' => $user_id]);
+            if ($stmt->rowCount() === 1) {
+                return $stmt->fetchColumn();
+            }
+        }
+        catch (Exception $e) {
+            errorMessage("Erro ao buscar email do usuário", $e->getMessage());
+        }
+        return null;
+    }
+
+    function getUserName($user_id) {
+        try {
+            $pdo = getDataBase();
+            $stmt = $pdo->prepare("SELECT nome FROM usuario WHERE id = :user_id");
+            $stmt->execute([':user_id' => $user_id]);
+            if ($stmt->rowCount() === 1) {
+                return $stmt->fetchColumn();
+            }
+        }
+        catch (Exception $e) {
+            errorMessage("Erro ao buscar nome do usuário", $e->getMessage());
+        }
+        return null;
+    }
+
+    function getUserByEmail($email) {
+        try {
+            $pdo = getDataBase();
+            $stmt = $pdo->prepare("SELECT id, nome FROM usuario WHERE email = :email");
+            $stmt->execute([':email' => $email]);
+            if ($stmt->rowCount() === 1) {
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+        }
+        catch (Exception $e) {
+            errorMessage("Erro ao buscar nome do usuário", $e->getMessage());
+        }
+        return null;
+    }
+
+    function getURNameOfOwnerByTrackerID($tracker_id) {
+        try {
+            $pdo = getDataBase();
+            $stmt = $pdo->prepare("SELECT nome from usuario_rastreador where rastreador_id = :tracker_id and usuario_id = (select dono_id from rastreador where id = :tracker_id);");
+            $stmt->execute([':tracker_id' => $tracker_id]);
+            if ($stmt->rowCount() === 1) {
+                return $stmt->fetchColumn();
+            }
+        }
+        catch (Exception $e) {
+            errorMessage("Erro ao buscar nome do UR pelo rastreador", $e->getMessage());
+        }
+        return null;
+    }
+
+    function enviarNotificacaoEmail($data) {
+        if (!isset($data) || !isset($data['destinatario']) || !validarEmail($data['destinatario'])) {
+            return ["status"=>"erro","mensagem"=>"dados inválidos"];
+        }
+
+        $usuario = getUserByEmail($data['destinatario']);
+        if (!$usuario) {
+            return ["status"=>"erro","mensagem"=>"não tem um usuário com esse email"];
+        }
+
+        try {
+            $pdo = getDataBase();
+            $stmt = $pdo->prepare("SELECT variavel from getconfiguracoesdousuario(:usuario_id) where nome = 'Receber notificação por Email'");
+            $stmt->execute([':usuario_id' => $usuario['id']]);
+            if ($stmt->rowCount() !== 1) {
+                return ["status"=>"erro","mensagem"=>"permissao para enviar email de notificação não encontrada"];
+            }
+            $permite = $stmt->fetchColumn();
+            $permite = $permite === 'true' ? true : false;
+
+            if (!$permite) {
+                return ["status"=>"erro","mensagem"=>"sem permissao para enviar notificação"];
+            }
+
+            return enviarEmail($data);
+        }
+        catch (Exception $e) {
+            errorMessage("Erro ao enviar notificação por email", $e->getMessage());
+        }
+    }
 
 ?>
