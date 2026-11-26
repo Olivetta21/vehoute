@@ -124,75 +124,50 @@ export default {
 </script>
 
 <style scoped>
-.switch-button-wrapper {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-}
+.switch-button-wrapper { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-height-sm); }
+.switch-button-label { color: var(--color-text); font-size: var(--font-sm); }
 
-.switch-button-label {
-    font-size: 0.875rem;
-    color: var(--colorC2, #2d3748);
-}
-
-.switch-button {
-    border: none;
-    background: transparent;
+.switch-button,
+.switch-button:hover,
+.switch-button:disabled {
+    min-height: 0;
     padding: 0;
-    cursor: pointer;
-    transition: opacity 0.2s ease;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-pill);
 }
-
-.switch-button.disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-}
+.switch-button.disabled { cursor: not-allowed; opacity: 0.55; }
 
 .switch-button-track {
     position: relative;
     display: inline-flex;
     align-items: center;
-    width: 2.7rem;
-    height: 1.5rem;
-    padding: 0.125rem;
-    border-radius: 999px;
-    background-color: var(--colorC6, #d0d7de);
-    transition: background-color 0.2s ease;
-    box-sizing: border-box;
+    width: 2.5rem;
+    height: 1.4rem;
+    background: var(--color-border-strong);
+    border-radius: var(--radius-pill);
+    transition: background var(--transition);
 }
-
-.switch-button.active .switch-button-track {
-    background-color: var(--colorPrimary, #1f6feb);
-}
-
-.switch-button.inactive .switch-button-track {
-    background-color: var(--colorDanger, #dc3545);
-}
+.switch-button.active .switch-button-track { background: var(--color-primary); }
+.switch-button.inactive .switch-button-track { background: var(--color-text-subtle); }
 
 .switch-button-thumb {
     position: absolute;
-    left: 0.125rem;
-    width: 1.15rem;
-    height: 1.15rem;
+    left: 0.15rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    background: var(--color-surface);
     border-radius: 50%;
-    background-color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition);
 }
-
-.switch-button.active .switch-button-thumb {
-    transform: translateX(1.15rem);
-}
-
-.switch-button.neutral .switch-button-thumb {
-    transform: translateX(0.65rem);
-}
+.switch-button.active .switch-button-thumb { transform: translateX(1.1rem); }
+.switch-button.neutral .switch-button-thumb { transform: translateX(0.55rem); }
 
 .switch-button-checkbox-hidden {
     position: absolute;
     width: 1px;
     height: 1px;
-    padding: 0;
     margin: -1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);

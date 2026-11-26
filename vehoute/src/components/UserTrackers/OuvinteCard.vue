@@ -31,17 +31,17 @@
     </div>
     <div class="ouvinte-actions">
         <template v-if="ouvinte.ur_status === 1 || ouvinte.ur_status === 2">
-            <button v-if="ouvinte.ur_status === 1" @click="$emit('pause', { ur_id: ouvinte.ur_id, atual_status_id: 1 })"> ⏸️ </button>
-            <button v-if="ouvinte.ur_status === 2" @click="$emit('resume', { ur_id: ouvinte.ur_id, atual_status_id: 2 })"> ▶️ </button>
-            <button v-if="ouvinte.u_id !== Usuario.id" @click="$emit('possechange', ouvinte.ur_id)"> 👑 </button>
+            <button v-if="ouvinte.ur_status === 1" class="btn-secondary btn-sm" @click="$emit('pause', { ur_id: ouvinte.ur_id, atual_status_id: 1 })"> Pausar </button>
+            <button v-if="ouvinte.ur_status === 2" class="btn-secondary btn-sm" @click="$emit('resume', { ur_id: ouvinte.ur_id, atual_status_id: 2 })"> Retomar </button>
+            <button v-if="ouvinte.u_id !== Usuario.id" class="btn-secondary btn-sm" @click="$emit('possechange', ouvinte.ur_id)"> Transferir posse </button>
             <!--button> 📍 </button-->
         </template>
         <template v-else-if="ouvinte.ur_status === 3">
-            <button @click="$emit('accept', ouvinte.ur_id)"> ✅ </button>
-            <button @click="$emit('decline', ouvinte.ur_id)"> ❌ </button>
+            <button class="btn-sm" @click="$emit('accept', ouvinte.ur_id)"> Aceitar </button>
+            <button class="btn-secondary btn-sm" @click="$emit('decline', ouvinte.ur_id)"> Recusar </button>
         </template>
-        <button v-else-if="ouvinte.ur_status === 5" @click="$emit('cancelpossechange', ouvinte.ur_id)"> ❌ </button>
-        <button v-if="ouvinte.ur_status !== 5 && ouvinte.ur_status !== 3" @click="$emit('exclude', ouvinte.ur_id)"> 🗑️ </button>
+        <button v-else-if="ouvinte.ur_status === 5" class="btn-secondary btn-sm" @click="$emit('cancelpossechange', ouvinte.ur_id)"> Cancelar transferência </button>
+        <button v-if="ouvinte.ur_status !== 5 && ouvinte.ur_status !== 3" class="red-button btn-sm" @click="$emit('exclude', ouvinte.ur_id)"> Excluir </button>
     </div>
 </template>
 
@@ -77,35 +77,13 @@ export default {
 </script>
 
 <style scoped>
-
-.ouvinte-nome, .ouvinte-contato, .ouvinte-locs {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.check-field {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.ouvinte-status {
-    display: flex;
-    flex-direction: row;
-}
-
-.ouvinte-status-colour {    
-    height: 1em;
-    aspect-ratio: 1;
-    border-radius: 50%;
-}
-
-.ouvinte-actions button{
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: 2px;
-}
-
+.ouvinte-nome,
+.ouvinte-contato,
+.ouvinte-locs { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; overflow-wrap: anywhere; }
+.ouvinte-nome > p { font-weight: var(--weight-bold); }
+.ouvinte-contato { color: var(--color-text-muted); font-size: var(--font-sm); }
+.check-field { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-sm); }
+.ouvinte-status { display: flex; align-items: center; gap: var(--space-2); color: var(--color-text-muted); font-size: var(--font-sm); }
+.ouvinte-status-colour { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; }
+.ouvinte-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 </style>

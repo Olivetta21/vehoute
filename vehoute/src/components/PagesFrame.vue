@@ -5,7 +5,7 @@
                 <div class="header-content" v-if="!isCollapsed">
                     <span class="logo-text">Vehoute</span>
                 </div>
-                <button class="toggle-btn" @click="toggleSidebar" :class="{'rotated': isCollapsed}">
+                <button class="toggle-btn btn-secondary" aria-label="Alternar menu" @click="toggleSidebar" :class="{'rotated': isCollapsed}">
                     <LeftArrow />
                 </button>
             </div>
@@ -31,6 +31,7 @@
                     <li v-for="item in menuItems" :key="item.id" 
                         class="nav-link" 
                         :class="{ 'active': isActive(item) }"
+                        :title="item.pageName"
                         @click="navigateTo(item)">
                         <div class="icon-wrapper">
                             <img :src="item.sidebarIcon" :alt="item.pageName" />
@@ -79,176 +80,98 @@ export default {
 </script>
 
 <style scoped>
-    #pagesframe {
-        display: flex;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background-color: var(--colorA1);
-    }
-    
-    /* Sidebar Base */
-    .sidebar {
-        position: absolute;
-        background-color: var(--colorD1);
-        color: var(--colorA1);
-        width: 260px;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        box-shadow: -10px 0px 20px 0px black;
-        z-index: 10;
-        overflow: hidden;
-    }
+#pagesframe { display: flex; width: 100%; height: 100%; overflow: hidden; background: var(--color-bg); }
 
-    .sidebar.is-collapsed {
-        width: 40px;
-    }
+.sidebar {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-width);
+    height: 100%;
+    overflow: hidden;
+    color: var(--sidebar-text);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--color-border);
+    box-shadow: var(--shadow-lg);
+    transition: width var(--transition);
+}
+.sidebar.is-collapsed { width: var(--sidebar-collapsed); box-shadow: none; }
 
-    /* Header */
-    .sidebar-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 20px;
-        height: 80px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
+.sidebar-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--header-height);
+    padding: 0 var(--space-3) 0 var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+}
+.sidebar.is-collapsed .sidebar-header { justify-content: center; padding: 0; }
+.logo-text { color: var(--color-text); font-size: var(--font-lg); font-weight: var(--weight-bold); white-space: nowrap; }
 
-    .sidebar.is-collapsed .sidebar-header {
-        justify-content: center;
-        padding: 0;
-    }
+.toggle-btn { width: var(--control-height-sm); min-height: var(--control-height-sm); padding: 0; }
+.toggle-btn svg { width: 18px; height: 18px; transition: transform var(--transition); }
+.toggle-btn.rotated svg { transform: rotate(180deg); }
 
-    .logo-text {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--colorA1);
-        white-space: nowrap;
-        letter-spacing: 0.5px;
-    }
+.sidebar-nav {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+.sidebar.is-collapsed .sidebar-nav { padding: var(--space-2); }
 
-    /* Toggle Button */
-    .toggle-btn {
-        background: rgba(255, 255, 255, 0.1);
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-    }
+.nav-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-2);
+    color: var(--color-text-subtle);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.toggle-fullscreen-btn { width: 16px; height: 16px; cursor: pointer; }
+.toggle-fullscreen-btn:hover { color: var(--color-primary); }
 
-    .toggle-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: scale(1.05);
-    }
+.nav-list { display: flex; flex-direction: column; gap: var(--space-1); list-style: none; }
+.nav-link {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    height: var(--control-height);
+    padding: 0 var(--space-2);
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+}
+.sidebar.is-collapsed .nav-link { justify-content: center; padding: 0; }
+.nav-link:hover { color: var(--color-text); background: var(--color-surface-muted); }
+.nav-link.active { color: var(--color-primary); background: var(--color-primary-soft); }
 
-    .toggle-btn.rotated svg {
-        transform: rotate(180deg);
-    }
+.icon-wrapper { display: flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; }
+.icon-wrapper img { width: 18px; height: 18px; filter: var(--sidebar-icon-filter); opacity: 0.5; transition: opacity var(--transition); }
+.nav-link:hover img,
+.nav-link.active img { opacity: 0.95; }
+.link-text { margin-left: var(--space-3); font-size: var(--font-sm); font-weight: var(--weight-medium); white-space: nowrap; }
 
-    /* Navigation */
-    .sidebar-nav {
-        padding: 20px 10px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-    .sidebar.is-collapsed .sidebar-nav {
-        padding: 0;
-    }
-
-    .nav-section {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        color: var(--colorA2);
-        margin: 10px 0 10px 10px;
-        white-space: nowrap;
-        font-weight: 600;
-    }
-
-    /* Links */
-    .nav-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .nav-link {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        cursor: pointer;
-        color: rgba(255, 255, 255, 0.6);
-        padding: 12px;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .sidebar.is-collapsed .nav-link {
-        justify-content: center;
-        padding: 0;
-    }
-
-    .nav-link:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: white;
-    }
-
-    .nav-link.active {
-        color: white;
-        box-shadow: 0 4px 15px rgb(17, 98, 230);
-    }
-
-    .icon-wrapper {
-        min-width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .icon-wrapper img {
-        width: 20px;
-        height: 20px;
-        filter: brightness(0) invert(1);
-        opacity: 0.5;
-        transition: all 0.3s ease;
-    }
-
-    .nav-link:hover .icon-wrapper img,
-    .nav-link.active .icon-wrapper img {
-        opacity: 1;
-        transform: scale(1.2);
-    }
-
-    .link-text {
-        margin-left: 16px;
-        font-size: 1rem;
-        font-weight: 500;
-        white-space: nowrap;
-    }
-
-    /* Main Content */
-    .page-content-wrapper {
-        flex: 1;
-        overflow-y: auto;
-        margin-left: 40px;
-        background-color: #f7f9fc;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
+.page-content-wrapper {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    height: 100%;
+    margin-left: var(--sidebar-collapsed);
+    overflow-y: auto;
+    background: var(--color-bg);
+}
+.page-content-wrapper > :deep(*) { flex-shrink: 0; }
 </style>

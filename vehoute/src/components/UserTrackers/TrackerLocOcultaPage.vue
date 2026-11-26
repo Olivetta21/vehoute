@@ -9,8 +9,8 @@
         @adicionar="handleAdicionar"
     />
     <GenericModalWindow v-if="showAddForm" @close="fecharModalAddNew">
-        <div class="add-elemento-form-container">
-            <form class="add-elemento-form" @submit.prevent="salvarNew">
+        <div class="modal-container">
+            <form class="modal-form" @submit.prevent="salvarNew">
                 <h2>Nova Localização Oculta</h2>
                 <p>Digite o intervalo de IDs e datas para ocultar localizações.</p>
                 <input v-model="newElemento.identificacao" type="text" placeholder="Identificação"  />
@@ -18,31 +18,31 @@
                 <input v-model="newElemento.id_final" type="text" placeholder="ID Final"  />
                 <input v-model="newElemento.data_inicial" type="datetime-local" placeholder="Data Inicial" step="1" />
                 <input v-model="newElemento.data_final" type="datetime-local" placeholder="Data Final" step="1" />
-                <div class="add-elemento-actions">
+                <div class="modal-actions">
                     <button type="submit">Adicionar</button>
-                    <button type="button" @click="fecharModalAddNew">Cancelar</button>
+                    <button type="button" class="btn-secondary" @click="fecharModalAddNew">Cancelar</button>
                 </div>
             </form>
         </div>
     </GenericModalWindow>
     
     <GenericModalWindow v-if="OuvinteDaLocOculta.show" @close="OuvinteDaLocOculta.close()">
-        <div class="add-elemento-form-container">
-            <form class="add-elemento-form" @submit.prevent="OuvinteDaLocOculta.setOuvintes()">
+        <div class="modal-container">
+            <form class="modal-form" @submit.prevent="OuvinteDaLocOculta.setOuvintes()">
                 <h2>Inserir Ouvinte nas localizações ocultas: {{ OuvinteDaLocOculta.locsOcultaSelected() }}</h2>
                 <p>Selecione os ouvintes que devem ser adicionados às localizações ocultas.</p>
-                <div>
-                    <button @click="OuvinteDaLocOculta.selecionarTodos()" type="button">Todos</button>
-                    <button @click="OuvinteDaLocOculta.selecionarNenhum()" type="button">Nenhum</button>
-                    <button @click="OuvinteDaLocOculta.inverterSelecao()" type="button">Inverter</button>
+                <div class="selection-actions">
+                    <button class="btn-secondary btn-sm" @click="OuvinteDaLocOculta.selecionarTodos()" type="button">Todos</button>
+                    <button class="btn-secondary btn-sm" @click="OuvinteDaLocOculta.selecionarNenhum()" type="button">Nenhum</button>
+                    <button class="btn-secondary btn-sm" @click="OuvinteDaLocOculta.inverterSelecao()" type="button">Inverter</button>
                 </div>
-                <div v-for="(ouvinte, index) in OuvinteDaLocOculta.ouvintesDisponiveis" :key="index">
+                <div class="selection-item" v-for="(ouvinte, index) in OuvinteDaLocOculta.ouvintesDisponiveis" :key="index">
                     <input type="checkbox" :id="'ouvinte-' + ouvinte.ur_id" v-model="ouvinte.selected" :value="'ouvinte-' + ouvinte.ur_id">
                     <label :for="'ouvinte-' + ouvinte.ur_id">{{ ouvinte.u_id }} - {{ ouvinte.u_nome }}</label>
                 </div>
-                <div class="add-elemento-actions">
+                <div class="modal-actions">
                     <button type="submit">Salvar</button>
-                    <button type="button" @click="OuvinteDaLocOculta.close()">Cancelar</button>
+                    <button type="button" class="btn-secondary" @click="OuvinteDaLocOculta.close()">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -71,12 +71,12 @@
                             <div class="loc-oculta-td-title">
                                 <div class="loc-oculta-td-identificacao">
                                     <input type="text" v-model="loc.v_model_identificacao" placeholder="Identificação">
-                                    <button v-if="compararVariaveis(loc.v_model_identificacao, loc.identificacao) !== 0"
+                                    <button class="btn-sm" v-if="compararVariaveis(loc.v_model_identificacao, loc.identificacao) !== 0"
                                         @click="salvarEdicao(loc, 'ident')">Salvar</button>
                                 </div>
                                 <div class="loc-oculta-td-actions">
-                                    <button @click="deletarLocOculta([loc.id])">X</button>
-                                    <button @click="loc.mostrando_ouvintes = !loc.mostrando_ouvintes"> {{  loc.mostrando_ouvintes ? 'Ocultar' : "Ouvintes (" + loc.ouvintes.length + ")"  }}</button>
+                                    <button class="red-button btn-sm" title="Excluir" aria-label="Excluir" @click="deletarLocOculta([loc.id])">×</button>
+                                    <button class="btn-secondary btn-sm" @click="loc.mostrando_ouvintes = !loc.mostrando_ouvintes"> {{  loc.mostrando_ouvintes ? 'Ocultar' : "Ouvintes (" + loc.ouvintes.length + ")"  }}</button>
                                 </div>
                             </div>
                             <div class="loc-oculta-td-filter">
@@ -85,14 +85,14 @@
                                         <p>IDs:</p>
                                         <input type="number" placeholder="ID Inicial" v-model="loc.v_model_id_inicial">
                                         <input type="number" placeholder="ID Final" v-model="loc.v_model_id_final">
-                                        <button v-if="compararVariaveis(loc.v_model_id_inicial, loc.id_inicial) !== 0 || compararVariaveis(loc.v_model_id_final, loc.id_final) !== 0"
+                                        <button class="btn-sm" v-if="compararVariaveis(loc.v_model_id_inicial, loc.id_inicial) !== 0 || compararVariaveis(loc.v_model_id_final, loc.id_final) !== 0"
                                         @click="salvarEdicao(loc, 'id')">Salvar</button>
                                     </div>
                                     <div>
                                         <p>Datas:</p>
                                         <input type="datetime-local" placeholder="Data Inicial" step="1" v-model="loc.v_model_data_inicial">
                                         <input type="datetime-local" placeholder="Data Final" step="1" v-model="loc.v_model_data_final">
-                                        <button v-if="compararDatas(loc.v_model_data_inicial, loc.data_inicial) !== 0 || compararDatas(loc.v_model_data_final, loc.data_final) !== 0"
+                                        <button class="btn-sm" v-if="compararDatas(loc.v_model_data_inicial, loc.data_inicial) !== 0 || compararDatas(loc.v_model_data_final, loc.data_final) !== 0"
                                         @click="salvarEdicao(loc, 'data')">Salvar</button>
                                     </div>
                                 </div>
@@ -108,10 +108,10 @@
                             <div class="loc-oculta-td-ouvintes" v-if="loc.mostrando_ouvintes">
                                 <div>
                                     Ouvintes:
-                                    <button @click="OuvinteDaLocOculta.open([loc])">✏️</button>
+                                    <button class="btn-secondary btn-sm" @click="OuvinteDaLocOculta.open([loc])">Editar</button>
                                 </div>
                                 <div v-for="(ouvinte, idx) in loc.ouvintes" :key="idx">
-                                    <button @click="OuvinteDaLocOculta.excludeMe(loc, ouvinte)">X</button>
+                                    <button class="red-button btn-sm" title="Remover ouvinte" aria-label="Remover ouvinte" @click="OuvinteDaLocOculta.excludeMe(loc, ouvinte)">×</button>
                                     <p>{{ ouvinte.u_id }} - {{ ouvinte.u_nome }}</p>
                                 </div>
                             </div>
@@ -350,118 +350,42 @@ export default {
 
 </script>
 
-
-
 <style scoped>
-.add-elemento-form-container {
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+.selection-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.selection-item { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-sm); }
 
-.add-elemento-form {
-    pointer-events: all;
-    background: white;
-    border: 1px solid var(--colorA2);
-    padding: 20px;
-    border-radius: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: min(420px, calc(100vw - 60px));
-}
-
-.add-elemento-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.elementos-page-content {
-    width: 100%;
-    height: 100%;
-    padding: 4px;
-    overflow-x: auto;
-}
-
-.loc-oculta-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.loc-oculta-checksome{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    padding: 5px;
-    width: max-content;
-    gap: 10px;
-}
-
-.loc-oculta-td {
-    padding-bottom: 30px;
-}
-
+.elementos-page-content { width: 100%; max-width: 1080px; padding: var(--space-5); }
+.loc-oculta-table,
+.loc-oculta-table tbody,
+.loc-oculta-table tr,
+.loc-oculta-table td { display: block; width: 100%; }
+.loc-oculta-table thead { display: none; }
+.loc-oculta-td { padding-bottom: var(--space-3); }
 .loc-oculta-td-content {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    padding: 5px;
-    border-radius: 5px;
-    border: 1px solid var(--colorC4);
-    box-shadow: 0 0 5px #00000061;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }
+.loc-oculta-td-title,
+.loc-oculta-td-filter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.loc-oculta-td-identificacao,
+.loc-oculta-td-actions,
+.loc-oculta-td-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.loc-oculta-td-identificacao > input { font-size: var(--font-md); font-weight: var(--weight-bold); }
+.loc-oculta-td-filter-datas { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.loc-oculta-td-filter-datas > div { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.loc-oculta-td-filter-datas p { min-width: 3.5rem; color: var(--color-text-muted); font-size: var(--font-sm); }
+.loc-oculta-td-filter-datas input { min-height: var(--control-height-sm); }
+.loc-oculta-td-filter-actions { font-size: var(--font-sm); }
+.loc-oculta-td-ouvintes { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--color-border); font-size: var(--font-sm); }
+.loc-oculta-td-ouvintes > div { display: flex; align-items: center; gap: var(--space-2); }
 
-.loc-oculta-td-title, .loc-oculta-td-actions, .loc-oculta-td-filter, .loc-oculta-td-filter-actions{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+@media (max-width: 520px) {
+    .elementos-page-content { padding: var(--space-3); }
 }
-
-.loc-oculta-td-identificacao > input {
-    border: none;
-    border-bottom: 3px solid var(--colorA2);
-    border-radius: 0;
-}
-
-.loc-oculta-td-filter-datas > div {
-    display: flex;
-    flex-direction: row;
-    gap: 2px;
-}
-
-
-.loc-oculta-td-ouvintes {
-    padding: 5px;
-    border-top: 1px solid var(--colorA2);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.loc-oculta-td-ouvintes > div {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 5px;
-}
-
-
-button {
-    border: 1px solid var(--colorC4);
-    color: var(--colorC4);
-    background: none;
-    padding: 2px;
-    min-width: 2rem;
-}
-
-button:hover, button:focus {
-    color: var(--colorA1);
-    background: var(--colorC2);
-}
-
 </style>

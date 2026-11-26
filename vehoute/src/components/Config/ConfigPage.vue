@@ -7,21 +7,24 @@
             @pesquisa="filterConfig"
         />
 
-        <div class="tabela">
-            <p class="tabela-resumo">Configurações do usuário</p>
+        <div class="tabela table-page">
+            <p class="table-summary">Configurações do usuário</p>
+            <div class="table-toolbar">
             <button :disabled="!configsChanged"
                 @click="salvarTodos()">
                 Salvar Alterações
             </button>
-            <button :disabled="!configsChanged"
+            <button class="btn-secondary" :disabled="!configsChanged"
                 @click="cancelarAlteracoes()">
                 Cancelar
             </button>
+            </div>
 
-            <table>
+            <div class="table-wrap">
+            <table class="data-table">
                 <tbody>
                     <template v-for="(classe, index) in configs" :key="index">
-                        <tr class="agrupamento-titulo">
+                        <tr class="group-row">
                             <td colspan="2">{{ classe.classe_nome }}</td>
                         </tr>
                         <tr v-for="(config, index) in classe.configs" :key="index">
@@ -41,6 +44,7 @@
                     </template>
                 </tbody>
             </table>
+            </div>
         </div>
 </template>
 
@@ -162,60 +166,8 @@ export default {
 };
 </script>
 
-
 <style scoped>
-.tabela {
-    padding: 12px;
-    overflow-x: auto;
-}
-
-.tabela-resumo {
-    margin-bottom: 10px;
-    color: #666;
-    font-size: 0.95rem;
-}
-
-table {
-    border-collapse: collapse;
-    color: #333;
-}
-
-th,
-td {
-    padding: 9px 12px;
-    text-align: left;
-}
-
-th {
-    background-color: #f5f5f5;
-    color: #555;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-th:last-child,
-td:last-child {
-    white-space: nowrap;
-}
-
-.agrupamento-titulo {
-    border-bottom: 2px solid #ddd;
-    font-weight: bold;
-}
-
-.agrupamento-perms {
-    color: #555;
-}
-
-.config-nome {
-    text-align: right;
-}
-
-button {
-    min-width: 32px;
-    padding: 5px 8px;
-    font-size: 14px;
-    line-height: 1;
-}
+.tabela { width: 100%; max-width: 760px; }
+.config-nome { width: 60%; }
+.tabela input { width: 100%; min-width: 4rem; }
 </style>

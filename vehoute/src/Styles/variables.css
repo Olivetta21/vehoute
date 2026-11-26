@@ -1,0 +1,79 @@
+/* =========================================================
+   Tokens de design — altere aqui para mudar o site inteiro.
+   ========================================================= */
+:root {
+    /* Marca / ação */
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-soft: #eff4ff;
+    --color-on-primary: #ffffff;
+
+    /* Superfícies */
+    --color-bg: #f7f8fa;
+    --color-surface: #ffffff;
+    --color-surface-muted: #f2f4f7;
+    --color-overlay: rgb(16 24 40 / 45%);
+
+    /* Texto */
+    --color-text: #101828;
+    --color-text-muted: #667085;
+    --color-text-subtle: #98a2b3;
+
+    /* Bordas */
+    --color-border: #e4e7ec;
+    --color-border-strong: #d0d5dd;
+
+    /* Estados */
+    --color-success: #067647;
+    --color-success-soft: #ecfdf3;
+    --color-warning: #b54708;
+    --color-warning-soft: #fffaeb;
+    --color-danger: #d92d20;
+    --color-danger-hover: #b42318;
+    --color-danger-soft: #fef3f2;
+    --color-info: var(--color-primary);
+
+    /* Tipografia */
+    --font-sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+    --font-xs: 0.75rem;
+    --font-sm: 0.875rem;
+    --font-md: 0.9375rem;
+    --font-lg: 1.125rem;
+    --font-xl: 1.5rem;
+    --weight-medium: 500;
+    --weight-bold: 600;
+
+    /* Espaçamento */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+
+    /* Forma e profundidade */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 14px;
+    --radius-pill: 999px;
+    --shadow-sm: 0 1px 2px rgb(16 24 40 / 6%);
+    --shadow-md: 0 6px 16px rgb(16 24 40 / 8%);
+    --shadow-lg: 0 20px 48px rgb(16 24 40 / 18%);
+    --focus-ring: 0 0 0 3px rgb(37 99 235 / 22%);
+    --transition: 160ms ease;
+
+    /* Layout */
+    --control-height: 2.5rem;
+    --control-height-sm: 2rem;
+    --sidebar-width: 248px;
+    --sidebar-collapsed: 56px;
+    --header-height: 64px;
+    --card-min-width: 280px;
+    --modal-width: 440px;
+
+    /* Menu lateral */
+    --sidebar-bg: var(--color-surface);
+    --sidebar-text: var(--color-text-muted);
+    --sidebar-icon-filter: brightness(0);
+}

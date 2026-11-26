@@ -1,5 +1,5 @@
 <template>
-    <div class="tracker-card">
+    <div class="tracker-card card">
         <div class="tracker-principal" @click="(trackerVModel) ? null :detailed = !detailed">
             <div class="tracker-header">
                 <span class="tracker-id"> #{{ tracker.ur_id ?? '~' }}</span>
@@ -7,7 +7,7 @@
                 <h3 class="tracker-name">{{ (trackerVModel) ? '' : tracker.ur_nome || 'Rastreador sem nome' }}</h3>
                 
                 <template v-if="Usuario.hasPermission('Modificar Rastreador')">
-                    <span v-if="!trackerVModel" @click="startEditingTracker"> ✏️ </span>
+                    <span v-if="!trackerVModel" class="edit-indicator" title="Editar" @click="startEditingTracker"> ✎ </span>
                     <template v-else>
                         <button v-if="someInfoIsEdited" type="button" class="action-accept" @click="saveAllChanges"> ✓ </button>
                         <button type="button" class="action-decline" @click="cancelEditingTracker"> ✕ </button>
@@ -214,285 +214,68 @@ export default {
 
 </script>
 
-
 <style scoped>
-.tracker-card {
-    width: 100%;
-    max-width: 300px;
-    box-sizing: border-box;
+.tracker-card { overflow: hidden; }
+.tracker-principal { padding: var(--space-4); cursor: pointer; }
+.tracker-principal > input,
+.tracker-token input { width: 100%; min-height: var(--control-height-sm); }
+.tracker-principal > input { margin-bottom: var(--space-3); }
 
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-
-    color: #1f2937;
-    font-family: Arial, Helvetica, sans-serif;
-
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-
-    overflow: hidden;
-    transition:
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
-}
-
-.tracker-card:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 5px 16px rgba(15, 23, 42, 0.10);
-}
-
-
-.tracker-principal {
-    padding: 16px;
-    cursor: pointer;
-}
-
-
-.tracker-header {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-
-    min-width: 0;
-    margin-bottom: 12px;
-}
-
+.tracker-header { display: flex; align-items: center; gap: var(--space-2); min-width: 0; margin-bottom: var(--space-3); }
 .tracker-id {
     flex-shrink: 0;
-
-    padding: 4px 6px;
-    border-radius: 5px;
-
-    background: #f1f5f9;
-    color: #64748b;
-
-    font-size: 11px;
-    font-weight: 600;
+    padding: 0 var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+    background: var(--color-surface-muted);
+    border-radius: var(--radius-sm);
 }
-
-.tracker-name {
-    flex: 1;
-    min-width: 0;
-
-    margin: 0;
-
-    color: #1e293b;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.4;
-
-    overflow-wrap: anywhere;
-}
-
+.tracker-name { flex: 1; min-width: 0; font-size: var(--font-md); font-weight: var(--weight-bold); overflow-wrap: anywhere; }
+.edit-indicator,
 .expand-indicator {
+    display: inline-flex;
     flex-shrink: 0;
-    color: #94a3b8;
-    font-size: 25px;
-    border: 1px solid #94a3b8;
-    border-radius: 5px;
-    line-height: 1;
-    aspect-ratio: 1;
-}
-
-
-.tracker-image-container {
-    display: flex;
     align-items: center;
     justify-content: center;
-
-    width: 100%;
-    height: 145px;
-
-    margin-bottom: 14px;
-
-    background: #f8fafc;
-    border-radius: 8px;
-    overflow: hidden;
+    width: var(--control-height-sm);
+    height: var(--control-height-sm);
+    color: var(--color-text-muted);
+    font-size: var(--font-lg);
+    border-radius: var(--radius-sm);
 }
+.edit-indicator:hover,
+.expand-indicator:hover { color: var(--color-primary); background: var(--color-primary-soft); }
 
-.tracker-image {
-    width: 100%;
-    height: 100%;
+.tracker-image-container { width: 100%; height: 140px; margin-bottom: var(--space-4); overflow: hidden; background: var(--color-surface-muted); border-radius: var(--radius-md); }
+.tracker-image { width: 100%; height: 100%; background-position: center; background-repeat: no-repeat; background-size: contain; }
 
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-}
+.tracker-info { display: flex; flex-direction: column; gap: var(--space-2); }
+.tracker-info-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-width: 0; }
+.info-label { flex-shrink: 0; color: var(--color-text-subtle); font-size: var(--font-xs); font-weight: var(--weight-medium); }
+.info-value { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-2); min-width: 0; }
+.status-indicator { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; }
+.status-text,
+.owner-name { font-size: var(--font-sm); text-align: right; overflow-wrap: anywhere; }
+.owner-name { font-weight: var(--weight-medium); }
 
+.tracker-token { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+.token-value { color: var(--color-text-muted); font-family: var(--font-mono); font-size: var(--font-xs); overflow-wrap: anywhere; user-select: text; }
 
-.tracker-info {
-    display: flex;
-    flex-direction: column;
-    gap: 11px;
-}
+.tracker-detailed { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4) var(--space-4); border-top: 1px solid var(--color-border); }
+.tracker-detailed.hide { display: none; }
+.tracker-detailed-actions { display: flex; flex-direction: column; gap: var(--space-2); }
+.tracker-detailed-actions:empty { display: none; }
+.tracker-detailed button { min-height: var(--control-height-sm); color: var(--color-text); background: var(--color-surface); border-color: var(--color-border-strong); }
+.tracker-detailed button:hover { background: var(--color-surface-muted); }
+.tracker-ouvinte-actions { display: flex; align-items: center; gap: var(--space-2); }
 
-.tracker-info-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-width: 0;
-}
-
-.info-label {
-    flex-shrink: 0;
-
-    color: #94a3b8;
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.info-value {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 2px;
-    gap: 6px;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    min-width: 0;
-}
-
-.status-indicator {
-    flex-shrink: 0;
-
-    width: 7px;
-    height: 7px;
-
-    border-radius: 50%;
-}
-
-.status-text {
-    color: #475569;
-    font-size: 12px;
-    text-align: right;
-    overflow-wrap: anywhere;
-}
-
-.owner-name {
-    color: #334155;
-    font-size: 12px;
-    font-weight: 600;
-    text-align: right;
-    overflow-wrap: anywhere;
-}
-
-
-.tracker-token {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    margin-top: 14px;
-    padding-top: 11px;
-
-    border-top: 1px solid #f1f5f9;
-}
-
-.token-value {
-    color: #64748b;
-    font-family: monospace;
-    font-size: 11px;
-    line-height: 1.5;
-
-    overflow-wrap: anywhere;
-    user-select: text;
-}
-
-
-.tracker-detailed {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    padding: 0 16px 16px;
-    border-top: 1px solid #f1f5f9;
-}
-
-.tracker-detailed.hide {
-    display: none;
-}
-
-.tracker-detailed-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-
-    padding-top: 12px;
-}
-
-.tracker-detailed button {
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 500;
-
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-
-    padding: 9px 10px;
-
-    background: #ffffff;
-    color: #475569;
-
-    cursor: pointer;
-    transition:
-        background 0.15s ease,
-        border-color 0.15s ease;
-}
-
-.tracker-detailed button:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-}
-
-.tracker-ouvinte-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.tracker-ouvinte-actions .action-accept, .action-accept,
-.tracker-ouvinte-actions .action-decline, .action-decline {
-    width: 36px;
-    height: 34px;
-    padding: 0;
-
-    font-size: 16px;
-}
-
-.tracker-ouvinte-actions .action-accept, .action-accept {
-    color: #15803d;
-    border-color: #bbf7d0;
-    background: #f0fdf4;
-}
-
-.tracker-ouvinte-actions .action-accept:hover, .action-accept:hover {
-    background: #dcfce7;
-}
-
-.tracker-ouvinte-actions .action-decline, .action-decline {
-    color: #b91c1c;
-    border-color: #fecaca;
-    background: #fef2f2;
-}
-
-.tracker-ouvinte-actions .action-decline:hover, .action-decline:hover {
-    background: #fee2e2;
-}
-
-.tracker-ouvinte-actions .action-delete {
-    margin-left: auto;
-
-    color: #b91c1c;
-    border-color: #fecaca;
-}
-
-.tracker-ouvinte-actions .action-delete:hover {
-    background: #fef2f2;
-}
-
-.tracker-status:hover, .tracker-status:focus {
-    border: 1px solid #e2e8f0;
-}
+button.action-accept,
+button.action-decline { width: var(--control-height-sm); min-height: var(--control-height-sm); flex-shrink: 0; padding: 0; }
+.tracker-card button.action-accept { color: var(--color-success); background: var(--color-success-soft); border-color: transparent; }
+.tracker-card button.action-accept:hover { border-color: var(--color-success); }
+.tracker-card button.action-decline { color: var(--color-danger); background: var(--color-danger-soft); border-color: transparent; }
+.tracker-card button.action-decline:hover { border-color: var(--color-danger); }
+.tracker-card .tracker-ouvinte-actions .action-delete { margin-left: auto; color: var(--color-danger); border-color: var(--color-border); }
+.tracker-card .tracker-ouvinte-actions .action-delete:hover { background: var(--color-danger-soft); border-color: var(--color-danger); }
 </style>
-

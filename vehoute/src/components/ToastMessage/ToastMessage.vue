@@ -24,85 +24,43 @@ export default {
 </script>
 
 <style scoped>
-
-  #toastcontainer {
+#toastcontainer {
     position: fixed;
     top: 0;
     right: 0;
-
-    margin: 20px 20px 20px 0;
-
-    width: 300px;
     z-index: 1000;
-
-    max-height: calc(100% - 40px);
+    width: min(340px, 100%);
+    max-height: 100%;
+    padding: var(--space-3);
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
     scrollbar-width: none;
-
     pointer-events: none;
-  }
-  
-  .toast-wrapper {
-    padding: 10px;
-  }
-  
-  .toast {
-    background-color: #070707;
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+.toast-wrapper { padding-bottom: var(--space-2); }
+.toast {
+    --toast-accent: var(--color-info);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--toast-accent);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
     cursor: pointer;
     pointer-events: all;
-    border: 2px solid rgba(0, 0, 0, 0);
-    backdrop-filter: blur(3px);
-  }
+}
+.toast:hover { background: var(--color-surface-muted); }
+.toast.success { --toast-accent: var(--color-success); }
+.toast.error { --toast-accent: var(--color-danger); }
+.toast.warn { --toast-accent: var(--color-warning); }
+.toast.info { --toast-accent: var(--color-info); }
 
-  .toast:hover {
-    border: 2px solid black;
-    backdrop-filter: blur(0);
-  }
+.textToast { overflow: hidden; white-space: pre-line; overflow-wrap: anywhere; }
+.textToast.title { color: var(--toast-accent); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.textToast.message { color: var(--color-text); font-size: var(--font-sm); }
 
-
-  .textToast {
-    white-space: pre-line;
-    text-overflow: ellipsis;
-    overflow: hidden;
-  }
-
-  .textToast.title {
-    text-wrap: nowrap;
-    margin-top: -12px;
-    margin-left: -12px;
-    margin-right: -12px;
-
-    font-size: xx-small;
-    background-color: rgba(0, 0, 0, 0.4);
-    border-radius: 0.2em;
-    text-align: center;
-  }
-  .textToast.message {
-    font-size: small;
-    text-wrap: wrap;
-    text-shadow: 0px 0px 5px black;
-  }
-
-  .toast.success {
-	background-color: #4caf4fb9; /* Verde para sucesso */
-  }
-  
-  .toast.error {
-	background-color: #f44336b9; /* Vermelho para erro */
-  }
-  
-  .toast.warn {
-	background-color: #ffee00b9; /* Laranja para alerta */
-  }
-
-  .toast.info {
-	background-color: #002fffb9; /* Laranja para alerta */
-  }
-
-
+.slide-enter-active,
+.slide-leave-active { transition: opacity var(--transition), transform var(--transition); }
+.slide-enter-from,
+.slide-leave-to { opacity: 0; transform: translateX(16px); }
 </style>

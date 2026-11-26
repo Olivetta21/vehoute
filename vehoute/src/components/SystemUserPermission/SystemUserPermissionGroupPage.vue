@@ -21,8 +21,9 @@
             @newUser="fetchGruposUsuario"
         />
 
-        <div class="tabela">
-            <table>
+        <div class="tabela table-page">
+            <div class="table-wrap">
+            <table class="data-table has-actions">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -32,12 +33,12 @@
                 </thead>
                 <tbody>
                     <template v-for="grupo in grupos" :key="grupo.id">
-                        <tr class="grupo-row">
+                        <tr class="grupo-row group-row">
                             <td>{{ grupo.id }}</td>
                             <td>{{ grupo.nome }}</td>
                             <td>
-                                <button class="action-button" title="Adicionar usuário ao grupo" aria-label="Adicionar usuário ao grupo" @click="showAddUsuarioGrupoModal = true; selectedGroupId = grupo.id; selectedGroupName = grupo.nome">+</button>
-                                <button class="action-button red-button" title="Excluir grupo" aria-label="Excluir grupo" @click="deleteGrupo(grupo)">🗑️</button>
+                                <button class="action-button btn-secondary btn-sm" title="Adicionar usuário ao grupo" aria-label="Adicionar usuário ao grupo" @click="showAddUsuarioGrupoModal = true; selectedGroupId = grupo.id; selectedGroupName = grupo.nome">+</button>
+                                <button class="action-button red-button btn-sm" title="Excluir grupo" aria-label="Excluir grupo" @click="deleteGrupo(grupo)">Excluir</button>
                             </td>
                         </tr>
                         <tr class="usuario-row" v-if="grupo.usuarios.length === 0">
@@ -47,11 +48,12 @@
                         <tr class="usuario-row" v-for="usuario in grupo.usuarios" :key="usuario.id">
                             <td>{{ usuario.id }}</td>
                             <td>{{ usuario.nome }}</td>
-                            <td><button class="action-button red-button" title="Remover usuário do grupo" aria-label="Remover usuário do grupo" @click="removerUsuarioDoGrupo(usuario, grupo)">−</button></td>
+                            <td><button class="action-button red-button btn-sm" title="Remover usuário do grupo" aria-label="Remover usuário do grupo" @click="removerUsuarioDoGrupo(usuario, grupo)">−</button></td>
                         </tr>
                     </template>
                 </tbody>
             </table>
+            </div>
         </div>
 </template>
 
@@ -115,57 +117,7 @@ export default {
 </script>
 
 <style scoped>
-.tabela {
-    padding: 12px;
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    color: #333;
-}
-
-th,
-td {
-    padding: 9px 12px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-}
-
-th {
-    background-color: #f5f5f5;
-    color: #555;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-th:last-child,
-td:last-child {
-    width: 1%;
-    white-space: nowrap;
-    text-align: right;
-}
-
-.grupo-row {
-    background-color: #e0e0e0;
-    font-weight: bold;
-}
-
-.usuario-row {
-    color: #555;
-}
-
-.usuario-row td:nth-child(2) {
-    padding-left: 28px;
-}
-
-.action-button {
-    min-width: 32px;
-    margin-left: 4px;
-    padding: 5px 8px;
-    font-size: 14px;
-    line-height: 1;
-}
+.usuario-row { color: var(--color-text-muted); }
+.data-table .usuario-row td:nth-child(2) { padding-left: var(--space-6); }
+.action-button { margin-left: var(--space-1); }
 </style>

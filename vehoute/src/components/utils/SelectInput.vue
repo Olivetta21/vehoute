@@ -1,10 +1,10 @@
 <template>
-    <div>
-        <p v-if="placeholder">{{ placeholder }}</p>
+    <div class="select-field">
+        <p class="select-label" v-if="placeholder">{{ placeholder }}</p>
         <div class="select-input-container">
             <template v-if="searchFn && !searchAll">
                 <input v-if="is_searching" type="text" v-model="searchText" :placeholder="searchPlaceholder" @input="search" class="search-input"/>
-                <button v-else @click="startSearch" class="search-bttn"> {{ searchBttnText }} </button>
+                <button v-else @click="startSearch" class="search-bttn btn-secondary"> {{ searchBttnText }} </button>
             </template>
             <select @change="handleChange" class="select-input" v-model="selected_value" :required="required">
                 <option value=""> {{ !real_data || real_data?.length < 1 ? 'Nenhuma opção encontrada' : 'Selecione' }} </option>
@@ -172,16 +172,10 @@ export default {
 </script>
 
 <style scoped>
-.select-input-container {
-    display: flex;
-    gap: 0;
-    align-items: center;
-}
-
-.select-input, .search-bttn, .search-input {
-    padding: 0;
-    border: 1px solid var(--colorC3);
-    border-radius: 0;
-    height: 1.5rem;
-}
+.select-field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.select-label { color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.select-input-container { display: flex; align-items: center; gap: var(--space-2); }
+.select-input { flex: 1; min-width: 0; }
+.search-input { flex: 1; width: 9rem; min-width: 0; }
+.search-bttn { flex-shrink: 0; padding: 0 var(--space-3); }
 </style>

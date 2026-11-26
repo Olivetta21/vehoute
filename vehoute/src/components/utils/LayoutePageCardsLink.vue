@@ -48,60 +48,34 @@ export default {
 
 <style scoped>
 .links {
-  padding: 5px;
-  height: 100%;
-  width: 100%;
-
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: space-evenly;
-  align-items: center;
-  overflow: auto;
-  scrollbar-width: none;
-  gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr));
+    gap: var(--space-4);
+    align-content: start;
+    width: 100%;
+    max-width: 960px;
+    padding: var(--space-5);
 }
-
 .links-card {
-  width: calc(100% / 4);
-  max-width: 200px;
-  max-height: 200px;
-  aspect-ratio: 1;
-  border-radius: 30px;
-  overflow: hidden;
-
-  padding: 0;
-  box-shadow: 4px 4px 8px 5px rgb(0 0 0 / 18%);
-  transition: all 0.3s ease;
-
-  background-color: white;
-  background-size: 75%;
-  background-repeat: no-repeat;
-  background-position: top;
-
-  text-align: end;
-  align-content: end;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: var(--space-3);
+    background-color: var(--color-surface);
+    background-repeat: no-repeat;
+    background-position: center 30%;
+    background-size: 52%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
 }
-.links-card:hover {
-  transform: scale(1.05);
-  box-shadow: 2px 2px 8px 5px rgb(0 0 0 / 12%);
-}
+.links-card:hover { transform: translateY(-2px); border-color: var(--color-primary); box-shadow: var(--shadow-md); }
+.card-name { text-align: center; font-size: var(--font-sm); font-weight: var(--weight-bold); }
 
-@media (orientation: portrait) {
-  .links-card {
-    width: calc((100% / 2) - 14px);
-    min-width: 130px;
-  }
-}
-
-.card-name {
-  padding: 5px;
-  border-radius: 10px;
-  color: var(--colorD1);
-  font-weight: bold;
-  background-color: rgba(255, 255, 255, 0.671);
-  text-align: center;
-  font-size: 1.2rem;
-  font-weight: 600;
+@media (max-width: 520px) {
+    .links { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-3); }
 }
 </style>

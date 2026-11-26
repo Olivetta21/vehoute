@@ -34,28 +34,12 @@ export default {
 </script>
 
 <style scoped>
-
-.input-check {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-}
-
-.input-slot {
-    width: 100%;
-}
-
-p {
-    font-size: 0.7em;
-    color: red;
-}
-
+.input-check { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-1); text-align: left; }
+p { color: var(--color-danger); font-size: var(--font-xs); }
 .checkbox-hidden {
     position: absolute;
     width: 1px;
     height: 1px;
-    padding: 0;
     margin: -1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);

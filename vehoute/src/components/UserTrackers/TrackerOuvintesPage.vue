@@ -9,21 +9,21 @@
         @adicionar="handleAdicionar"
     />
     <GenericModalWindow v-if="showAddOuvinteForm" @close="fecharModalNovoOuvinte">
-        <div class="add-ouvinte-form-container">
-            <form class="add-ouvinte-form" @submit.prevent="salvarNovoOuvinte">
+        <div class="modal-container">
+            <form class="modal-form" @submit.prevent="salvarNovoOuvinte">
                 <h2>Novo ouvinte</h2>
                 <p>Envie uma proposta de inclusão para um usuário do sistema.</p>
                 <input v-model.number="newOuvinte.usuario_id_destino" type="number" min="1" placeholder="ID do usuário destino" required />
-                <div class="add-ouvinte-actions">
+                <div class="modal-actions">
                     <button type="submit">Adicionar</button>
-                    <button type="button" @click="fecharModalNovoOuvinte">Cancelar</button>
+                    <button type="button" class="btn-secondary" @click="fecharModalNovoOuvinte">Cancelar</button>
                 </div>
             </form>
         </div>
     </GenericModalWindow>
     <div class="ouvintes-page-content">
             <ul>
-            <li v-for="ouvinte in ouvintes" :key="ouvinte.ur_id">
+            <li v-for="ouvinte in ouvintes" :key="ouvinte.ur_id" class="card">
                 <OuvinteCard
                     :ouvinte="ouvinte"
                     @pause="handlePause"
@@ -170,59 +170,19 @@ export default {
 
 </script>
 
-
-
 <style scoped>
-.add-ouvinte-form-container {
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.add-ouvinte-form {
-    pointer-events: all;
-    background: white;
-    border: 1px solid var(--colorA2);
-    padding: 20px;
-    border-radius: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: min(420px, calc(100vw - 60px));
-}
-
-.add-ouvinte-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.ouvintes-page-content {
-    width: 100%;
-    height: 100%;
-    overflow-x: auto;
-}
-
-ul {
-    width: min-content;
-}
-
+.ouvintes-page-content { width: 100%; padding: var(--space-5); }
+ul { display: flex; flex-direction: column; gap: var(--space-3); max-width: 1080px; list-style: none; }
 li {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    border: 1px solid var(--colorA2);
-    box-shadow: 3px 3px 11px #00000061;
-    padding: 10px;
-    gap: 5px;
-    border-radius: 5px;
-    text-wrap: nowrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) auto minmax(0, 1.4fr);
     align-items: center;
-    margin-bottom: 14px;
+    gap: var(--space-4);
+    padding: var(--space-4);
 }
-
-
+@media (max-width: 800px) {
+    .ouvintes-page-content { padding: var(--space-3); }
+    li { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+    li :deep(.ouvinte-actions) { justify-content: flex-start; }
+}
 </style>

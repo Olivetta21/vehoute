@@ -106,3 +106,7 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+label { color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+</style>

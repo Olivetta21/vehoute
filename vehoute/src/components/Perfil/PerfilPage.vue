@@ -6,7 +6,7 @@
         />
 
         <div class="perfil-page" v-if="userProfile">
-            <div>
+            <div class="card perfil-section">
                 <h1>#{{Usuario.id}} - Dados Pessoais</h1>
                 <div class="info">
                     <label for="user-nome">Nome</label>
@@ -36,13 +36,13 @@
                         <button v-if="userProfileIdentidadeChanged" @click="salvarIdentidadeLegal">Salvar Identidade</button>
                     </label>
                 </div>
-                <div>
+                <div class="perfil-stats">
                     <p>Rastreadores: {{ userProfile.total_rastreadores }}</p>
                     <p>Rastreadores Registrados: {{ userProfile.total_rastreadores_registrados }}</p>
                     <p>Ouvinte em: {{ userProfile.total_ouvinte }}</p>
                 </div>
             </div>
-            <div>
+            <div class="card perfil-section">
                 <h1>Contato</h1>
                 <div class="info">
                     <label for="user-email">Email</label>
@@ -54,12 +54,12 @@
                 </div>
                 <div class="buttons" v-if="userProfileInfosChanged">
                     <button @click="atualizarPerfilUsuario">Salvar</button>
-                    <button @click="setUserProfileInfos(this.userProfile)">Cancelar</button>
+                    <button class="btn-secondary" @click="setUserProfileInfos(this.userProfile)">Cancelar</button>
                 </div>
             </div>
         </div>
 
-        <div v-else>Perfil não carregado</div>
+        <div v-else class="perfil-empty">Perfil não carregado</div>
 
 </template>
 
@@ -170,42 +170,19 @@ export default {
 </script>
 
 <style scoped>
-    .perfil-page {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        padding: 20px;
-        gap: 20px;
-        flex-wrap: wrap;
-        max-width: 800px;
-    }
-
-    .perfil-page > div {
-        flex: 1;
-        border-radius: 5px;
-        max-width: 600px;
-    }
-
-    .info {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        padding: 10px;
-    }
-
-    .credencial {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        gap: 10px;
-    }
-
-    .regex {
-        font-size: 0.8rem;
-        color: red;
-    }
-
-    .regex.valid {
-        color: green;
-    }
+.perfil-page { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-4); width: 100%; max-width: 960px; padding: var(--space-5); }
+.perfil-section { display: flex; flex: 1 1 var(--card-min-width); flex-direction: column; gap: var(--space-4); padding: var(--space-5); }
+h1 { font-size: var(--font-lg); }
+.info,
+.info > label { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.info label { color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.info input { width: 100%; color: var(--color-text); font-weight: normal; }
+.credencial { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.credencial > .info { flex: 1 1 140px; }
+.perfil-stats { padding-top: var(--space-3); color: var(--color-text-muted); font-size: var(--font-sm); border-top: 1px solid var(--color-border); }
+.buttons { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.regex { color: var(--color-danger); font-size: var(--font-xs); }
+.regex.valid { color: var(--color-success); }
+.perfil-empty { padding: var(--space-5); color: var(--color-text-muted); }
+@media (max-width: 520px) { .perfil-page { padding: var(--space-3); } }
 </style>

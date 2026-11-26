@@ -86,14 +86,16 @@ export default class MapApi_OpenStreet extends MapApi_Interface {
         try {
             const blueIcon = window.L.divIcon({
                 html: `<div style="
-                    width: 12px;
-                    height: 12px;
+                    width: 16px;
+                    height: 16px;
                     border-radius: 50%;
-                    background: #00F;
+                    background: var(--color-primary);
+                    border: 3px solid var(--color-surface);
+                    box-shadow: var(--shadow-md);
                 "></div>`,
                 className: '',
-                iconSize: [12, 12],
-                iconAnchor: [6, 6]
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
             });
 
             MapApi_OpenStreet.marker = window.L.marker([9999, 9999], {

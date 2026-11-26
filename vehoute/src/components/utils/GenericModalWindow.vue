@@ -12,13 +12,11 @@ export default {
 </script>
 
 <style scoped>
-
 .modal-window {
     position: fixed;
-    width: calc(100dvw - 40px);
-    height: 100vh;
-    background-color: #0000007a;
+    inset: 0 0 0 var(--sidebar-collapsed);
     z-index: 30;
+    background: var(--color-overlay);
+    backdrop-filter: blur(2px);
 }
-
 </style>

@@ -32,42 +32,23 @@ export default {
 </script>
 
 <style scoped>
-
+#auth-container { position: relative; width: 100%; height: 100%; overflow: auto; background: var(--color-bg); }
 #triangulo-background {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    background: var(--colorC3);
-    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 45%;
+    background: linear-gradient(var(--color-primary-soft), var(--color-bg));
 }
-
-#auth-cont-header {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-#auth-cont-header:hover {
-    color: var(--colorC4);
-}
-
-#conteudo {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    height: 100%;
-    overflow: auto;
-    scrollbar-width: auto;
-    align-content: center;
-
-    max-width: 100vw;
-}
-
+#conteudo { position: relative; display: flex; min-height: 100%; padding: var(--space-4); }
 #content-container {
-    min-width: max-content;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    width: min(380px, 100%);
+    margin: auto;
 }
-
-
-
+h1 { text-align: center; }
+#auth-cont-header { position: relative; display: flex; align-items: center; justify-content: center; padding: 0 var(--space-6); cursor: pointer; }
+#auth-cont-header svg { position: absolute; left: 0; }
+#auth-cont-header:hover { color: var(--color-primary); }
 </style>

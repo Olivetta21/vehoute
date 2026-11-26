@@ -16,16 +16,18 @@
             :preselectedPermissao="preSelPerm"
         />
 
-        <div>
+        <div class="table-page">
             <SelectInput 
+                class="grouping-select"
                 :data="agrupamento_options"
                 placeholder="Selecione o agrupamento"
                 @update:value="agrupamento_selecionado = $event"
             />
 
             <div class="tabela">
-                <p class="tabela-resumo">Agrupado por: <strong>{{ ultimo_agrupado_por || 'nenhum critério selecionado' }}</strong></p>
-                <table>
+                <p class="table-summary">Agrupado por: <strong>{{ ultimo_agrupado_por || 'nenhum critério selecionado' }}</strong></p>
+                <div class="table-wrap">
+                <table class="data-table has-actions">
                     <thead>
                         <tr>
                             <th>ID do vínculo</th>
@@ -36,18 +38,18 @@
                     </thead>
                     <tbody>
                         <template v-for="(entidade, index) in agrupamento" :key="index">
-                            <tr class="agrupamento-titulo">
+                            <tr class="group-row">
                                 <td colspan="3">{{ {'null': 'Permissão', 'true': 'Rastreador', 'false': 'Grupo'}[String(entidade.is_tracker)] }} {{ entidade.id }}: {{ entidade.nome }}</td>
                                 <td>
-                                    <button v-if="ultimo_agrupado_por === 'permissao'"
+                                    <button class="btn-secondary btn-sm" v-if="ultimo_agrupado_por === 'permissao'"
                                         @click="openAddVinculoPermissaoModal(null, entidade)"
                                         title="Adicionar entidade" aria-label="Adicionar entidade">+
                                     </button>
-                                    <button v-else-if="ultimo_agrupado_por === 'entidade' || ultimo_agrupado_por === 'rastreador'"
+                                    <button class="btn-secondary btn-sm" v-else-if="ultimo_agrupado_por === 'entidade' || ultimo_agrupado_por === 'rastreador'"
                                         @click="openAddVinculoPermissaoModal(entidade, null)"
                                         title="Adicionar permissão" aria-label="Adicionar permissão">+
                                     </button>
-                                    <button v-else title="Ação indisponível" aria-label="Ação indisponível">—</button>
+                                    <button class="btn-secondary btn-sm" v-else title="Ação indisponível" aria-label="Ação indisponível">—</button>
                                 </td>
                             </tr>
                             <tr class="agrupamento-perms" v-for="(permissao, pIndex) in entidade.permissoes" :key="pIndex">
@@ -57,7 +59,7 @@
                                         ? (permissao.is_tracker ? 'Rastreador ' : 'Grupo ') + permissao.x_id + ': ' + permissao.x_nome
                                         : permissao.pr_id + ' - ' + permissao.pr_nome }}</td>
                                 <td>
-                                    <button class="red-button" v-if="ultimo_agrupado_por === 'permissao' || ultimo_agrupado_por === 'entidade' || permissao.is_tracker"
+                                    <button class="red-button btn-sm" v-if="ultimo_agrupado_por === 'permissao' || ultimo_agrupado_por === 'entidade' || permissao.is_tracker"
                                         @click="removeVinculoPermissao(permissao)"
                                         title="Remover vínculo" aria-label="Remover vínculo">×
                                     </button>
@@ -66,6 +68,7 @@
                         </template>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
 </template>
@@ -144,58 +147,5 @@ export default {
 </script>
 
 <style scoped>
-.tabela {
-    padding: 12px;
-    overflow-x: auto;
-}
-
-.tabela-resumo {
-    margin-bottom: 10px;
-    color: #666;
-    font-size: 0.95rem;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    color: #333;
-}
-
-th,
-td {
-    padding: 9px 12px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-}
-
-th {
-    background-color: #f5f5f5;
-    color: #555;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-th:last-child,
-td:last-child {
-    width: 1%;
-    white-space: nowrap;
-    text-align: right;
-}
-
-.agrupamento-titulo {
-    background-color: #e0e0e0;
-    font-weight: bold;
-}
-
-.agrupamento-perms {
-    color: #555;
-}
-
-button {
-    min-width: 32px;
-    padding: 5px 8px;
-    font-size: 14px;
-    line-height: 1;
-}
+.grouping-select { max-width: 320px; margin-bottom: var(--space-4); }
 </style>

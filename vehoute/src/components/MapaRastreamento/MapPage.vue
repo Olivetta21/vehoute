@@ -177,89 +177,41 @@ export default {
 </script>
 
 <style scoped>
-    #map-container {
-        height: calc(100dvh);
-        width: calc(100vw - 40px);
-        position: absolute;
-    }
-    .colored-red { 
-        width: 100%;
-        height: 100%;
-        background-color: wheat;
-        z-index: 0;
-    }
+#map-container,
+#map-buttons { position: absolute; width: calc(100% - var(--sidebar-collapsed)); height: 100dvh; }
+#map-buttons { pointer-events: none; }
+.colored-red { z-index: 0; width: 100%; height: 100%; background: var(--color-surface-muted); }
 
-    #map-buttons {
-        height: 100dvh;
-        width: calc(100vw - 40px);
-        position: absolute;
-        pointer-events: none;
-    }
+.buttons-container {
+    position: absolute;
+    bottom: var(--space-5);
+    left: 50%;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    width: max-content;
+    max-width: calc(100% - var(--space-4));
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-50%);
+    pointer-events: all;
+}
+.loc-navigation-buttons { display: flex; gap: var(--space-2); }
+.loc-navigation-buttons button { width: var(--control-height); padding: 0; color: var(--color-text); background: var(--color-surface); border-color: var(--color-border-strong); }
+.loc-navigation-buttons button:hover { color: var(--color-primary); background: var(--color-primary-soft); border-color: var(--color-primary); }
 
-    .buttons-container {
-        background-color: var(--colorD1-transparent);
-        color: var(--colorA1);
-        position: absolute;
-        left: 50%;
-        bottom: 2px;
-        padding: 5px;
-        transform: translateX(-50%);
-        pointer-events: all;
-        display: flex;
-        flex-direction: row;
-        gap: 5px;
-        border-radius: 5px;
-        align-items: center;
-        width: calc(100% - 4px);
-        max-width: 540px;
-        overflow: auto;
-        scrollbar-width: none;
-    }
-
-    .tracker-info-buttons {
-        display: flex;
-        justify-content: space-evenly;
-        flex-wrap: wrap;
-        gap: 2px;
-    }
-    .tracker-location-container, .filter-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-evenly;
-        gap: 2px;
-    }
-    .filter-container {
-        align-items: flex-end;
-    }
-
-    option {
-        background-color: var(--colorD1);
-        color: var(--colorA1);
-    }
-
-
-    .loc-navigation-buttons, .filter-container {
-        display: flex;
-        justify-content: space-evenly;
-    }
-    .loc-navigation-buttons button {
-        padding: 0;
-        width: 50px;
-        height: 50px;
-        font-size: 1.2rem;
-        background-color: unset;
-        color: var(--colorA1);
-        border: 1px solid var(--colorA1);
-        
-    }
-    
-    input[type="date"],
-    select {
-        border: 1px solid var(--colorA1);
-        background: unset;
-        color: var(--colorA1);
-        padding: 1px;
-        border-radius: 5px;
-    }
-
+.tracker-info-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); min-width: 0; }
+.tracker-location-container,
+.filter-container { display: flex; flex-direction: column; gap: var(--space-2); }
+.filter-container { align-items: flex-end; }
+.filter-container > div { display: flex; align-items: center; gap: var(--space-2); color: var(--color-text-muted); font-size: var(--font-xs); }
+.tracker-location-container select { width: 13rem; }
+input[type="date"],
+select { min-height: var(--control-height-sm); }
 </style>

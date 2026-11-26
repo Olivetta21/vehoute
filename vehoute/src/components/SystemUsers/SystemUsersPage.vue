@@ -34,26 +34,26 @@
             </form>
         </div>
     </GenericModalWindow>
-    <div class="user-cards-container">
-        <div class="user-card" v-for="user in users" :key="user.id">
+    <div class="user-cards-container cards-grid">
+        <div class="user-card card" v-for="user in users" :key="user.id">
             <div class="user-card-content">
                 <div class="user-card-stats">
-                    <p> {{ user.id }}</p>
-                    <p v-if="user.adm"> 👑 </p>
-                    <p> {{ user.ativo ? '🟢' : '🔴' }}</p>
+                    <p class="user-id">#{{ user.id }}</p>
+                    <p v-if="user.adm" class="badge is-primary">Admin</p>
+                    <p class="badge" :class="user.ativo ? 'is-success' : 'is-danger'">{{ user.ativo ? 'Ativo' : 'Inativo' }}</p>
                 </div>
                 <div class="user-card-name">{{ user.nome }}</div>
                 <div class="user-card-posses">
-                    <p> 🚗 {{ user.qnt_posse_rastr }}</p>
-                    <p> 👂 {{ user.ouvinte_qnt_rastr }}</p>
+                    <p>Rastreadores: {{ user.qnt_posse_rastr }}</p>
+                    <p>Ouvinte em: {{ user.ouvinte_qnt_rastr }}</p>
                 </div>
             </div>
             <div class="user-card-footer">
                 <p>{{ user.email }}</p>
                 <p>{{ user.telefone }}</p>
                 <p>{{ user.identidade }}</p>
-                <button type="button" @click="toggleAtivo(user.id)">{{ user.ativo ? 'Desativar' : 'Ativar' }}</button>
-                <button type="button" @click="toggleAdm(user.id)">{{ user.adm ? 'Remover admin' : 'Tornar admin' }}</button>
+                <button type="button" class="btn-secondary btn-sm" @click="toggleAtivo(user.id)">{{ user.ativo ? 'Desativar' : 'Ativar' }}</button>
+                <button type="button" class="btn-secondary btn-sm" @click="toggleAdm(user.id)">{{ user.adm ? 'Remover admin' : 'Tornar admin' }}</button>
             </div>
             
         </div>
@@ -149,140 +149,13 @@ export default {
 </script>
 
 <style scoped>
-
-.modal-container {
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.modal-form {
-    pointer-events: all;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    width: min(440px, calc(100vw - 40px));
-    padding: 26px;
-    background: var(--colorA1);
-    border: 1px solid var(--colorA2);
-    border-radius: 16px;
-    box-shadow: 0 18px 45px rgb(22 22 22 / 18%);
-}
-
-.modal-heading {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.modal-heading h2 {
-    margin: 0;
-    color: var(--colorA3);
-}
-
-.modal-form input:not([type="checkbox"]) {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 11px 12px;
-    border: 1px solid #d8dce2;
-    border-radius: 8px;
-}
-
-.feedback-message {
-    margin: 0;
-    font-size: 0.95rem;
-}
-
-.user-cards-container {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 18px;
-    padding: 22px;
-    overflow: auto;
-}
-
-.user-card {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: clamp(240px, 100%, 360px);
-    min-height: 190px;
-    padding: 18px;
-    border: 1px solid #e1e5eb;
-    border-radius: 16px;
-    background: var(--colorA1);
-    box-shadow: 0 8px 22px rgb(22 22 22 / 7%);
-    box-sizing: border-box;
-    transition: transform 160ms ease, box-shadow 160ms ease;
-}
-
-.user-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 14px 28px rgb(22 22 22 / 12%);
-}
-
-.user-card-content {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-}
-
-.user-card-stats {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    color: #687281;
-    font-size: 0.85rem;
-}
-
-.user-card-stats p,
-.user-card-posses p,
-.user-card-footer p {
-    margin: 0;
-}
-
-.user-card-name {
-    overflow: hidden;
-    color: var(--colorA3);
-    font-size: 1.15rem;
-    font-weight: 700;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.user-card-posses {
-    display: flex;
-    gap: 14px;
-    color: #687281;
-    font-size: 0.9rem;
-}
-
-.user-card-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
-    margin-top: auto;
-    color: #687281;
-    font-size: 0.85rem;
-}
-
-.user-card-footer p {
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.user-card-footer button {
-    flex: 1;
-    min-width: 110px;
-}
-
+.user-card { display: flex; flex-direction: column; align-self: stretch; gap: var(--space-3); padding: var(--space-4); }
+.user-card-content { display: flex; flex-direction: column; gap: var(--space-2); }
+.user-card-stats { display: flex; align-items: center; gap: var(--space-2); }
+.user-id { margin-right: auto; color: var(--color-text-subtle); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.user-card-name { overflow: hidden; font-size: var(--font-lg); font-weight: var(--weight-bold); text-overflow: ellipsis; white-space: nowrap; }
+.user-card-posses { display: flex; flex-wrap: wrap; gap: var(--space-4); color: var(--color-text-muted); font-size: var(--font-sm); }
+.user-card-footer { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); margin-top: auto; padding-top: var(--space-3); color: var(--color-text-muted); font-size: var(--font-sm); border-top: 1px solid var(--color-border); }
+.user-card-footer p { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-card-footer button { flex: 1; margin-top: var(--space-2); }
 </style>

@@ -10,8 +10,8 @@
         />
 
         <GenericModalWindow v-if="this.showAddTrackerForm" @close="showAddTrackerForm = false; newTracker.checked = false; newTracker.validated = false;">
-            <div class="add-tracker-form-container">
-                <form class="add-tracker-form" @submit.prevent>
+            <div class="modal-container">
+                <form class="modal-form" @submit.prevent>
                     <template v-if="!newTracker.checked || !newTracker.validated">
                         <p>Insira o token do rastreador e a senha para verificar sua validade:</p>
                         <input type="text" v-model="newTracker.token" placeholder="Token do rastreador">
@@ -27,7 +27,7 @@
             </div>
         </GenericModalWindow>
 
-            <div class="trackers-container">
+            <div class="trackers-container cards-grid">
             <TrackerCard v-for="(tracker, index) in trackers" :key="index" :tracker="tracker"
                 @ouvintes="TrackerOuvintes.openPage(tracker)"
                 @lococulta="TrackerLocOculta.openPage(tracker)"
@@ -154,37 +154,3 @@ export default {
 }
 
 </script>
-
-
-<style scoped>
-
-.trackers-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 20px;
-    align-items: flex-start;
-}
-
-
-.add-tracker-form-container {
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.add-tracker-form {
-    pointer-events: all;
-    background: white;
-    border: 1px solid var(--colorA2);
-    padding: 20px;
-    border-radius: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-</style>

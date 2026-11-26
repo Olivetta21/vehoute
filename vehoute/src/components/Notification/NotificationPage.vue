@@ -35,9 +35,13 @@ export default {
 
 <style scoped>
 p {
-    background-color: #f0f0f0;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 5px;
+    margin: var(--space-3) var(--space-5) 0;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-sm);
+    overflow-wrap: anywhere;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
 }
+p:last-child { margin-bottom: var(--space-5); }
 </style>

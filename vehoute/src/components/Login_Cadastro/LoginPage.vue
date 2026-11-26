@@ -5,8 +5,8 @@
         <input v-model="senha" type="password" placeholder="senha" required />
         <button type="submit">Entrar</button>
         <div id="opcoes">
-            <button type="button" class="option-button" @click="$router.push({ name: 'recuperacao-senha' })">Recuperar senha</button>
-            <button type="button" class="option-button" @click="$router.push({ name: 'cadastro' })">Fazer cadastro</button>
+            <button type="button" class="option-button btn-ghost btn-sm" @click="$router.push({ name: 'recuperacao-senha' })">Recuperar senha</button>
+            <button type="button" class="option-button btn-ghost btn-sm" @click="$router.push({ name: 'cadastro' })">Fazer cadastro</button>
         </div>
         </form>
     </AuthCont>
@@ -38,3 +38,7 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+#opcoes { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1); }
+</style>
