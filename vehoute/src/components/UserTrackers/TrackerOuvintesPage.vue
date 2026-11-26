@@ -131,8 +131,12 @@ export default {
             if (ok) this.ouvintes = this.ouvintes.filter(o => o.ur_id !== ur_id);
         },
         async handlePosseTransfer(ur_id) {
+            if (!confirm('Confirma enviar a proposta de transferência de posse para este ouvinte?')) return;
             const ok = await TrackerOuvintes.donoEnviaPropostaParaTransferirPosse(ur_id);
-            if (ok) ToastMessage.add('Proposta enviada', '', 'success', true);
+            if (ok) {
+                await this.fetchOuvintes();
+                ToastMessage.add('Proposta enviada', '', 'success', true);
+            }
         },
         async handleCancelTransfer(ur_id) {
             const ok = await TrackerOuvintes.donoCancelaTransferenciaDePosse(ur_id);

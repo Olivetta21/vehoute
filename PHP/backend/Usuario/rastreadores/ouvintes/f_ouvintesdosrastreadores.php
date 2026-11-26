@@ -87,6 +87,7 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
         $pdo->beginTransaction();
 
         if (!checkCorrectStatusForAction($credenciais, $ur_id, $ur_status_permitidos)) {
+            $pdo->rollBack();
             return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o dono, ou status atual não confere para enviar proposta de transferência de posse", $ur_id . " - " . $usuario_id)];
         }
 
@@ -113,11 +114,11 @@ function donoEnviaPropostaDeTransferenciaDePosse($credenciais, $ur_id) {
 
         $Audit->sucesso(true);
         $pdo->commit();
-        $emres = enviarEmailAvisarOuvinteQueTemPropostaPosse(
+        enviarEmailAvisarOuvinteQueTemPropostaPosse(
             $ouvinte_id,
             $credenciais['id']
         );
-        return ["success" => true, "r" => $emres];
+        return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
@@ -142,6 +143,7 @@ function donoCancelaTransferenciaDePosse($credenciais, $ur_id) {
         $pdo->beginTransaction();
 
         if (!checkCorrectStatusForAction($credenciais, $ur_id, $ur_status_permitidos)) {
+            $pdo->rollBack();
             return ["error" => errorMessage("Rastreador de usuário não encontrado, usuário autenticado não é o dono, ou status atual não confere para cancelar proposta de transferência de posse", $ur_id . " - " . $usuario_id)];
         }
 
@@ -213,7 +215,17 @@ function enviarEmailAvisarOuvinteQueTemNovoRastreador($ouvinte_id, $dono_id) {
     return enviarNotificacaoEmail($data);
 }
 
-function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $usuario_id_destino) {
+/** Aceita (credenciais, rastreador, usuario) ou (credenciais, rastreador, nome, usuario). */
+function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nome_ou_usuario_id, $usuario_id_destino = null) {
+    $nome = null;
+    if ($usuario_id_destino === null) {
+        $usuario_id_destino = $nome_ou_usuario_id;
+    } else {
+        $nome = mb_substr(trim((string) $nome_ou_usuario_id), 0, 100);
+    }
+    if ($nome === null || $nome === '') {
+        $nome = "Novo Rastreador " . substr(uniqid(), -5);
+    }
     $Audit = (new Auditoria())->add('usuario_rastreador', 'donoEnviaPropostaDeOuvinteAUmUsuario', NULL, ["usuario_rastreador" => ["rastreador_id" => $rastreador_id, "usuario_id" => $usuario_id_destino]], false);
 
     $pdo = $credenciais["pdo"];
@@ -232,14 +244,22 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $usu
         $stmt = $pdo->prepare("select id from rastreador where id = :id and dono_id = :dono_id and status in (1, 2) and ativo = true");
         $stmt->execute(["id" => $rastreador_id, "dono_id" => $credenciais["id"]]);
         if ($stmt->rowCount() !== 1) {
+            $pdo->rollBack();
             return ["error" => errorMessage("Rastreador não encontrado ou usuário autenticado não é o dono para enviar proposta de ouvinte", $rastreador_id . " - " . $credenciais["id"])];
+        }
+
+        $stmt = $pdo->prepare("select 1 from usuario_rastreador where usuario_id = :usuario_id and rastreador_id = :rastreador_id");
+        $stmt->execute(["usuario_id" => $usuario_id_destino, "rastreador_id" => $rastreador_id]);
+        if ($stmt->fetchColumn() !== false) {
+            $pdo->rollBack();
+            return ["error" => "Este usuário já está vinculado ao rastreador"];
         }
 
         $stmt = $pdo->prepare("insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (:usuario_id, :rastreador_id, :nome, 4) returning id");
         $stmt->execute([
             "usuario_id" => $usuario_id_destino,
             "rastreador_id" => $rastreador_id,
-            "nome" => "Novo Rastreador " . substr(uniqid(), -5)
+            "nome" => $nome
         ]);
 
         if ($stmt->rowCount() !== 1) {
@@ -290,7 +310,9 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $usu
         );
         return ["success" => true];
     } catch (Exception $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         return ["error" => errorMessage("Erro ao enviar proposta de ouvinte para o usuário", $e->getMessage())];
     }
 }

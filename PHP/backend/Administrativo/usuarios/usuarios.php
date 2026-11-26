@@ -7,19 +7,21 @@ $credenciais = getCredentials();
 try {
 userHasPermission("Administrador");
 
-if ($name_filter = getRequestValue("get", "is_string")) {    
+if (($name_filter = getRequestValue("get", "is_string")) !== null) {    
     returnJson(getUsuarios($credenciais["pdo"], $name_filter));
 }
 
-if ($name_filter = getRequestValue("getSimple", "is_string")) {    
+if (($name_filter = getRequestValue("getSimple", "is_string")) !== null) {    
     returnJson(getSimpleUsuarios($credenciais["pdo"], $name_filter));
 }
 
 if ($id = getRequestValue("toggle_ativo", "is_int")) {
+    if ($id === $credenciais["id"]) returnJson(["error" => "Você não pode desativar a própria conta"]);
     returnJson(toggleUsuarioAtivo($credenciais["pdo"], $id));
 }
 
 if ($id = getRequestValue("toggle_adm", "is_int")) {
+    if ($id === $credenciais["id"]) returnJson(["error" => "Você não pode remover o próprio acesso de administrador"]);
     returnJson(toggleUsuarioAdm($credenciais["pdo"], $id));
 }
 

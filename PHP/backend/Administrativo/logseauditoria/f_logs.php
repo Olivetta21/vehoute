@@ -1,7 +1,9 @@
 <?php
 
 
-function getLogsDoSistema($credenciais, $titulo = null, $mensagem = null, $ip = null, $data_inicio = null, $data_fim = null) {
+function getLogsDoSistema($credenciais, $titulo = null, $mensagem = null, $ip = null, $data_inicio = null, $data_fim = null, $limite = 200, $offset = 0) {
+    $limite = max(1, min(1000, (int) $limite));
+    $offset = max(0, (int) $offset);
     $params = [];
     $where = [];
 
@@ -30,15 +32,21 @@ function getLogsDoSistema($credenciais, $titulo = null, $mensagem = null, $ip = 
     $pdo = $credenciais["pdo"];
     $sql = "SELECT el.id, el.titulo, el.mensagem, u.id u_id, u.nome u_nome, el.url, el.ip, el.data
 	from errors_log el
-	left join usuario_access_token uat on uat.token = el.u_access_token
+	left join (
+        select token as chave, usuario_id from usuario_access_token
+        union all
+        select 'sha256:' || encode(digest(token, 'sha256'), 'hex'), usuario_id from usuario_access_token
+    ) uat on uat.chave = el.u_access_token
 	left join usuario u on u.id = uat.usuario_id
-    " . (empty($where) ? "" : "WHERE " . implode(" AND ", $where)) . " ORDER BY el.data DESC"; 
+    " . (empty($where) ? "" : "WHERE " . implode(" AND ", $where)) . " ORDER BY el.data DESC, el.id DESC LIMIT " . ($limite + 1) . " OFFSET " . $offset;
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $tem_mais = count($logs) > $limite;
+    $logs = array_slice($logs, 0, $limite);
     $Audit->depois(["qnt_logs" => count($logs)]);
     $Audit->sucesso(true);
-    return ["success" => true, "logs" => $logs];
+    return ["success" => true, "logs" => $logs, "tem_mais" => $tem_mais];
 }
 
 function getSimpleTitulos($credenciais, $filter = '%') {

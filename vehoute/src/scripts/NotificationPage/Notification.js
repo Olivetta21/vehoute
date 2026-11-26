@@ -14,7 +14,14 @@ export default class Notification {
     }
 
     static insertNotification(notification) {
-        Notification.lista_notificacoes_.value.unshift(notification);
+        const hora = new Date().toLocaleString('pt-BR');
+        const lista = Notification.lista_notificacoes_.value;
+        lista.unshift(`${hora} · ${notification}`);
+        if (lista.length > 100) lista.length = 100;
+    }
+
+    static limpar() {
+        Notification.lista_notificacoes_.value = [];
     }
 
 }

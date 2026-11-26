@@ -68,6 +68,9 @@ function toggleUsuarioAtivo($pdo, $usuario_id) {
         }
 
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$usuario['ativo']) {
+            revogarTokensDoUsuario($pdo, $usuario_id);
+        }
         $pdo->commit();
 
         $Audit->depois($usuario);
@@ -194,7 +197,7 @@ function adicionarUsuario($pdo, $nome, $email, $identidade, $tipo_ident, $adm = 
             return ["error" => errorMessage("Falha ao cadastrar a identificação", $identidade)];
         }
 
-        $stmt = $pdo->prepare("insert into usuario (nome, login, senha, legal_ident_id, email) values (:nome, :login, :senha, :legal_ident_id, :email) returning id, nome, login, ativo");
+        $stmt = $pdo->prepare("insert into usuario (nome, login, senha, legal_ident_id, email) values (:nome, :login, crypt(:senha, gen_salt('bf')), :legal_ident_id, :email) returning id, nome, login, ativo");
         $stmt->execute([
             "nome" => $nome,
             "login" => $login,

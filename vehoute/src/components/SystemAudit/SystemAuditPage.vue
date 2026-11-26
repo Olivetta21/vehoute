@@ -39,7 +39,7 @@
                 />
             </label>
 
-            <button class="botao-buscar" @click="fetchAuditorias(tabela, filtro, data_inicio, data_fim, sucesso)">
+            <button class="botao-buscar" @click="fetchAuditorias()">
                 Buscar auditorias
             </button>
             <button class="botao-buscar btn-secondary" @click="is_searching = !is_searching">
@@ -67,7 +67,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <template v-for="(auditoria, index) in auditorias" :key="index">
+                    <template v-for="auditoria in auditorias" :key="auditoria.id">
                         <tr class="auditoria-row up-line">
                             <td data-label="Tabela">{{ auditoria.tabela }}</td>
                             <td data-label="Ação"><span class="acao">{{ auditoria.acao }}</span></td>
@@ -88,9 +88,17 @@
             </div>
         </div>
 
+        <p v-if="buscou && !auditorias.length" class="rodape-lista">Nenhum registro encontrado.</p>
+        <div v-if="auditorias.length" class="rodape-lista">
+            <button v-if="tem_mais" type="button" class="btn-secondary" :disabled="carregando" @click="fetchAuditorias(true)">
+                Carregar mais
+            </button>
+            <button type="button" class="btn-secondary" @click="exportar">Exportar CSV</button>
+        </div>
 </template>
 
 <script>
+import { baixarCsv, getDateWithOffset } from '../../scripts/utils';
 import SystemAudit from '../../scripts/SystemAuditPage/SystemAudit';
 import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
@@ -112,18 +120,37 @@ export default {
             sucesso: null,
 
             auditorias: [],
+            tem_mais: false,
+            buscou: false,
+            carregando: false,
         };
     },
     methods: {
-        async fetchAuditorias(tabela, filtro, data_inicio, data_fim, sucesso) {
-            let result = await SystemAudit.getAuditorias(tabela, filtro, data_inicio, data_fim, sucesso);
-            if (result.length > 0) {
-                this.auditorias = result.map(auditoria => ({
-                    ...auditoria,
-                    antes_short: auditoria.antes?.length > 35 ? auditoria.antes.substring(0, 32) + '...' : auditoria.antes,
-                    depois_short: auditoria.depois?.length > 35 ? auditoria.depois.substring(0, 32) + '...' : auditoria.depois
+        async fetchAuditorias(acrescentar = false) {
+            if (this.carregando) return;
+            this.carregando = true;
+            try {
+                const offset = acrescentar ? this.auditorias.length : 0;
+                const result = await SystemAudit.getAuditorias(this.tabela, this.filtro, this.data_inicio, this.data_fim, this.sucesso, offset);
+                if (!result) return;
+                const encurtar = (t) => t?.length > 35 ? t.substring(0, 32) + '...' : t;
+                const novos = result.itens.map(item => ({
+                    ...item,
+                    antes_short: encurtar(item.antes),
+                    depois_short: encurtar(item.depois),
                 }));
+                this.auditorias = acrescentar ? [...this.auditorias, ...novos] : novos;
+                this.tem_mais = result.tem_mais;
+                this.buscou = true;
+            } finally {
+                this.carregando = false;
             }
+        },
+        exportar() {
+            const linhas = this.auditorias.map((item) => Object.fromEntries(
+                Object.entries(item).filter(([chave]) => !chave.endsWith('_short'))
+            ));
+            baixarCsv('auditorias-' + getDateWithOffset(0) + '.csv', linhas);
         },
         async getSimpleTabelas(filter = '%') {
             let r = await SystemAudit.getSimpleTabelas(filter);
@@ -131,6 +158,9 @@ export default {
             r = r.map(tabela => ({ id: id_++, nome: tabela }));
             return r;
         }
+    },
+    mounted() {
+        this.fetchAuditorias();
     },
     components: {
         HeaderTelas,
@@ -141,6 +171,7 @@ export default {
 </script>
 
 <style scoped>
+.rodape-lista { display: flex; justify-content: center; gap: var(--space-2); padding: var(--space-4); }
 .valor-auditoria { color: var(--color-text-muted); white-space: nowrap; }
 .data-auditoria { white-space: nowrap; }
 .acao,

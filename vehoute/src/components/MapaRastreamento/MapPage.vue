@@ -13,7 +13,7 @@
                 <div class="tracker-location-container">
                     <div class="tracker">
                         <select v-model="tracker_selected_id" >
-                            <option value=null>Selecione um rastreador</option>
+                            <option :value="null">Selecione um rastreador</option>
                             <option v-for="tracker in MapPagina.trackers" :key="tracker.id" :value="tracker.id">
                                 {{ MapPagina._tracker_watching_id.value === tracker.id ? '🟢' : '' }} {{ tracker.name }}
                             </option>
@@ -21,7 +21,7 @@
                     </div>
                     <div class="location">
                         <select v-model="loc_selected_id" @change="updateLocation">
-                            <option value=null v-if="!loc_selected_id">Sem localização</option>
+                            <option :value="null" v-if="!loc_selected_id">Sem localização</option>
                             <option v-for="loc in filtered_localizacao"
                                 :key="loc.id" :value="loc.id">{{ loc.l_data }}:{{ loc.id }}</option>
                         </select>
@@ -81,10 +81,10 @@ export default {
             return;
         }
         console.log("Fullscreen: ", FullScreenController.is_fullscreen);
-        if (!Map.already_confirmed_fullscreen && !FullScreenController.is_fullscreen && confirm("Deseja entrar em tela cheia para melhor visualização do mapa?")) {
+        if (!MapPagina.already_confirmed_fullscreen && !FullScreenController.is_fullscreen && confirm("Deseja entrar em tela cheia para melhor visualização do mapa?")) {
             FullScreenController.toggleFullScreen();
         }
-        Map.already_confirmed_fullscreen = true;
+        MapPagina.already_confirmed_fullscreen = true;
     },
     methods: {
         filtrarLocalizacoes() {
@@ -162,7 +162,7 @@ export default {
                 this.loc_selected_id = null;
                 this.filtrarLocalizacoes();
                 MapPagina.setActualLocsReference(this.tracker_selected_id);
-                MapPagina.loadLocations(this.tracker_selected_id);
+                if (this.tracker_selected_id !== null) MapPagina.loadLocations(this.tracker_selected_id);
                 MapPagina.setWatchForTracker(this.tracker_selected_id);
             }
         },

@@ -1,7 +1,7 @@
 <?php
 
 function selectUsuarioPorSenha($pdo, $login, $senha) {
-    $stmt = $pdo->prepare("select id, nome, login from usuario where login = :login and senha = crypt(:senha, senha)");
+    $stmt = $pdo->prepare("select id, nome, login from usuario where login = :login and senha = crypt(:senha, senha) and ativo = true");
     $stmt->execute([
         "login"=>$login,
         "senha"=>$senha
@@ -63,16 +63,27 @@ function fazerLogin($login, $senha) {
         $pdo->beginTransaction();
         
         $usuario = selectUsuarioPorSenha($pdo, $login, $senha);
-        if (!$usuario) return ["error"=> errorMessage("Usuario não encontrado", "login=". $login ."")];
+        if (!$usuario) {
+            $pdo->rollBack();
+            return ["error"=> errorMessage("Usuario não encontrado", "login=". $login ."")];
+        }
 
         $GLOBALS['USUARIO_ID'] = $usuario['id'];
         $Audit = (new Auditoria())->add('usuario|usuario_access_token', 'fazerLogin', null, ["usuario_id" => $usuario['id']], false);
         
+        $pdo->prepare("delete from usuario_access_token where usuario_id = :id and expires_at < now()")
+            ->execute(["id" => $usuario['id']]);
         $access_token = insertAccess_Token($pdo, $usuario['id']);
-        if (!$access_token) return ["error"=> errorMessage("access_token não adicionado", "usuario=". $usuario ."")];
+        if (!$access_token) {
+            $pdo->rollBack();
+            return ["error"=> errorMessage("access_token não adicionado", "usuario=". $usuario['id'])];
+        }
 
         $permissoes = selectPermissoesDoUsuario($pdo, $usuario["id"]);
-        if (!$permissoes) return ["error"=> errorMessage("Erro ao recuperar permissões", "usuario=". $usuario ."")];
+        if (!$permissoes) {
+            $pdo->rollBack();
+            return ["error"=> errorMessage("Erro ao recuperar permissões", "usuario=". $usuario['id'])];
+        }
         
         $usuario['access_token'] = $access_token;
         $usuario['permissoes'] = $permissoes;
@@ -89,6 +100,14 @@ function fazerLogin($login, $senha) {
     }
 }
 
+function fazerLogoff($access_token) {
+    if (is_string($access_token) && $access_token !== '') {
+        getDataBase()->prepare("delete from usuario_access_token where token = :token")
+            ->execute(["token" => $access_token]);
+    }
+    return ["success" => true, "logoff" => true];
+}
+
 function testAccessToken($access_token) {
     $pdo = null;
     try {
@@ -101,7 +120,7 @@ function testAccessToken($access_token) {
         $Audit = (new Auditoria())->add('usuario|usuario_access_token', 'testAccessToken', null, ["usuario_id" => $usuario['id']], false);
         
         $permissoes = selectPermissoesDoUsuario($pdo, $usuario["id"]);
-        if (!$permissoes) return ["error"=> errorMessage("Erro ao recuperar permissões", "usuario=". $usuario ."")];
+        if (!$permissoes) return ["error"=> errorMessage("Erro ao recuperar permissões", "usuario=". $usuario['id'])];
         
         $usuario['access_token'] = $access_token;
         $usuario['permissoes'] = $permissoes;

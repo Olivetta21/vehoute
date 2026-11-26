@@ -7,10 +7,10 @@ try {
 userHasPermission("Administrador");
 
 if ($permissoes = getRequestValue("permissoes", "is_array")) {
-    returnJson(getPermissoesRastreador($credenciais, $permissoes['agrupar_por'], $permissoes['filter']));
+    returnJson(getPermissoesRastreador($credenciais, $permissoes['agrupar_por'] ?? null, $permissoes['filter'] ?? null));
 }
 
-if ($grupo_nome = getRequestValue("grupos", "is_string")) {
+if (($grupo_nome = getRequestValue("grupos", "is_string")) !== null) {
     returnJson(getGrupos($credenciais, $grupo_nome));
 }
 
@@ -30,11 +30,11 @@ if ($trackerandgroup = getRequestValue("removerRastreadorDoGrupo", "is_array")) 
     returnJson(removerRastreadorDoGrupo($credenciais, $trackerandgroup['rastreadorID'], $trackerandgroup['grupoID']));
 }
 
-if ($group_name = getRequestValue("searchGrupos", "is_string")) {
+if (($group_name = getRequestValue("searchGrupos", "is_string")) !== null) {
     returnJson(searchGrupos($credenciais, $group_name));
 }
 
-if ($permissoes_name = getRequestValue("searchPermissoes", "is_string")) {
+if (($permissoes_name = getRequestValue("searchPermissoes", "is_string")) !== null) {
     returnJson(searchPermissoes($credenciais, $permissoes_name));
 }
 

@@ -4,15 +4,6 @@ function getPermissoesUsuario($credenciais, $agrupar_por, $filter) {
     $Audit = (new Auditoria())->add('vinc_perm_usuario', 'getPermissoesUsuario', null, ["agrupar_por" => $agrupar_por, "filtro" => $filter], false);
     $pdo = $credenciais["pdo"];
 
-    function findIndexEntity($agrupamento, $id, $is_user) {
-        foreach ($agrupamento as $index => $entidade) {
-            if ($entidade["id"] == $id && $entidade["is_user"] == $is_user) {
-                return $index;
-            }
-        }
-        return -1;
-    }
-
     $agrupamento = [];
     /*
     [0] => {
@@ -77,84 +68,48 @@ function getPermissoesUsuario($credenciais, $agrupar_por, $filter) {
     $perms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
+    // Agrupamento em O(n) usando mapas indexados por chave
+    $inserir = function (string $chave, $id, $nome, $flag, array $perm) use (&$agrupamento) {
+        $agrupamento[$chave] ??= ["id" => $id, "nome" => $nome, "is_user" => $flag, "permissoes" => []];
+        $agrupamento[$chave]["permissoes"][] = $perm;
+    };
+
     if ($agrupar_por === "entidade") {
         foreach ($perms as $p) {
-            $index = findIndexEntity($agrupamento, $p["x_id"], $p["is_user"]);
-
-            if ($index === -1) {
-                $agrupamento[] = [
-                    "id" => $p["x_id"],
-                    "nome" => $p["x_nome"],
-                    "is_user" => $p["is_user"],
-                    "permissoes" => [$p]
-                ];
-            } else {
-                $agrupamento[$index]["permissoes"][] = $p;
-            }
+            $inserir(((int) $p["is_user"]) . ":" . $p["x_id"], $p["x_id"], $p["x_nome"], (bool) $p["is_user"], $p);
         }
-    }
-
-    else if ($agrupar_por === "permissao") {
+    } else if ($agrupar_por === "permissao") {
         foreach ($perms as $p) {
-            $index = findIndexEntity($agrupamento, $p["pu_id"], null);
-
-            if ($index === -1) {
-                $agrupamento[] = [
-                    "id" => $p["pu_id"],
-                    "nome" => $p["pu_nome"],
-                    "is_user" => null,
-                    "permissoes" => [$p]
-                ];
-            } else {
-                $agrupamento[$index]["permissoes"][] = $p;
-            }
+            $inserir((string) $p["pu_id"], $p["pu_id"], $p["pu_nome"], null, $p);
         }
-    }
-
-    else if ($agrupar_por === "usuario") {
-        $sql = "select usuario_id, grupo_id from vinc_grupo_usuario";
+    } else if ($agrupar_por === "usuario") {
+        $sql = "select vg.usuario_id id, e.nome nome, vg.grupo_id
+            from vinc_grupo_usuario vg join usuario e on e.id = vg.usuario_id"
+            . (!empty($filter) ? " where e.nome ilike :filter" : "");
         $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        $vinc_grupos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt->execute(!empty($filter) ? [":filter" => "%$filter%"] : []);
+        $membros = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $m) {
+            $membros[$m["grupo_id"]][] = $m;
+        }
 
         foreach ($perms as $p) {
             if ($p["is_user"]) {
-                $index = findIndexEntity($agrupamento, $p["x_id"], $p["is_user"]);
-
-                if ($index === -1) {
-                    $agrupamento[] = [
-                        "id" => $p["x_id"],
-                        "nome" => $p["x_nome"],
-                        "is_user" => $p["is_user"],
-                        "permissoes" => [$p]
-                    ];
-                } else {
-                    $agrupamento[$index]["permissoes"][] = $p;
-                }
-            } else { //grupo
-                foreach ($vinc_grupos as $vinc) {
-                    if ($vinc["grupo_id"] == $p["x_id"]) {
-                        $index = findIndexEntity($agrupamento, $vinc["usuario_id"], true);
-                        if ($index === -1) {
-                            continue;
-                        } else {
-                            $agrupamento[$index]["permissoes"][] = $p;
-                        }
-                    }
+                $inserir((string) $p["x_id"], $p["x_id"], $p["x_nome"], true, $p);
+            } else {
+                foreach ($membros[$p["x_id"]] ?? [] as $m) {
+                    $inserir((string) $m["id"], $m["id"], $m["nome"], true, $p);
                 }
             }
         }
 
-        foreach ($agrupamento as &$user) {
-            usort($user["permissoes"], function($a, $b) {
-                if ($a["pu_id"] == $b["pu_id"]) {
-                    return $a["vpu_negado"] <=> $b["vpu_negado"];
-                }
-                return $a["pu_id"] <=> $b["pu_id"];
-            });
+        foreach ($agrupamento as &$item) {
+            usort($item["permissoes"], fn($a, $b) =>
+                [(int) $a["pu_id"], (int) $a["vpu_negado"]] <=> [(int) $b["pu_id"], (int) $b["vpu_negado"]]);
         }
+        unset($item);
     }
-
+    $agrupamento = array_values($agrupamento);
 
     $Audit->depois(["qnt_entidades" => count($agrupamento)]);
     $Audit->sucesso(true);
@@ -182,34 +137,19 @@ function getGrupos($credenciais, $grupo_nome) {
     $stmt->execute([":grupo_id" => $ids]);
     $grupos_linha = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    function findGrupoById($grupos, $id) {
-        foreach ($grupos as $index => $grupo) {
-            if ($grupo["id"] == $id) {
-                return $index;
-            }
-        }
-        return -1;
-    }
     $grupos = [];
     foreach ($grupos_linha as $linha) {
         $grupo_id = $linha["gu_id"];
-        $index = findGrupoById($grupos, $grupo_id);
-        if ($index === -1) {
-            $grupos[] = [
-                "id" => $grupo_id,
-                "nome" => $linha["gu_nome"],
-                "usuarios" => [],
-            ];
-            $index = count($grupos) - 1;
-        } 
+        $grupos[$grupo_id] ??= ["id" => $grupo_id, "nome" => $linha["gu_nome"], "usuarios" => []];
         if ($linha["u_id"] === null) {
             continue;
         }
-        $grupos[$index]["usuarios"][] = [
+        $grupos[$grupo_id]["usuarios"][] = [
             "id" => $linha["u_id"],
             "nome" => $linha["u_nome"]
         ];
     }
+    $grupos = array_values($grupos);
 
     $Audit->depois(["qnt_grupos" => count($grupos)]);
     $Audit->sucesso(true);
@@ -219,6 +159,11 @@ function getGrupos($credenciais, $grupo_nome) {
 function addGrupo($credenciais, $novo_grupo) {
     $Audit = (new Auditoria())->add('grupo_usuario', 'addGrupo', null, ["nome" => $novo_grupo], false);
     $pdo = $credenciais["pdo"];
+
+    $novo_grupo = trim((string) $novo_grupo);
+    if ($novo_grupo === '' || mb_strlen($novo_grupo) > 100) {
+        return ["error" => errorMessage("Nome de grupo inválido", $novo_grupo)];
+    }
 
     try {
         $pdo->beginTransaction();

@@ -8,7 +8,7 @@ try {
 
 //usuario requisitando seus ouvintes de rastreadores;
 if ($search = getRequestValue("get", "is_array")) {    
-    returnJson(getOuvintesDoRastreador($credenciais, $search["rastreador_id"], $search["name_filter"]));
+    returnJson(getOuvintesDoRastreador($credenciais, $search["rastreador_id"] ?? null, $search["name_filter"] ?? null));
 }
 
 //dono adicionando um rastreador a um usuario(ouvinte);

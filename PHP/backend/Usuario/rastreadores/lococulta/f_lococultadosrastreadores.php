@@ -45,17 +45,14 @@ function getLocOcultaDoRastreador($credenciais, $rastreador_id, $filter) {
         ]);
         $ouvintes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+        $por_loc = [];
+        foreach ($ouvintes as $ouvinte) {
+            $por_loc[$ouvinte["ilo_id"]][] = $ouvinte;
+        }
         foreach ($localizacoes_ocultas as &$loc) {
-            $loc["ouvintes"] = [];
+            $loc["ouvintes"] = $por_loc[$loc["id"]] ?? [];
         }
-
-        if ($ouvintes && count($ouvintes) > 0) {
-            foreach ($localizacoes_ocultas as &$loc) {
-                $loc["ouvintes"] = array_values(array_filter($ouvintes, function ($ouvinte) use ($loc) {
-                    return $ouvinte["ilo_id"] == $loc["id"];
-                }));
-            }
-        }
+        unset($loc);
 
         $Audit->depois(["qnt_localizacoes" => count($localizacoes_ocultas)]);
         $Audit->sucesso(true);
@@ -78,6 +75,15 @@ function createLocOcultaDoRastreador($credenciais, $rastreador_id, $id_inicial, 
         return ["error" => errorMessage("Usuário não tem permissão para criar localizações ocultas do rastreador", $usuario_id . " - " . $rastreador_id)];
     }
 
+    // Campos vazios do formulário viram NULL
+    foreach (['id_inicial', 'id_final', 'data_inicial', 'data_final', 'identificacao'] as $campo) {
+        if (is_string($$campo) && trim($$campo) === '') $$campo = null;
+    }
+    if (($id_inicial !== null && $id_final !== null && (int) $id_inicial > (int) $id_final)
+        || ($data_inicial !== null && $data_final !== null && strtotime($data_inicial) > strtotime($data_final))) {
+        return ["error" => "O início do intervalo não pode ser maior que o fim"];
+    }
+
     try {
         $pdo->beginTransaction();
 
@@ -92,7 +98,7 @@ function createLocOcultaDoRastreador($credenciais, $rastreador_id, $id_inicial, 
             "identificacao" => $identificacao
         ]);
 
-        if ($rcount = $stmt->rowCount() !== 1) {
+        if (($rcount = $stmt->rowCount()) !== 1) {
             $pdo->rollBack();
             return ["error" => errorMessage("Erro ao criar localização oculta do rastreador", "Numero de linhas afetadas diferente de 1: " . $rcount)];
         }

@@ -35,7 +35,7 @@ if ($search = getRequestValue("get", "is_array")) {
 if ($create = getRequestValue("create", "is_array")) {
     returnJson(
         createLocOcultaDoRastreador($credenciais,
-            $create["rastreador_id"], $create["id_inicial"], $create["id_final"], $create["data_inicial"], $create["data_final"], $create["identificacao"]
+            $create["rastreador_id"] ?? null, $create["id_inicial"] ?? null, $create["id_final"] ?? null, $create["data_inicial"] ?? null, $create["data_final"] ?? null, $create["identificacao"] ?? null
         )
     );
 }

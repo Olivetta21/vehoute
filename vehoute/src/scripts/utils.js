@@ -1,5 +1,5 @@
 export function getBaseOfDestApi() {
-    return process.env.VUE_APP_BACKEND_ADDRESS;
+    return process.env.VUE_APP_BACKEND_ADDRESS || '/api';
 }
 
 export function getDateWithOffset(dayOffset = 0) {
@@ -125,4 +125,25 @@ export function validarRegex(valor, regex) {
         console.error("Erro ao validar regex:", e);
         return false;
     }
+}
+
+/** Gera e baixa um CSV (separador ";", compatível com planilhas em pt-BR). */
+export function baixarCsv(nomeArquivo, linhas) {
+    if (!linhas?.length) return false;
+    const colunas = Object.keys(linhas[0]);
+    const escapar = (valor) => {
+        let texto = valor === null || valor === undefined ? '' : String(valor);
+        if (/^[=+\-@\t\r]/.test(texto)) texto = "'" + texto; // evita execução de fórmulas
+        return `"${texto.replace(/"/g, '""')}"`;
+    };
+    const csv = [colunas, ...linhas.map(l => colunas.map(c => l[c]))]
+        .map(linha => linha.map(escapar).join(';'))
+        .join('\r\n');
+    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    link.click();
+    URL.revokeObjectURL(url);
+    return true;
 }

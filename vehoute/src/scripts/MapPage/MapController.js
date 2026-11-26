@@ -46,7 +46,8 @@ export default class MapController {
         }
 
         if (!MapApi.haveMarker()) {
-            if (!MapApi.createMarker()) {
+            const last = coords[coords.length - 1];
+            if (!MapApi.createMarker([last.lat, last.lng])) {
                 console.error("Failed to create marker");
                 return false;
             }

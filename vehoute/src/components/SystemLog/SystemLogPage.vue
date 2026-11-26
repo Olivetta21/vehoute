@@ -34,7 +34,7 @@
                 <input type="date" v-model="data_fim">
             </label>
 
-            <button class="botao-buscar" @click="fetchLogs(titulo, mensagem, ip, data_inicio, data_fim)">
+            <button class="botao-buscar" @click="fetchLogs()">
                 Buscar logs
             </button>
             <button class="botao-buscar btn-secondary" @click="is_searching = !is_searching">
@@ -59,7 +59,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <template v-for="(log, index) in logs" :key="index">
+                    <template v-for="log in logs" :key="log.id">
                         <tr class="log-row up-line">
                             <td data-label="Título"><span class="titulo-log">{{ log.titulo }}</span></td>
                             <td colspan="2" data-label="Mensagem" class="mensagem-log" :title="log.mensagem">{{ log.mensagem_short }}</td>
@@ -76,9 +76,17 @@
             </table>
             </div>
         </div>
+        <p v-if="buscou && !logs.length" class="rodape-lista">Nenhum registro encontrado.</p>
+        <div v-if="logs.length" class="rodape-lista">
+            <button v-if="tem_mais" type="button" class="btn-secondary" :disabled="carregando" @click="fetchLogs(true)">
+                Carregar mais
+            </button>
+            <button type="button" class="btn-secondary" @click="exportar">Exportar CSV</button>
+        </div>
 </template>
 
 <script>
+import { baixarCsv, getDateWithOffset } from '../../scripts/utils';
 import SystemLog from '../../scripts/SystemLogPage/SystemLog';
 import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
@@ -99,19 +107,38 @@ export default {
             data_fim: '',
 
             logs: [],
+            tem_mais: false,
+            buscou: false,
+            carregando: false,
         };
     },
     methods: {
-        async fetchLogs(titulo, mensagem, ip, data_inicio, data_fim) {
-            let result = await SystemLog.getLogs(titulo, mensagem, ip, data_inicio, data_fim);
-            if (result.length > 0) {
-                this.logs = result.map(log => ({
+        async fetchLogs(acrescentar = false) {
+            if (this.carregando) return;
+            this.carregando = true;
+            try {
+                const offset = acrescentar ? this.logs.length : 0;
+                const result = await SystemLog.getLogs(this.titulo, this.mensagem, this.ip, this.data_inicio, this.data_fim, offset);
+                if (!result) return;
+                const encurtar = (t) => t?.length > 35 ? t.substring(0, 32) + '...' : t;
+                const novos = result.itens.map(log => ({
                     ...log,
-                    mensagem_short: log.mensagem?.length > 35 ? log.mensagem.substring(0, 32) + '...' : log.mensagem,
-                    url_short: log.url?.length > 35 ? log.url.substring(0, 32) + '...' : log.url,
-                    ip_short: log.ip?.length > 35 ? log.ip.substring(0, 32) + '...' : log.ip,
+                    mensagem_short: encurtar(log.mensagem),
+                    url_short: encurtar(log.url),
+                    ip_short: encurtar(log.ip),
                 }));
+                this.logs = acrescentar ? [...this.logs, ...novos] : novos;
+                this.tem_mais = result.tem_mais;
+                this.buscou = true;
+            } finally {
+                this.carregando = false;
             }
+        },
+        exportar() {
+            const linhas = this.logs.map((item) => Object.fromEntries(
+                Object.entries(item).filter(([chave]) => !chave.endsWith('_short'))
+            ));
+            baixarCsv('logs-' + getDateWithOffset(0) + '.csv', linhas);
         },
         async getSimpleTitulos(filter = '%') {
             let r = await SystemLog.getSimpleTitulos(filter);
@@ -119,6 +146,9 @@ export default {
             r = r.map(titulo => ({ id: id_++, nome: titulo }));
             return r;
         }
+    },
+    mounted() {
+        this.fetchLogs();
     },
     components: {
         HeaderTelas,
@@ -128,6 +158,7 @@ export default {
 </script>
 
 <style scoped>
+.rodape-lista { display: flex; justify-content: center; gap: var(--space-2); padding: var(--space-4); }
 .mensagem-log,
 .url-log,
 .ip-log { white-space: nowrap; color: var(--color-text-muted); }

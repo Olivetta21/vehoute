@@ -30,40 +30,60 @@ function updatePerfilUsuario($credenciais, $valores) {
     $Audit = (new Auditoria())->add('usuario', 'updatePerfilUsuario', ["usuario_id" => $credenciais["id"]], $valores, false);
     $pdo = $credenciais["pdo"];
 
-    $sql = "UPDATE usuario SET ";
-    foreach ($valores as $caracteristica => $valor) {
-        $sql .= "$caracteristica = ";
-        $caracteristica = ":$caracteristica";
-        switch ($caracteristica) {
-            case ':nome':
-                if (!validarNomeUsuario($valor)) return ["error" => errorMessage("Nome inválido", $valor)];
-                break;
-            case ':email':
-                if (!validarEmail($valor)) return ["error" => errorMessage("Email inválido", $valor)];
-                break;
-            case ':telefone':
-                if (!validarTelefone($valor)) return ["error" => errorMessage("Telefone inválido", $valor)];
-                break;
-            case ':senha':
-                if (!validarSenha($valor)) return ["error" => errorMessage("Senha inválida", $valor)];
-                $caracteristica = "crypt(:senha, gen_salt('bf'))";
-                break;
-            default:
-                return ["error" => errorMessage("Característica inválida", $caracteristica)];
-        }
-        $sql .= "$caracteristica, ";
-    }
-    $sql = rtrim($sql, ", ") . " WHERE id = :usuario_id";
+    $senha_atual = $valores['senha_atual'] ?? null;
+    unset($valores['senha_atual']);
 
-    $pdo->beginTransaction();
-    $stmt = $pdo->prepare($sql);
-    $valores['usuario_id'] = $credenciais["id"];
-    $stmt->execute($valores);
-    if ($stmt->rowCount() != 1) {
-        $pdo->rollBack();
-        return ["error" => errorMessage("Erro ao atualizar perfil", $valores)];
+    // Lista fechada de colunas: nada vindo do cliente é concatenado no SQL
+    $regras = [
+        'nome' => ['validarNomeUsuario', "Nome inválido", ":nome"],
+        'email' => ['validarEmail', "Email inválido", ":email"],
+        'telefone' => ['validarTelefone', "Telefone inválido", ":telefone"],
+        'senha' => ['validarSenha', "Senha inválida", "crypt(:senha, gen_salt('bf'))"],
+    ];
+
+    $sets = [];
+    foreach ($valores as $campo => $valor) {
+        if (!isset($regras[$campo])) {
+            return ["error" => errorMessage("Característica inválida", ":$campo")];
+        }
+        [$validar, $mensagem, $expressao] = $regras[$campo];
+        if (!is_string($valor) || !$validar($valor)) {
+            return ["error" => errorMessage($mensagem, $campo === 'senha' ? '***' : $valor)];
+        }
+        $sets[] = "$campo = $expressao";
     }
-    $pdo->commit();
+    if (!$sets) {
+        return ["error" => errorMessage("Nenhum valor para atualizar", $credenciais["id"])];
+    }
+
+    if (isset($valores['senha'])) {
+        $stmt = $pdo->prepare("select 1 from usuario where id = :id and senha = crypt(:senha, senha)");
+        $stmt->execute(["id" => $credenciais["id"], "senha" => (string) $senha_atual]);
+        if ($stmt->fetchColumn() === false) {
+            return ["error" => "Informe corretamente a senha atual para trocar a senha"];
+        }
+    }
+
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare("UPDATE usuario SET " . implode(', ', $sets) . " WHERE id = :usuario_id");
+        $stmt->execute($valores + ['usuario_id' => $credenciais["id"]]);
+        if ($stmt->rowCount() != 1) {
+            $pdo->rollBack();
+            return ["error" => errorMessage("Erro ao atualizar perfil", $credenciais["id"])];
+        }
+        if (isset($valores['senha'])) {
+            $token = isset($_POST['access_token']) ? json_decode($_POST['access_token'], true) : null;
+            revogarTokensDoUsuario($pdo, $credenciais["id"], is_string($token) ? $token : null);
+        }
+        $pdo->commit();
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        if ($e->getCode() === '23505') {
+            return ["error" => "Este email já está em uso"];
+        }
+        return ["error" => errorMessage("Erro ao atualizar perfil", $e->getMessage())];
+    }
     $Audit->sucesso(true);
     return getPerfilUsuario($credenciais);
 }
@@ -93,7 +113,7 @@ function getLegalIdentUsuario($credenciais) {
 }
 
 function validarLegalIdent($ident, $regex) {
-    if (!$regex || !preg_match("/$regex/", $ident)) return false;
+    if (!$regex || !preg_match('~' . str_replace('~', '\~', $regex) . '~u', (string) $ident)) return false;
     return true;
 }
 
@@ -107,7 +127,7 @@ function updateLegalIdentUsuario($credenciais, $identidade, $tipo) {
         $stmt->execute(['usuario_id' => $credenciais["id"]]);
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $Audit->antes(["usuario" => ["identidade" => $usuario["li_identidade"]]]);
+        $Audit->antes(["usuario" => ["identidade" => $usuario["li_identidade"] ?? null]]);
 
         $stmt = $pdo->prepare("SELECT regex FROM legal_ident_tipo WHERE id = :tipo_id");
         $stmt->execute(['tipo_id' => $tipo]);

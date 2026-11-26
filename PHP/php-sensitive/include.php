@@ -1,51 +1,90 @@
-<?php	
-	header("Access-Control-Allow-Origin: *");
-	header("Access-Control-Allow-Methods:POST");
-	header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
+<?php
     //# DOTENV CONFIG
     define("ENVDIR",__DIR__);
     require ENVDIR . '/vendor/autoload.php';        
     Dotenv\Dotenv::createImmutable(ENVDIR)->load();
     //DOTENV CONFIG #
 
-    define("DEVELOPMENT_ENV", $_ENV['DEVELOPMENT_ENV'] === 'true');
+    define("DEVELOPMENT_ENV", ($_ENV['DEVELOPMENT_ENV'] ?? 'false') === 'true');
     define("SITE_URL", $_ENV['SITE_URL'] ?? "http://localhost");
+
+    // Cabeçalhos de CORS e segurança (CORS_ORIGIN permite restringir a origem)
+    if (PHP_SAPI !== 'cli' && !headers_sent()) {
+        header("Access-Control-Allow-Origin: " . ($_ENV['CORS_ORIGIN'] ?? '*'));
+        header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Authorization");
+        header("X-Content-Type-Options: nosniff");
+        header("X-Frame-Options: DENY");
+        header("Referrer-Policy: no-referrer");
+        header("Cache-Control: no-store");
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+            http_response_code(204);
+            exit;
+        }
+    }
     
     function getClientIp() {
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) return $_SERVER['HTTP_CLIENT_IP'];
-        elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) return explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
-        elseif (!empty($_SERVER['REMOTE_ADDR'])) return $_SERVER['REMOTE_ADDR'];
-        elseif (DEVELOPMENT_ENV) return '0.0.0.0';
-        else return 'unknown';
+        // Cabeçalhos enviados pelo cliente só são confiáveis atrás de um proxy próprio
+        if (($_ENV['TRUST_PROXY'] ?? 'false') === 'true' && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $partes = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            $ip = trim(end($partes));
+            if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
+        }
+        if (!empty($_SERVER['REMOTE_ADDR'])) return $_SERVER['REMOTE_ADDR'];
+        return DEVELOPMENT_ENV ? '0.0.0.0' : 'unknown';
+    }
+
+    /** Remove segredos antes de gravar dados em log ou auditoria. */
+    function redigirSensivel($dados) {
+        if (!is_array($dados)) return $dados;
+        $sensiveis = ['senha', 'senha_atual', 'password', 'otp', 'token', 'access_token', 'r_senha'];
+        foreach ($dados as $chave => $valor) {
+            if (is_string($chave) && in_array(strtolower($chave), $sensiveis, true)) {
+                $dados[$chave] = '***';
+            } else if (is_array($valor)) {
+                $dados[$chave] = redigirSensivel($valor);
+            }
+        }
+        return $dados;
+    }
+
+    /** Conexão exclusiva (e reaproveitada) para logs: não sofre rollback da transação principal. */
+    function getLogDataBase() {
+        static $pdo = null;
+        if ($pdo === null) $pdo = getDataBase();
+        return $pdo;
     }
 
     function errorMessage($error_title, $error_message) {
         $message = '' . $error_title . '' . (DEVELOPMENT_ENV ?  ':' . $error_message . '': '');
-        $acc_tk = "";
-
-        if (isset($_POST['access_token'])) {
-            $acc_tk = json_decode($_POST['access_token'], true) ?? $_POST['access_token'] ?? "invalid_token";
-        } else if (DEVELOPMENT_ENV) {
-            $acc_tk = "unittest";
+        // O token de sessão nunca é gravado em claro, apenas o seu hash
+        $token = isset($_POST['access_token']) ? json_decode($_POST['access_token'], true) : null;
+        if (is_string($token) && $token !== '') {
+            $acc_tk = 'sha256:' . hash('sha256', $token);
         } else {
-            $acc_tk = "not_provided";
+            $acc_tk = DEVELOPMENT_ENV ? 'unittest' : 'not_provided';
+        }
+
+        $detalhe = is_scalar($error_message) || $error_message === null
+            ? (string) $error_message
+            : json_encode(redigirSensivel($error_message));
+        $detalhe = preg_replace('/access_token=[A-Za-z0-9]+/', 'access_token=***', $detalhe);
+        if (preg_match('/senha|otp|codigo|código|access_token/iu', $error_title)
+            && preg_match('/inválid|não atende|invalid/iu', $error_title)) {
+            $detalhe = '***';
         }
 
         try {
-            $pdo = getDataBase();
-            if ($pdo) {
-                $stmt = $pdo->prepare("INSERT INTO errors_log (titulo, mensagem, u_access_token, ip, url) VALUES (:titulo, :mensagem, :u_access_token, :ip, :url)");
-                $stmt->execute([
-                    ':titulo' => $error_title,
-                    ':mensagem' => $error_message,
-                    ':u_access_token' =>  $acc_tk,
-                    ':ip' => getClientIp(),
-                    ':url' => $_SERVER['REQUEST_URI'] ?? null
-                ]);
-            }
-        } catch (Exception $e) {
-            
+            $stmt = getLogDataBase()->prepare("INSERT INTO errors_log (titulo, mensagem, u_access_token, ip, url) VALUES (:titulo, :mensagem, :u_access_token, :ip, :url)");
+            $stmt->execute([
+                ':titulo' => $error_title,
+                ':mensagem' => $detalhe,
+                ':u_access_token' =>  $acc_tk,
+                ':ip' => substr(getClientIp(), 0, 45),
+                ':url' => $_SERVER['REQUEST_URI'] ?? null
+            ]);
+        } catch (Throwable $e) {
+            error_log("Vehoute: falha ao gravar errors_log: " . $e->getMessage());
         }
         return $message;
     }
@@ -107,6 +146,9 @@
             }
             
 
+            $antes = redigirSensivel($antes);
+            $depois = redigirSensivel($depois);
+
             $values = [
                 ':usuario_id' => $GLOBALS['USUARIO_ID'],
                 ':tabela' => $tabela,
@@ -127,7 +169,7 @@
             $columns = array_map(fn($key) => substr($key, 1), $keys);
 
             try {
-                $pdo = getDataBase();
+                $pdo = getLogDataBase();
                 if ($pdo) {
                     $stmt = $pdo->prepare("INSERT INTO audit_log (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $keys) . ") returning *");
                     $stmt->execute($values);
@@ -152,6 +194,7 @@
         }
 
         private function change($column, $value, $concat = true) {
+            $value = redigirSensivel($value);
             if (!array_key_exists($column, $this->audits)) {
                 errorMessage("Coluna de log de auditoria não encontrada", $column);
                 return;
@@ -169,7 +212,7 @@
             $this->audits[$column] = $value;
 
             try {
-                $pdo = getDataBase();
+                $pdo = getLogDataBase();
                 if ($pdo) {
                     $sql = "UPDATE audit_log SET " . $column . " = :value WHERE id = :log_id";
                     $stmt = $pdo->prepare($sql);
@@ -205,7 +248,7 @@
     }
 
     function validarSenha($senha) {
-        if (strlen($senha) < 8) return 0;
+        if (!is_string($senha) || strlen($senha) < 8 || strlen($senha) > 72) return 0; // bcrypt ignora além de 72 bytes
         if (!preg_match('/[A-Z]/', $senha)) return 0;
         if (!preg_match('/[a-z]/', $senha)) return 0;
         if (!preg_match('/\d/', $senha)) return 0;
@@ -256,40 +299,70 @@
     }
 
 	function returnJson($data, $type = null) {
-		$result = [];
         if (is_array($data) && count($data) > 0) {
             $type = $type ?: array_keys($data)[0];
-			foreach ($data as $key => $value) {
-				$result[$key] = is_bool($value) ? $value : mb_convert_encoding($value, 'UTF-8', 'auto');
-			}
+            $result = $data;
 		} else {
             $type = 'in_error';
-            $result = 'internal_error';
+            $result = ['error' => 'internal_error'];
         }
-        
+
         $responses = [
             'success' => 200,
             'error' => 400,
+            'invalid_token' => 401,
             'warn' => 409,
+            'rate_limit' => 429,
             'in_error' => 500,
         ];
-        http_response_code($responses[$type] ?? 200);
-		echo json_encode($result);
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code($responses[$type] ?? 200);
+        }
+		echo json_encode($result, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE);
         exit;
 	}
-    
+
     function getRequestValue($key, $check_type = null) {
-        try {
-            if (isset($_POST[$key])) {
-                $value = json_decode($_POST[$key], true);
-                
-                return $check_type ? ($check_type($value) ? $value : null) : $value;
-            }
-        } catch (Exception) {
+        if (!isset($_POST[$key]) || !is_string($_POST[$key])) return null;
+        $value = json_decode($_POST[$key], true);
+        return $check_type ? ($check_type($value) ? $value : null) : $value;
+    }
 
+    /**
+     * Limite de tentativas por IP (janela fixa em arquivo), contra força bruta e spam de e-mail.
+     * Chamar apenas nos endpoints. Encerra a requisição com HTTP 429 ao exceder.
+     */
+    function limitarRequisicoes($acao, $maximo, $janela_segundos, $chave = '') {
+        $arquivo = sys_get_temp_dir() . '/vehoute_rl_' . hash('sha256', $acao . '|' . getClientIp() . '|' . strtolower((string) $chave));
+        $fp = @fopen($arquivo, 'c+');
+        if (!$fp) return;
+        flock($fp, LOCK_EX);
+        $dados = json_decode(stream_get_contents($fp), true);
+        if (!is_array($dados) || $dados['expira'] <= time()) {
+            $dados = ['total' => 0, 'expira' => time() + $janela_segundos];
         }
+        $dados['total']++;
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($dados));
+        flock($fp, LOCK_UN);
+        fclose($fp);
 
-        return null;
+        if ($dados['total'] > $maximo) {
+            if (!headers_sent()) header('Retry-After: ' . max(1, $dados['expira'] - time()));
+            returnJson(["error" => "Muitas tentativas. Aguarde alguns minutos e tente novamente."], 'rate_limit');
+        }
+    }
+
+    function revogarTokensDoUsuario($pdo, $usuario_id, $exceto_token = null) {
+        $sql = "delete from usuario_access_token where usuario_id = :usuario_id";
+        $params = ["usuario_id" => $usuario_id];
+        if ($exceto_token !== null) {
+            $sql .= " and token <> :token";
+            $params["token"] = $exceto_token;
+        }
+        $pdo->prepare($sql)->execute($params);
     }
 
     function getRandomHex($length = 256){
@@ -302,27 +375,36 @@
         $dbname = $_ENV['DB_DATABASE'];
         $user = $_ENV['DB_USERNAME'];
         $pass = $_ENV['DB_PASSWORD'];
+        $port = $_ENV['DB_PORT'] ?? '5432';
 
         try {
-            $pdo = new PDO("pgsql:host=$host;dbname=$dbname", $user, $pass);
-            if ($pdo) return $pdo;
-        } catch (Exception) {
-
+            return new PDO("pgsql:host=$host;port=$port;dbname=$dbname;connect_timeout=5", $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            ]);
+        } catch (Exception $e) {
+            error_log("Vehoute: falha ao conectar no banco: " . $e->getMessage());
         }
 
-        returnJson(["error" => "database_error", "details"=>"failed to connect to database"]);
+        returnJson(["error" => "database_error", "details"=>"failed to connect to database"], 'in_error');
+    }
+
+    function definirCookieAccessToken($valor, $expira) {
+        setcookie("access_token", $valor, [
+            'expires' => $expira,
+            'path' => '/',
+            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'samesite' => 'Strict',
+            // httponly fica desligado: o frontend lê o cookie para restaurar a sessão
+        ]);
     }
 
     function resetAccessToken() {
-        setcookie(
-            "access_token",
-            "", time()-9999, "/"
-        );
+        definirCookieAccessToken("", time() - 9999);
     }
-        
+
     function getCredentials(){ 
         try {
-            if (isset($_POST['access_token'])) {
+            if (isset($_POST['access_token']) && is_string($_POST['access_token'])) {
                 $access_token = json_decode($_POST['access_token'], true);
                 $sql = "SELECT u.*, (adm.id is not null) as is_adm from
                         getUsuarioByToken(:access_token) u
@@ -362,8 +444,8 @@
 
         }
 
-        usleep(rand(1000, 10000) * 1000);
-        returnJson(["invalid_token" => errorMessage("invalid_token", $_POST['access_token'] ?? "not_provided")]);
+        usleep(random_int(200, 800) * 1000); // atraso curto: não prende os workers do servidor
+        returnJson(["invalid_token" => errorMessage("invalid_token", "sessão ausente ou expirada")]);
     }
 
     function userHasPermission($perm, $credenciais = null, $throw_error = true) {
@@ -403,6 +485,8 @@
             $ch = curl_init($_ENV['MAIL_URL']);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
             curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
 
@@ -512,6 +596,7 @@
         }
         catch (Exception $e) {
             errorMessage("Erro ao enviar notificação por email", $e->getMessage());
+            return ["status"=>"erro","mensagem"=>"falha ao enviar notificação"];
         }
     }
 

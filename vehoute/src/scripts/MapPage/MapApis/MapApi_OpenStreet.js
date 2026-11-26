@@ -12,16 +12,16 @@ export default class MapApi_OpenStreet extends MapApi_Interface {
 
         return new Promise((resolve) => {
             // CSS do Leaflet
-            if (!document.querySelector('link[href="https://unpkg.com/leaflet/dist/leaflet.css"]')) {
+            if (!document.querySelector('link[href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"]')) {
                 const link = document.createElement('link');
                 link.rel = 'stylesheet';
-                link.href = 'https://unpkg.com/leaflet/dist/leaflet.css';
+                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
                 document.head.appendChild(link);
             }
 
             // Script do Leaflet
             const script = document.createElement('script');
-            script.src = 'https://unpkg.com/leaflet/dist/leaflet.js';
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
             
             script.onload = () => {
                 resolve(true);
@@ -48,7 +48,10 @@ export default class MapApi_OpenStreet extends MapApi_Interface {
 
             MapApi_OpenStreet.map = window.L.map(map_el_div).setView([-34, 150], 15);
 
-            window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(MapApi_OpenStreet.map);
+            window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(MapApi_OpenStreet.map);
 
             return true;
 
@@ -77,7 +80,7 @@ export default class MapApi_OpenStreet extends MapApi_Interface {
         return MapApi_OpenStreet.marker !== null;
     }
 
-    static createMarker() {
+    static createMarker(position = [0, 0]) {
         if (!MapApi_OpenStreet.isMapInitialized() || MapApi_OpenStreet.haveMarker()) {
             console.error("Map not initialized or marker already exists");
             return false;
@@ -98,7 +101,7 @@ export default class MapApi_OpenStreet extends MapApi_Interface {
                 iconAnchor: [8, 8]
             });
 
-            MapApi_OpenStreet.marker = window.L.marker([9999, 9999], {
+            MapApi_OpenStreet.marker = window.L.marker(position, {
                 icon: blueIcon
             }).addTo(MapApi_OpenStreet.map);
 

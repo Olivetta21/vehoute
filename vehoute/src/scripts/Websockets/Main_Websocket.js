@@ -4,38 +4,45 @@ import MapPagina from "../MapPage/Map";
 
 export default class MainWS {
     static _ws = null;
+    static _manter_conectado = false;
+    static _tentativas = 0;
+    static _timer = null;
 
     static genWS() {
-        const ws_url = "/ws/";
-        MainWS._ws = new WebSocket(ws_url);
-        MainWS._ws.onopen = () => MainWS.on_open();
-        MainWS._ws.onmessage = (e) => MainWS.on_message(e);
-        MainWS._ws.onclose = (e) => MainWS.on_close(e);
-        MainWS._ws.onerror = (e) => MainWS.on_error(e);
+        const protocolo = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocolo}//${window.location.host}/ws/`);
+        MainWS._ws = ws;
+        ws.onopen = () => MainWS.on_open();
+        ws.onmessage = (e) => MainWS.on_message(e);
+        ws.onclose = () => MainWS.on_close(ws);
+        ws.onerror = (e) => MainWS.on_error(e);
     }
 
-    static connect(access_token) {
-        if (MainWS._ws) {
-            console.log("WebSocket já conectado.");
-            return;
-        }
-        console.log("tentando se conectar ao WebSocket com token:", access_token);
-
+    static connect() {
+        MainWS._manter_conectado = true;
+        if (MainWS._ws) return;
+        clearTimeout(MainWS._timer);
         MainWS.genWS();
     }
 
-
     static on_open() {
+        MainWS._tentativas = 0;
         // ENVIA IDENTIFICAÇÃO EM JSON:
         MainWS._ws.send("ident:" + Usuario.access_token);
-        console.log("WebSocket conectado com sucesso.");
+        // Após uma reconexão, volta a acompanhar o rastreador que estava aberto no mapa
+        MapPagina.rewatch();
     }
 
     static on_message(evento) {
-        console.log("Mensagem recebida do WebSocket:", evento.data);
+        let message;
+        try {
+            message = JSON.parse(evento.data);
+        } catch {
+            console.warn("Mensagem inválida recebida do WebSocket");
+            return;
+        }
 
         //{"t": "wTrk", "tk": "23", "a": true, "r": true}
-        const message = JSON.parse(evento.data);
         if (message.t === "wTrk" && message.r === true) {
             const gate_token = `watch_tracker_${message.a ? 'add' : 'del'}_${message.tk}`;
             Gatekeeper.openGate(gate_token, true);
@@ -50,25 +57,32 @@ export default class MainWS {
         console.error("Erro no WebSocket:", error);
     }
 
-    static on_close(event) {
-        console.log("WebSocket fechado:", event);
+    static on_close(ws) {
+        if (MainWS._ws !== ws) return;
         MainWS._ws = null;
+        if (!MainWS._manter_conectado || !Usuario.access_token) return;
+
+        // Reconexão com espera exponencial (1s, 2s, 4s ... até 30s)
+        const espera = Math.min(30000, 1000 * 2 ** MainWS._tentativas++);
+        MainWS._timer = setTimeout(() => {
+            if (MainWS._manter_conectado && !MainWS._ws) MainWS.genWS();
+        }, espera);
     }
 
     static disconnect() {
-        if (MainWS._ws) {
-            MainWS._ws.close();
-        } else {
-            console.log("Nenhum WebSocket conectado para desconectar.");
-        }
+        MainWS._manter_conectado = false;
+        MainWS._tentativas = 0;
+        clearTimeout(MainWS._timer);
+        const ws = MainWS._ws;
+        MainWS._ws = null;
+        ws?.close();
     }
 
     static message(msg) {
         if (MainWS._ws && MainWS._ws.readyState === WebSocket.OPEN) {
             MainWS._ws.send(msg);
-            console.log("Mensagem enviada para o WebSocket:", msg);
         } else {
-            console.warn("WebSocket não está aberto. Não foi possível enviar a mensagem:", msg);
+            console.warn("WebSocket não está aberto; mensagem não enviada.");
         }
     }
 }

@@ -34,7 +34,7 @@
     </GenericModalWindow>
 
     <div class="tracker-cards-container cards-grid">
-        <div class="tracker-card card" v-for="(tracker, index) in trackers" :key="index">            
+        <div class="tracker-card card" v-for="(tracker, index) in trackers" :key="tracker.id">
             <div v-if="tracker.mostrarObservacao" class="tracker-obs">
                 <div class="tracker-obs-name" @click="toggleObservacao(index)">
                     <LeftArrow/>
@@ -60,7 +60,7 @@
                 <div class="tracker-card-footer-wrapper">
                     <div class="tracker-card-footer">
                         <button class="btn-secondary btn-sm" @click="toggleObservacao(index)">Infos</button>
-                        <button type="button" class="btn-secondary btn-sm" @click="toggleAtivo(tracker.id)">{{ tracker.ativo ? 'Desativar' : 'Ativar' }}</button>
+                        <button type="button" class="btn-secondary btn-sm" @click="toggleAtivo(tracker)">{{ tracker.ativo ? 'Desativar' : 'Ativar' }}</button>
                     </div>
                 </div>
             </template>
@@ -118,8 +118,9 @@ export default {
             this.termoPesquisa = pesquisa ?? '';
             this.trackers = await TrackerPage.getRastreadores(this.termoPesquisa);
         },
-        async toggleAtivo(id) {
-            const response = await TrackerPage.toggleAtivo(id);
+        async toggleAtivo(tracker) {
+            if (!confirm(`Confirma ${tracker.ativo ? 'desativar' : 'ativar'} o rastreador ${tracker.hardware}?`)) return;
+            const response = await TrackerPage.toggleAtivo(tracker.id);
             this.mensagem = response?.success ? 'Status do rastreador atualizado.' : response?.error ?? 'Não foi possível atualizar o status.';
             await this.fetchTrackers(this.termoPesquisa);
         },
@@ -142,7 +143,7 @@ export default {
                     tokenPublico: '',
                     senha: '',
                     obs: '',
-                    status: '',
+                    status: 1,
                     donoId: null
                 };
                 this.mostrarFormulario = false;

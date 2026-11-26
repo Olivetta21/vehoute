@@ -14,9 +14,18 @@ export default class Login {
         if (Usuario.access_token || Cookies.get('access_token')) {
             resp = await fetch_("/login_cadastro/login.php", [{"logoff": 1}]);
         }
+        Usuario.disconnectWebSockets();
         Usuario.clean();
+        Cookies.remove('access_token', { path: '/' });
 
         return resp;
+    }
+
+    /** Chamado quando o servidor informa que a sessão não é mais válida. */
+    static encerrarSessaoLocal() {
+        Usuario.disconnectWebSockets();
+        Usuario.clean();
+        Cookies.remove('access_token', { path: '/' });
     }
 
     static setLogged(resp) {

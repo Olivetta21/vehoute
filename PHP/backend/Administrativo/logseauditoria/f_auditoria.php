@@ -1,6 +1,8 @@
 <?php
 
-function getAuditoriaDoSistema($credenciais, $tabela = null, $filtro = null, $data_inicio = null, $data_fim = null, $sucesso = null) {
+function getAuditoriaDoSistema($credenciais, $tabela = null, $filtro = null, $data_inicio = null, $data_fim = null, $sucesso = null, $limite = 200, $offset = 0) {
+    $limite = max(1, min(1000, (int) $limite));
+    $offset = max(0, (int) $offset);
     $params = [];
     $where = [];
 
@@ -33,13 +35,15 @@ function getAuditoriaDoSistema($credenciais, $tabela = null, $filtro = null, $da
     FROM audit_log al
     JOIN usuario u
     ON u.id = al.usuario_id
-    " . (empty($where) ? "" : "WHERE " . implode(" AND ", $where)) . " ORDER BY al.data DESC"; 
+    " . (empty($where) ? "" : "WHERE " . implode(" AND ", $where)) . " ORDER BY al.data DESC, al.id DESC LIMIT " . ($limite + 1) . " OFFSET " . $offset;
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $tem_mais = count($logs) > $limite;
+    $logs = array_slice($logs, 0, $limite);
     $Audit->depois(["qnt_audits" => count($logs)]);
     $Audit->sucesso(true);
-    return ["success" => true, "auditorias" => $logs];
+    return ["success" => true, "auditorias" => $logs, "tem_mais" => $tem_mais];
 }
 
 function getSimpleTabelasAuditoria($credenciais, $filter = '%') {

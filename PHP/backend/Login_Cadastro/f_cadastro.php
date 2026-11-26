@@ -164,7 +164,7 @@ function finalizarCadastro($nome, $email, $telefone, $login, $senha, $otp, $iden
 
 
 function getSimpleLegalIdentTipoCadastro() {
-    $pdo = $pdo = getDataBase();
+    $pdo = getDataBase();
     $stmt = $pdo->query("SELECT id, descricao as nome, regex FROM legal_ident_tipo WHERE invalido = false");
     $idents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -293,6 +293,11 @@ function salvarNovaSenhaRecuperada($email, $otp, $senha) {
         $res = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($res["sucesso"] === true) {
+            // Código de uso único e encerramento das sessões abertas
+            $stmt = $pdo->prepare("delete from usuario_recuperacao_senha where email = :email");
+            $stmt->execute(["email" => $email]);
+            $stmt = $pdo->prepare("delete from usuario_access_token where usuario_id = (select id from usuario where email = :email)");
+            $stmt->execute(["email" => $email]);
             $pdo->commit();
             return ["success" => true];
         }

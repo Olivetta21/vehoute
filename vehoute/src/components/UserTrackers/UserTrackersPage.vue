@@ -28,7 +28,7 @@
         </GenericModalWindow>
 
             <div class="trackers-container cards-grid">
-            <TrackerCard v-for="(tracker, index) in trackers" :key="index" :tracker="tracker"
+            <TrackerCard v-for="(tracker, index) in trackers" :key="tracker.ur_id" :tracker="tracker"
                 @ouvintes="TrackerOuvintes.openPage(tracker)"
                 @lococulta="TrackerLocOculta.openPage(tracker)"
                 @rastrear="MapPagina.enterWithTracker(tracker.ur_id)"
@@ -142,7 +142,7 @@ export default {
             if (!confirm('Confirma remover esse rastreador da sua lista?')) return;
             const ok = await UserTrackers.excluirRastreador(ur_id);
             if (ok) {
-                this.trackers = this.trackers.filter(t => t.id !== ur_id);
+                this.trackers = this.trackers.filter(t => t.ur_id !== ur_id);
             }
         }
     },

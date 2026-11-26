@@ -7,7 +7,6 @@
 
 <script>
 import PagesRoutes from '../../scripts/PagesRoutes.js';
-import HomePage from '../../scripts/HomePage/HomePage.js';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import LayoutePageCardsLink from '../utils/LayoutePageCardsLink.vue';
 
@@ -19,7 +18,6 @@ export default {
   },
   data() {
     return {
-      HomePage,
       home_cardIcon: PagesRoutes.byCaracteristic('home_cardIcon')
     };
   }

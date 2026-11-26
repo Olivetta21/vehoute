@@ -8,7 +8,7 @@ function existsExactUR_WithIdAndStatus($credenciais, $ur_id, $ur_status) {
 }
 
 function existsExactR_WithIdDonoTKStatusSenha($pdo, $rastreador_id, $dono_id, $token, $status, $senha) {
-    $stmt = $pdo->prepare("select * from rastreador where id = :id and dono_id = :dono_id and token_publico = :token and status = :status and senha = :senha and status in (1, 2) and ativo = true");
+    $stmt = $pdo->prepare("select * from rastreador where id = :id and dono_id is not distinct from :dono_id and token_publico = :token and status = :status and senha = :senha and status in (1, 2) and ativo = true");
     $stmt->execute(["id" => $rastreador_id, "dono_id" => $dono_id, "token" => $token, "status" => $status, "senha" => $senha]);
     return $stmt->rowCount() === 1;
 }
@@ -99,7 +99,8 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
     $Audit = (new Auditoria())->add('usuario_rastreador|vinc_loc_oculta_usuario_rastreador', 'usuarioAdicionaUmRastreador', null, ["rastreador_id" => $rastreador_id, "nome" => $nome, "status" => $status], false);
     $pdo = $credenciais["pdo"];
 
-    if (!$rastreador_id || !$nome) {
+    $nome = trim((string) $nome);
+    if (!$rastreador_id || $nome === '' || mb_strlen($nome) > 100) {
         return ["error" => errorMessage("Id do rastreador ou nome não fornecidos", $rastreador_id . " - " . $token)];
     }
 
@@ -110,6 +111,11 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
     if (!checkDonoPermiteOuvinteCadastrarSeuRastreador($credenciais, $rastreador_id)) {
         return ["error" => errorMessage("Dono do rastreador não permite que ouvintes adicionem seu rastreador", $rastreador_id . " - " . $token)];
     }
+
+    // O dono é sempre o registrado no banco, nunca o informado pelo cliente
+    $stmt = $pdo->prepare("select dono_id from rastreador where id = :id");
+    $stmt->execute(["id" => $rastreador_id]);
+    $dono_id = $stmt->fetchColumn();
 
     $ur_status = ($dono_id === null || $dono_id === $credenciais["id"]) ? 1 : 3;
 
@@ -181,16 +187,20 @@ function usuarioAdicionaUmRastreador($credenciais, $rastreador_id, $dono_id, $to
         $Audit->depois(["usuario_rastreador" => $new_ur]);
         $Audit->sucesso(true);
 
-        enviarEmailAvisarDonoQueTemNovoOuvinte(
-            getUserMail($dono_id),
-            getUserName($dono_id),
-            getURNameOfOwnerByTrackerID($rastreador_id),
-            getUserName($credenciais["id"])
-        );
+        if ($dono_id && $dono_id !== $credenciais["id"]) {
+            enviarEmailAvisarDonoQueTemNovoOuvinte(
+                getUserMail($dono_id),
+                (string) getUserName($dono_id),
+                (string) getURNameOfOwnerByTrackerID($rastreador_id),
+                (string) getUserName($credenciais["id"])
+            );
+        }
 
         return ["success" => true, "usuario_rastreador" => $new_ur];
     } catch (Exception $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         return ["error" => errorMessage("Erro ao adicionar rastreador ao usuário", $e->getMessage())];
     }
 }
@@ -516,7 +526,10 @@ function updateVinculoUsuarioRastreador($credenciais, $ur_id, $ur_status, $new_v
     if (!array_key_exists('ur_nome', $new_values)) {
         return ["error" => errorMessage("Chave de valor novo inválida", implode(", ", array_keys($new_values)))];
     }
-    $ur_nome = $new_values['ur_nome'];
+    $ur_nome = trim((string) $new_values['ur_nome']);
+    if ($ur_nome === '' || mb_strlen($ur_nome) > 100) {
+        return ["error" => errorMessage("Nome inválido", $ur_nome)];
+    }
 
     try {
         $pdo = $credenciais["pdo"];
@@ -582,6 +595,13 @@ function updateRastreadorDoDono($credenciais, $r_id, $r_token_publico, $r_status
             break;
         default:
             return ["error" => errorMessage("Chave de valor novo inválida", $key)];
+        }
+        if ($key === 'token_publico') {
+            $dup = $credenciais["pdo"]->prepare("select 1 from rastreador where token_publico = :t and id <> :id");
+            $dup->execute(["t" => $value, "id" => $r_id]);
+            if ($dup->fetchColumn() !== false) {
+                return ["error" => "Este token público já está em uso"];
+            }
         }
         $edit_sql[] = "$key = :$key";
         $values_sql["$key"] = $value;

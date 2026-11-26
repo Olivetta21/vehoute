@@ -6,11 +6,11 @@ $credenciais = getCredentials();
 try {
 userHasPermission("Administrador");
 
-if ($name_filter = getRequestValue("get", "is_string")) {
+if (($name_filter = getRequestValue("get", "is_string")) !== null) {
 	returnJson(getRastreadores($credenciais["pdo"], $name_filter));
 }
 
-if ($name_filter = getRequestValue("getSimple", "is_string")) {
+if (($name_filter = getRequestValue("getSimple", "is_string")) !== null) {
 	returnJson(getSimpleRastreadores($credenciais["pdo"], $name_filter));
 }
 

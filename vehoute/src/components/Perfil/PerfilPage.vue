@@ -18,8 +18,12 @@
                         <input id="user-login" type="text" v-model="userProfile.v_model_login" disabled>
                     </div>
                     <div class="info">
-                        <label for="user-pass">Senha</label>
-                        <input id="user-pass" type="password" v-model="userProfile.v_model_senha">
+                        <label for="user-pass">Nova senha</label>
+                        <input id="user-pass" type="password" autocomplete="new-password" v-model="userProfile.v_model_senha">
+                    </div>
+                    <div class="info" v-if="userProfile.v_model_senha">
+                        <label for="user-pass-atual">Senha atual</label>
+                        <input id="user-pass-atual" type="password" autocomplete="current-password" v-model="senhaAtual">
                     </div>
                 </div>
                 <div class="info">
@@ -65,6 +69,7 @@
 
 <script>
 import Perfil from '../../scripts/PerfilPage/Perfil';
+import ToastMessage from '../../scripts/ToastMessage/ToastMessage';
 import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import { compararVariaveis, validarRegex } from '../../scripts/utils';
@@ -79,11 +84,13 @@ export default {
             Usuario,
             validarRegex,
             Perfil,
-            userProfile: null
+            userProfile: null,
+            senhaAtual: ''
         };
     },
     methods: {
         setUserProfileInfos(p) {
+            this.senhaAtual = '';
             this.userProfile = {
                 ...p,
                 v_model_nome: p.nome,
@@ -119,8 +126,17 @@ export default {
                 return;
             }
 
+            if (valores.senha) {
+                if (!this.senhaAtual) {
+                    ToastMessage.add('Informe a senha atual para trocar a senha', '', 'warn');
+                    return;
+                }
+                valores.senha_atual = this.senhaAtual;
+            }
+
             const updatedProfile = await Perfil.atualizarPerfilUsuario(valores);
             if (updatedProfile) {
+                ToastMessage.add('Perfil atualizado.', '', 'success');
                 this.setUserProfileInfos(updatedProfile);
             }
         },

@@ -3,6 +3,7 @@ import Notification from "../NotificationPage/Notification";
 
 export default class ToastMessage {
     static _toasts = ref([]);
+    static _proximo_id = 1;
     
     static get toasts(){
         return ToastMessage._toasts.value;
@@ -23,7 +24,7 @@ export default class ToastMessage {
             title = "";
         }
 
-        const id = Date.now();
+        const id = ToastMessage._proximo_id++;
         
         ToastMessage.toasts.unshift({id, title, message, type});
         Notification.insertNotification(`[${type.toUpperCase()}] ${title} - ${message}`);

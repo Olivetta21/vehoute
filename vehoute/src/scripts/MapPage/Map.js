@@ -60,12 +60,7 @@ export default class Map {
     static _actual_locs_reference = ref(null);
     static setActualLocsReference(tracker_id) {
         const tracker = Map.trackers.find(t => t.id === tracker_id);
-        if (tracker) {
-            Map._actual_locs_reference.value = tracker.localizacoes;
-        } else {
-            Map._actual_locs_reference.value = null;
-            console.error("Tracker not found for ID:", tracker_id);
-        }
+        Map._actual_locs_reference.value = tracker ? tracker.localizacoes : null;
     }
 
     static get_localizacoes(id) {
@@ -101,47 +96,26 @@ export default class Map {
     }
 
     static insertLocationWithRealTrackerID(id, location) {
-        const tracker_id = Map.trackers.find(t => t.rastreador_id === id)?.id;
-
-        Map.insertLocation(tracker_id, location);
+        const tracker_id = Map.trackers.find(t => Number(t.rastreador_id) === Number(id))?.id;
+        if (tracker_id !== undefined) Map.insertLocation(tracker_id, location);
     }
 
+    /** Insere mantendo a ordem por id (busca binária, O(log n)) e ignorando repetidos. */
     static insertLocation(tracker_id, location) {
         const tracker = Map.trackers.find(t => t.id === tracker_id);
-        if (tracker) {
-            location.lat = Number(location.lat);
-            location.lng = Number(location.lng);
+        if (!tracker) return;
 
-            const size = tracker.localizacoes.length;
-            let nextTo = -1;
-            for (let i = size - 1; i >= 0; i--) {
-                if (location.id > tracker.localizacoes[i].id) {
-                    nextTo = i + 1;
-                    break;
-                }
-            }
-
-            try {
-                if (nextTo !== -1) {
-                    tracker.localizacoes.splice(nextTo, 0, location);
-                } else {
-                    tracker.localizacoes.push(location);
-                }
-            } catch (error) {
-                console.error("Error inserting location:", error);
-            }
-
-            //ordena apenas se necessario
-            for (let i = 1; i < tracker.localizacoes.length; i++) {
-                if (tracker.localizacoes[i - 1].id > tracker.localizacoes[i].id) {
-                    tracker.localizacoes.sort((a, b) => a.id - b.id);
-                    break;
-                }
-            }
-
-        } else {
-            console.error("Tracker not found for ID:", tracker_id);
+        const nova = { ...location, id: Number(location.id), lat: Number(location.lat), lng: Number(location.lng) };
+        const lista = tracker.localizacoes;
+        let inicio = 0;
+        let fim = lista.length;
+        while (inicio < fim) {
+            const meio = (inicio + fim) >> 1;
+            if (lista[meio].id < nova.id) inicio = meio + 1;
+            else fim = meio;
         }
+        if (lista[inicio]?.id === nova.id) return;
+        lista.splice(inicio, 0, nova);
     }
 
 
@@ -159,8 +133,9 @@ export default class Map {
             const tracker = Map.trackers.find(t => t.id === ur_id);
             if (tracker) {
                 const locations = await Map.fetchLocations(tracker.rastreador_id);
+                locations.sort((a, b) => Number(a.l_id) - Number(b.l_id));
                 const converted = locations.map(l => ({
-                    id: l.l_id,
+                    id: Number(l.l_id),
                     lat: Number(l.l_lat),
                     lng: Number(l.l_lng),
                     l_data: l.l_data,
@@ -188,45 +163,39 @@ export default class Map {
     }
 
     static async setWatchForTracker(tracker_id) {
-        const tracker = Map.trackers.find(t => t.id === tracker_id);
-        if (tracker) {
-            setTimeout(() => {
-                MainWS.message(`wtu:${tracker.rastreador_id}`);
-            }, 10);
-            const res = await Gatekeeper.openFor(`watch_tracker_add_${tracker.rastreador_id}`, 2000);
-
-            if (res !== true) {
-                console.warn("Failed to open gate for tracker ID:", tracker_id);
-                return;
-            }
-
-            Map._tracker_watching_id.value = tracker_id;
-            console.log("Watching for tracker ID:", tracker_id);
-        } else {
-            Map.unsetWatchForTracker();
-            console.error("Tracker not found for ID:", tracker_id);
+        if (Map._tracker_watching_id.value !== null && Map._tracker_watching_id.value !== tracker_id) {
+            await Map.unsetWatchForTracker();
         }
+        const tracker = Map.trackers.find(t => t.id === tracker_id);
+        if (!tracker || Map._tracker_watching_id.value === tracker_id) return;
+
+        const gate = Gatekeeper.openFor(`watch_tracker_add_${tracker.rastreador_id}`, 2000);
+        MainWS.message(`wtu:${tracker.rastreador_id}`);
+
+        if (await gate !== true) {
+            console.warn("Sem confirmação para acompanhar o rastreador:", tracker_id);
+            return;
+        }
+        Map._tracker_watching_id.value = tracker_id;
     }
 
     static async unsetWatchForTracker() {
-        const tracker_id = Map._tracker_watching_id.value;
-        const tracker = Map.trackers.find(t => t.id === tracker_id);
-        if (tracker) {
-            setTimeout(() => {
-                MainWS.message(`wtr:${tracker.rastreador_id}`);
-            }, 10);
-            const res = await Gatekeeper.openFor(`watch_tracker_del_${tracker.rastreador_id}`, 2000);
+        const tracker = Map.trackers.find(t => t.id === Map._tracker_watching_id.value);
+        Map._tracker_watching_id.value = null;
+        if (!tracker) return;
 
-            if (res !== true) {
-                console.warn("Failed to open gate for tracker ID:", tracker_id);
-                return;
-            }
+        const gate = Gatekeeper.openFor(`watch_tracker_del_${tracker.rastreador_id}`, 2000);
+        MainWS.message(`wtr:${tracker.rastreador_id}`);
 
-            Map._tracker_watching_id.value = null;
-            console.log("Stopped watching for tracker ID:", tracker_id);
-        } else {
-            console.error("Tracker not found for ID:", tracker_id);
+        if (await gate !== true) {
+            console.warn("Sem confirmação para deixar de acompanhar o rastreador:", tracker.id);
         }
+    }
+
+    /** Reenvia o pedido de acompanhamento após o WebSocket reconectar. */
+    static rewatch() {
+        const tracker = Map.trackers.find(t => t.id === Map._tracker_watching_id.value);
+        if (tracker) MainWS.message(`wtu:${tracker.rastreador_id}`);
     }
 
 }

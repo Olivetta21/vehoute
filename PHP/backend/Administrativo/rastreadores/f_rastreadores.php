@@ -115,6 +115,13 @@ function adicionarRastreador($pdo, $hardware, $token, $token_publico, $senha, $o
 			return ["error" => errorMessage("Usuário dono não encontrado", $dono_id)];
 		}
 
+		$stmt = $pdo->prepare("select 1 from rastreador where token = :token or token_publico = :token_publico");
+		$stmt->execute(["token" => $token, "token_publico" => $token_publico]);
+		if ($stmt->fetchColumn() !== false) {
+			$pdo->rollBack();
+			return ["error" => errorMessage("Token ou token público já cadastrado", $token_publico)];
+		}
+
 		$stmt = $pdo->prepare(
 			"insert into rastreador (hardware, token, token_publico, senha, obs, status, dono_id)
 			 values (:hardware, :token, :token_publico, :senha, :obs, :status, :dono_id)

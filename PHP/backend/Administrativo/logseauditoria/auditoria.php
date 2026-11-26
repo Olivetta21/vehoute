@@ -7,11 +7,11 @@ try {
 
 userHasPermission("Administrador");
 
-if ($params = getRequestValue("get")) {
-    returnJson(getAuditoriaDoSistema($credenciais, $params['tabela'] ?? null, $params['filtro'] ?? null, $params['data_inicio'] ?? null, $params['data_fim'] ?? null, $params['sucesso'] ?? null));
+if ($params = getRequestValue("get", "is_array")) {
+    returnJson(getAuditoriaDoSistema($credenciais, $params['tabela'] ?? null, $params['filtro'] ?? null, $params['data_inicio'] ?? null, $params['data_fim'] ?? null, $params['sucesso'] ?? null, $params['limite'] ?? 200, $params['offset'] ?? 0));
 }
 
-if ($filter = getRequestValue("getSimpleTabelas", "is_string")) {
+if (($filter = getRequestValue("getSimpleTabelas", "is_string")) !== null) {
     returnJson(getSimpleTabelasAuditoria($credenciais, $filter));
 }
 

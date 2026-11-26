@@ -33,23 +33,21 @@ export default class Usuario {
     }
 
     static hasPermission(permission) {
-        permission = permission.toLowerCase();
-        if (!this.permissoes || !Array.isArray(this.permissoes)) {
+        if (!Array.isArray(this.permissoes)) {
             return false;
         }
-        this.permissoes = this.permissoes.map(p => p.toLowerCase());
-        return this.permissoes.includes(permission);
+        const procurada = permission.toLowerCase();
+        return this.permissoes.some(p => p.toLowerCase() === procurada);
     }
 
     static disconnectWebSockets() {
-        console.log("Desconectando WebSockets do usuário:", this.nome);
+        MainWS.disconnect();
     }
 
     static connectWebSockets(ws_name) {
         
         if (ws_name === "main") {
-            console.log("Conectando WebSocket principal para o usuário:", this.nome);
-            MainWS.connect(this.access_token);
+            MainWS.connect();
         }
 
     }

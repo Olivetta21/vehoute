@@ -14,31 +14,17 @@ function getConfiguracaoUsuario($credenciais) {
     $stmt->execute(['usuario_id' => $credenciais["id"]]);
     $configs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    function findIndexConfig($array, $classeId) {
-        foreach ($array as $indice => $config) {
-            if ($config['classe_id'] == $classeId) {
-                return $indice;
-            }
-        }
-        return null;
-    }
-
     $grupo = [];
-
     foreach ($configs as $config) {
         $classe_id = $config['classe_id'];
-        $index = findIndexConfig($grupo, $classe_id);
-        if ($index === null) {
-            $grupo[] = [
-                'classe_id' => $classe_id,
-                'classe_nome' => $config['classe_nome'],
-                'configs' => []
-            ];
-            $index = count($grupo) - 1; // Atualiza o índice para o novo grupo
-        }
-        $grupo[$index]['configs'][] = $config;
-
+        $grupo[$classe_id] ??= [
+            'classe_id' => $classe_id,
+            'classe_nome' => $config['classe_nome'],
+            'configs' => []
+        ];
+        $grupo[$classe_id]['configs'][] = $config;
     }
+    $grupo = array_values($grupo);
 
     $Audit->depois(["qnt_configuracoes" => count($configs)]);
     $Audit->sucesso(true);
@@ -49,6 +35,8 @@ function updateConfiguracaoUsuario($credenciais, $config_id, $variavel) {
     $Audit = (new Auditoria())->add('vinculo_configuracao', 'updateConfiguracaoUsuario', null, ["config_id" => $config_id, "variavel" => $variavel], false);
     $pdo = $credenciais["pdo"];
 
+    if (is_bool($variavel)) $variavel = $variavel ? 'true' : 'false';
+
     try {
         $pdo->beginTransaction();
         $stmt = $pdo->prepare("SELECT var_type FROM configuracao WHERE id = :config_id");
@@ -56,6 +44,7 @@ function updateConfiguracaoUsuario($credenciais, $config_id, $variavel) {
         $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$config) {
+            $pdo->rollBack();
             return ["error" => errorMessage("Configuração não encontrada", $config_id)];
         }
 
@@ -75,6 +64,7 @@ function updateConfiguracaoUsuario($credenciais, $config_id, $variavel) {
         ]);
 
         if ($stmt->rowCount() == 0) {
+            $pdo->rollBack();
             return ["error" => errorMessage("Erro ao atualizar configuração", "Nenhuma linha afetada")];
         }
 

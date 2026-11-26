@@ -34,6 +34,21 @@
             </form>
         </div>
     </GenericModalWindow>
+    <GenericModalWindow v-if="credenciaisNovas" @close="credenciaisNovas = null">
+        <div class="modal-container">
+            <div class="modal-form">
+                <h2>Usuário criado</h2>
+                <p>Anote e entregue ao usuário. A senha não será exibida novamente.</p>
+                <p>Login: <strong>{{ credenciaisNovas.login }}</strong></p>
+                <p>Senha provisória: <strong>{{ credenciaisNovas.senha }}</strong></p>
+                <div class="modal-actions">
+                    <button type="button" @click="copiarCredenciais">Copiar</button>
+                    <button type="button" class="btn-secondary" @click="credenciaisNovas = null">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </GenericModalWindow>
+    <p v-if="!users.length" class="empty-state">Nenhum usuário encontrado.</p>
     <div class="user-cards-container cards-grid">
         <div class="user-card card" v-for="user in users" :key="user.id">
             <div class="user-card-content">
@@ -52,8 +67,8 @@
                 <p>{{ user.email }}</p>
                 <p>{{ user.telefone }}</p>
                 <p>{{ user.identidade }}</p>
-                <button type="button" class="btn-secondary btn-sm" @click="toggleAtivo(user.id)">{{ user.ativo ? 'Desativar' : 'Ativar' }}</button>
-                <button type="button" class="btn-secondary btn-sm" @click="toggleAdm(user.id)">{{ user.adm ? 'Remover admin' : 'Tornar admin' }}</button>
+                <button type="button" class="btn-secondary btn-sm" @click="toggleAtivo(user)">{{ user.ativo ? 'Desativar' : 'Ativar' }}</button>
+                <button type="button" class="btn-secondary btn-sm" @click="toggleAdm(user)">{{ user.adm ? 'Remover admin' : 'Tornar admin' }}</button>
             </div>
             
         </div>
@@ -62,6 +77,7 @@
 
 <script>
 import SystemUser from '../../scripts/SystemUserPage/SystemUser';
+import ToastMessage from '../../scripts/ToastMessage/ToastMessage';
 import CadastroUsuario from '../../scripts/CadastroPage/CadastroUsuario';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import PagesRoutes from '../../scripts/PagesRoutes.js';
@@ -78,6 +94,7 @@ export default {
             termoPesquisa: '',
             mostrarFormulario: false,
             mensagem: '',
+            credenciaisNovas: null,
             novoUsuario: {
                 nome: '',
                 email: '',
@@ -102,15 +119,26 @@ export default {
         async getLegalIdentTipos() {
             return await CadastroUsuario.getLegalIdentTipos();
         },
-        async toggleAtivo(id) {
-            const response = await SystemUser.toggleAtivo(id);
-            this.mensagem = response?.success ? 'Status do usuário atualizado.' : response?.error ?? 'Não foi possível atualizar o status.';
+        async toggleAtivo(user) {
+            if (!confirm(`Confirma ${user.ativo ? 'desativar' : 'ativar'} ${user.nome}?`)) return;
+            const response = await SystemUser.toggleAtivo(user.id);
+            if (response.success) ToastMessage.add('Status do usuário atualizado.', '', 'success');
             await this.fetchUsers(this.termoPesquisa);
         },
-        async toggleAdm(id) {
-            const response = await SystemUser.toggleAdm(id);
-            this.mensagem = response?.success ? 'Permissão de administrador atualizada.' : response?.error ?? 'Não foi possível atualizar a permissão.';
+        async toggleAdm(user) {
+            if (!confirm(`Confirma ${user.adm ? 'remover o acesso de administrador de' : 'tornar administrador'} ${user.nome}?`)) return;
+            const response = await SystemUser.toggleAdm(user.id);
+            if (response.success) ToastMessage.add('Permissão de administrador atualizada.', '', 'success');
             await this.fetchUsers(this.termoPesquisa);
+        },
+        async copiarCredenciais() {
+            const { login, senha } = this.credenciaisNovas;
+            try {
+                await navigator.clipboard.writeText(`Login: ${login}\nSenha: ${senha}`);
+                ToastMessage.add('Credenciais copiadas.', '', 'success');
+            } catch {
+                ToastMessage.add('Não foi possível copiar.', 'Anote os dados manualmente.', 'warn');
+            }
         },
         async criarUsuario() {
             const response = await SystemUser.addUsuario(
@@ -122,7 +150,7 @@ export default {
             );
 
             if (response?.success) {
-                this.mensagem = `Usuário criado. Login: ${response.credenciais.login}`;
+                this.credenciaisNovas = response.credenciais;
                 this.novoUsuario = {
                     nome: '',
                     email: '',
@@ -149,6 +177,7 @@ export default {
 </script>
 
 <style scoped>
+.empty-state { padding: var(--space-5); color: var(--color-text-muted); }
 .user-card { display: flex; flex-direction: column; align-self: stretch; gap: var(--space-3); padding: var(--space-4); }
 .user-card-content { display: flex; flex-direction: column; gap: var(--space-2); }
 .user-card-stats { display: flex; align-items: center; gap: var(--space-2); }

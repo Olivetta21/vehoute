@@ -1,18 +1,9 @@
-﻿<?php
+<?php
 
 function getPermissoesRastreador($credenciais, $agrupar_por, $filter) {
     $Audit = (new Auditoria())->add('vinc_perm_rastreador', 'getPermissoesRastreador', null, ["agrupar_por" => $agrupar_por, "filtro" => $filter], false);
     $pdo = $credenciais["pdo"];
     
-    function findIndexEntity($agrupamento, $id, $is_tracker) {
-        foreach ($agrupamento as $index => $entidade) {
-            if ((int) $entidade["id"] == (int) $id && (($entidade["is_tracker"] ?? null) == $is_tracker)) {
-                return $index;
-            }
-        }
-        return -1;
-    }
-
     $agrupamento = [];
     $where = "";
 
@@ -50,78 +41,48 @@ function getPermissoesRastreador($credenciais, $agrupar_por, $filter) {
     );
     $perms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Agrupamento em O(n) usando mapas indexados por chave
+    $inserir = function (string $chave, $id, $nome, $flag, array $perm) use (&$agrupamento) {
+        $agrupamento[$chave] ??= ["id" => $id, "nome" => $nome, "is_tracker" => $flag, "permissoes" => []];
+        $agrupamento[$chave]["permissoes"][] = $perm;
+    };
+
     if ($agrupar_por === "entidade") {
         foreach ($perms as $p) {
-            $index = findIndexEntity($agrupamento, $p["x_id"], $p["is_tracker"]);
-
-            if ($index === -1) {
-                $agrupamento[] = [
-                    "id" => $p["x_id"],
-                    "nome" => $p["x_nome"],
-                    "is_tracker" => (bool) $p["is_tracker"],
-                    "permissoes" => [$p]
-                ];
-            } else {
-                $agrupamento[$index]["permissoes"][] = $p;
-            }
+            $inserir(((int) $p["is_tracker"]) . ":" . $p["x_id"], $p["x_id"], $p["x_nome"], (bool) $p["is_tracker"], $p);
         }
-    } elseif ($agrupar_por === "permissao") {
+    } else if ($agrupar_por === "permissao") {
         foreach ($perms as $p) {
-            $index = findIndexEntity($agrupamento, $p["pr_id"], null);
-
-            if ($index === -1) {
-                $agrupamento[] = [
-                    "id" => $p["pr_id"],
-                    "nome" => $p["pr_nome"],
-                    "is_tracker" => null,
-                    "permissoes" => [$p]
-                ];
-            } else {
-                $agrupamento[$index]["permissoes"][] = $p;
-            }
+            $inserir((string) $p["pr_id"], $p["pr_id"], $p["pr_nome"], null, $p);
         }
-    } elseif ($agrupar_por === "rastreador") {
-        $sql = "select rastreador_id, grupo_id from vinc_grupo_rastreador";
+    } else if ($agrupar_por === "rastreador") {
+        $sql = "select vg.rastreador_id id, e.hardware nome, vg.grupo_id
+            from vinc_grupo_rastreador vg join rastreador e on e.id = vg.rastreador_id"
+            . (!empty($filter) ? " where e.hardware ilike :filter" : "");
         $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        $vinc_grupos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt->execute(!empty($filter) ? [":filter" => "%$filter%"] : []);
+        $membros = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $m) {
+            $membros[$m["grupo_id"]][] = $m;
+        }
 
         foreach ($perms as $p) {
             if ($p["is_tracker"]) {
-                $index = findIndexEntity($agrupamento, $p["x_id"], $p["is_tracker"]);
-
-                if ($index === -1) {
-                    $agrupamento[] = [
-                        "id" => $p["x_id"],
-                        "nome" => $p["x_nome"],
-                        "is_tracker" => true,
-                        "permissoes" => [$p]
-                    ];
-                } else {
-                    $agrupamento[$index]["permissoes"][] = $p;
-                }
+                $inserir((string) $p["x_id"], $p["x_id"], $p["x_nome"], true, $p);
             } else {
-                foreach ($vinc_grupos as $vinc) {
-                    if ((int) $vinc["grupo_id"] == (int) $p["x_id"]) {
-                        $index = findIndexEntity($agrupamento, $vinc["rastreador_id"], true);
-                        if ($index !== -1) {
-                            $agrupamento[$index]["permissoes"][] = $p;
-                        }
-                    }
+                foreach ($membros[$p["x_id"]] ?? [] as $m) {
+                    $inserir((string) $m["id"], $m["id"], $m["nome"], true, $p);
                 }
             }
         }
 
-        foreach ($agrupamento as &$rastreador) {
-            usort($rastreador["permissoes"], function ($a, $b) {
-                if ((int) $a["pr_id"] == (int) $b["pr_id"]) {
-                    return (int) $a["vpr_negado"] <=> (int) $b["vpr_negado"];
-                }
-                return (int) $a["pr_id"] <=> (int) $b["pr_id"];
-            });
+        foreach ($agrupamento as &$item) {
+            usort($item["permissoes"], fn($a, $b) =>
+                [(int) $a["pr_id"], (int) $a["vpr_negado"]] <=> [(int) $b["pr_id"], (int) $b["vpr_negado"]]);
         }
-        unset($rastreador);
+        unset($item);
     }
+    $agrupamento = array_values($agrupamento);
 
     $Audit->depois(["qnt_entidades" => count($agrupamento)]);
     $Audit->sucesso(true);
@@ -148,38 +109,19 @@ function getGrupos($credenciais, $grupo_nome) {
     $stmt->execute([":grupo_id" => $ids]);
     $grupos_linha = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    function findGrupoById($grupos, $id) {
-        foreach ($grupos as $index => $grupo) {
-            if ((int) $grupo["id"] == (int) $id) {
-                return $index;
-            }
-        }
-        return -1;
-    }
-
     $grupos = [];
     foreach ($grupos_linha as $linha) {
         $grupo_id = $linha["gr_id"];
-        $index = findGrupoById($grupos, $grupo_id);
-
-        if ($index === -1) {
-            $grupos[] = [
-                "id" => $grupo_id,
-                "nome" => $linha["gr_nome"],
-                "rastreadores" => [],
-            ];
-            $index = count($grupos) - 1;
-        }
-
+        $grupos[$grupo_id] ??= ["id" => $grupo_id, "nome" => $linha["gr_nome"], "rastreadores" => []];
         if ($linha["r_id"] === null) {
             continue;
         }
-
-        $grupos[$index]["rastreadores"][] = [
+        $grupos[$grupo_id]["rastreadores"][] = [
             "id" => $linha["r_id"],
             "nome" => $linha["r_hardware"]
         ];
     }
+    $grupos = array_values($grupos);
 
     $Audit->depois(["qnt_grupos" => count($grupos)]);
     $Audit->sucesso(true);
@@ -189,6 +131,11 @@ function getGrupos($credenciais, $grupo_nome) {
 function addGrupo($credenciais, $novo_grupo) {
     $Audit = (new Auditoria())->add('grupo_rastreador', 'addGrupo', null, ["nome" => $novo_grupo], false);
     $pdo = $credenciais["pdo"];
+
+    $novo_grupo = trim((string) $novo_grupo);
+    if ($novo_grupo === '' || mb_strlen($novo_grupo) > 100) {
+        return ["error" => errorMessage("Nome de grupo inválido", $novo_grupo)];
+    }
 
     try {
         $pdo->beginTransaction();

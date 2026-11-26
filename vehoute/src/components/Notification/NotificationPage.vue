@@ -4,6 +4,10 @@
             :mostrarVoltar="true"
             @voltar="this.$router.back()"
         />        
+        <div class="notificacoes-acoes" v-if="Notification.lista_notificacoes.length">
+            <button type="button" class="btn-secondary btn-sm" @click="Notification.limpar()">Limpar notificações</button>
+        </div>
+        <p v-else>Nenhuma notificação por aqui.</p>
         <p v-for="(notificacao, index) in Notification.lista_notificacoes" :key="index">
             {{ notificacao }}
         </p>
@@ -24,16 +28,12 @@ export default {
     },
     components: {
         HeaderTelas
-    },
-    methods: {
-        testAdd() {
-            this.Notification.insertNotification("Nova Notificação");
-        }
     }
 };
 </script>
 
 <style scoped>
+.notificacoes-acoes { display: flex; justify-content: flex-end; padding: var(--space-3) var(--space-5) 0; }
 p {
     margin: var(--space-3) var(--space-5) 0;
     padding: var(--space-3) var(--space-4);

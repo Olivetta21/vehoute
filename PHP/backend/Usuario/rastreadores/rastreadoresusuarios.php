@@ -6,12 +6,13 @@ $credenciais = getCredentials();
 try {
 
 //usuario requisitando seus rastreadores;
-if ($name_filter = getRequestValue("get", "is_string")) {
+if (($name_filter = getRequestValue("get", "is_string")) !== null) {
     returnJson(getRastreadoresDoUsuario($credenciais, $name_filter));
 }
 
 //usuario tentando verificar se esse rastreador existe e se ele pode ser adicionado por ele;
 if ($dados_for_check = getRequestValue("check_rastreador", "is_array")) {
+    limitarRequisicoes('check_rastreador', 10, 300, $credenciais["id"]);
     returnJson(checkRastreadorDoUsuario(
         $credenciais,
         $dados_for_check["token"] ?? null,
@@ -21,6 +22,7 @@ if ($dados_for_check = getRequestValue("check_rastreador", "is_array")) {
 
 //usuario tentando adicionar um rastreador a si mesmo;
 if ($dados_for_add = getRequestValue("add_rastreador", "is_array")) {
+    limitarRequisicoes('add_rastreador', 10, 300, $credenciais["id"]);
     userHasPermission("Registrar Rastreador");
     returnJson(usuarioAdicionaUmRastreador(
         $credenciais,
