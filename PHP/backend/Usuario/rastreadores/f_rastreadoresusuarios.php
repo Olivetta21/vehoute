@@ -8,7 +8,7 @@ function existsExactUR_WithIdAndStatus($credenciais, $ur_id, $ur_status) {
 }
 
 function existsExactR_WithIdDonoTKStatusSenha($pdo, $rastreador_id, $dono_id, $token, $status, $senha) {
-    $stmt = $pdo->prepare("select * from rastreador where id = :id and dono_id is not distinct from :dono_id and token_publico = :token and status = :status and senha = :senha and status in (1, 2) and ativo = true");
+    $stmt = $pdo->prepare("select * from rastreador where id = :id and dono_id is not distinct from :dono_id and token_publico = :token and status = :status and senha = crypt(:senha, senha) and status in (1, 2) and ativo = true");
     $stmt->execute(["id" => $rastreador_id, "dono_id" => $dono_id, "token" => $token, "status" => $status, "senha" => $senha]);
     return $stmt->rowCount() === 1;
 }
@@ -60,7 +60,7 @@ function checkRastreadorDoUsuario($credenciais, $token, $senha) {
         return ["error" => errorMessage("Token ou senha não fornecidos", null)];
     }
     
-    $stmt = $credenciais["pdo"]->prepare("select id, dono_id, token_publico, status from rastreador where token_publico = :token and senha = :senha and status in (1, 2) and ativo = true");
+    $stmt = $credenciais["pdo"]->prepare("select id, dono_id, token_publico, status from rastreador where token_publico = :token and senha = crypt(:senha, senha) and status in (1, 2) and ativo = true");
     $stmt->execute(["token" => $token, "senha" => $senha]);
 
     if ($stmt->rowCount() === 1) {
@@ -217,6 +217,10 @@ function deleteUsuarioRastreador($pdo, $ur_id) {
             return ["error" => errorMessage("deleteUsuarioRastreador deve ser chamado dentro de uma transação", $ur_id)];
         }
         
+        // Se havia transferência de posse pendente para este vínculo, o rastreador não pode ficar preso nela
+        $stmt = $pdo->prepare("update rastreador set status = 1 where status = 3 and id = (select rastreador_id from usuario_rastreador where id = :id and status = 5)");
+        $stmt->execute(["id" => $ur_id]);
+
         $stmt = $pdo->prepare("delete from vinc_loc_oculta_usuario_rastreador where usuario_rastreador_id = :usuario_rastreador_id");
         $stmt->execute(["usuario_rastreador_id" => $ur_id]);
 
@@ -580,7 +584,7 @@ function updateRastreadorDoDono($credenciais, $r_id, $r_token_publico, $r_status
         switch ($key) {
         case 'senha':
             if (!validarSenha($value)) {
-                return ["error" => errorMessage("Senha inválida", $value)];
+                return ["error" => errorMessage("A senha deve ter no mínimo 8 caracteres, uma letra maiúscula e minúscula, um número e caractere especial", "***")];
             }
             break;
         case 'token_publico':
@@ -603,7 +607,9 @@ function updateRastreadorDoDono($credenciais, $r_id, $r_token_publico, $r_status
                 return ["error" => "Este token público já está em uso"];
             }
         }
-        $edit_sql[] = "$key = :$key";
+        if ($key === 'senha') {
+            $edit_sql[] = "$key = crypt(:senha, gen_salt('bf'))";
+        } else $edit_sql[] = "$key = :$key";
         $values_sql["$key"] = $value;
     }
     $edit_sql = implode(", ", $edit_sql);

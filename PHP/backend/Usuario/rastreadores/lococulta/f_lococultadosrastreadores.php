@@ -34,8 +34,10 @@ function getLocOcultaDoRastreador($credenciais, $rastreador_id, $filter) {
         ]);
         $localizacoes_ocultas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if (!$localizacoes_ocultas || count($localizacoes_ocultas) < 1) {
-            return ["error" => errorMessage("Nenhuma localização oculta encontrada para o rastreador", $rastreador_id)];
+        if (!$localizacoes_ocultas) { // lista vazia não é um erro
+            $Audit->depois(["qnt_localizacoes" => 0]);
+            $Audit->sucesso(true);
+            return ["success" => true, "localizacoes_ocultas" => []];
         }
 
         $sql = "select * from getUsuariosDaLocOculta(:locsOcultasIds)";

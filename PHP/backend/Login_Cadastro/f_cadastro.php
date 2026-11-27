@@ -81,7 +81,7 @@ function verificarOTP($otp) {
     try {
         $pdo = getDataBase();
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare("update usuario_cadastrando set verificado = true where otp = :otp and expires_at > now() returning *");
+        $stmt = $pdo->prepare("update usuario_cadastrando set verificado = true, expires_at = now() + interval '20 minutes' where otp = :otp and expires_at > now() returning *");
         $stmt->execute([
             "otp"=>$otp
         ]);
@@ -165,12 +165,26 @@ function finalizarCadastro($nome, $email, $telefone, $login, $senha, $otp, $iden
 
 function getSimpleLegalIdentTipoCadastro() {
     $pdo = getDataBase();
-    $stmt = $pdo->query("SELECT id, descricao as nome, regex FROM legal_ident_tipo WHERE invalido = false");
+    $stmt = $pdo->query("SELECT id, descricao as nome, regex, mascara FROM legal_ident_tipo WHERE invalido = false");
     $idents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     return ["success" => true, "legal_ident_tipo" => $idents];
 }
 
+
+/** Nome e login do dono do email: quem esqueceu o login o encontra no email de recuperação. */
+function saudacaoRecuperacao($email) {
+    try {
+        $stmt = getDataBase()->prepare("select nome, login from usuario where email = :email");
+        $stmt->execute(["email" => $email]);
+        if ($u = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            return htmlspecialchars($u["nome"]) . " (seu login: " . htmlspecialchars($u["login"]) . ")";
+        }
+    } catch (Exception $e) {
+        errorMessage("Erro ao buscar login para recuperação", $e->getMessage());
+    }
+    return "usuário";
+}
 
 function enviarEmailRecuperacao($email, $otp) {
     $data = [
@@ -180,7 +194,7 @@ function enviarEmailRecuperacao($email, $otp) {
         "template" => [
             "id" => "redefinir-senha",
             "variables" => [
-                "first_name" => "usuário",
+                "first_name" => saudacaoRecuperacao($email),
                 "website" => "Vehoute",
                 "website_url" => SITE_URL,
                 "reset_url" => SITE_URL . "/cadastro/recuperacao?otp=$otp",
@@ -248,7 +262,7 @@ function testarCodigoRecuperacao($otp) {
     try {
         $pdo = getDataBase();
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare("update usuario_recuperacao_senha set verificado = true where verificado = false and otp = :otp and expires_at > now() returning *");
+        $stmt = $pdo->prepare("update usuario_recuperacao_senha set verificado = true, expires_at = now() + interval '20 minutes' where verificado = false and otp = :otp and expires_at > now() returning *");
         $stmt->execute([
             "otp"=>$otp
         ]);

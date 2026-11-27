@@ -58,6 +58,7 @@
 </template>
 
 <script>
+import { confirmar } from '../../scripts/confirmacao';
 import SystemTrackerPermissionGroup from '../../scripts/SystemTrackerPermissionPage/SystemTrackerPermissionGroup';
 import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
@@ -92,7 +93,7 @@ export default {
             this.grupos = await this.STPG.getGrupos(nome);
         },
         async deleteGrupo(grupo) {
-            if (!confirm(`Tem certeza que deseja excluir o grupo "${grupo.id} - ${grupo.nome}"?`)) {
+            if (!await confirmar({ titulo: 'Excluir grupo', mensagem: `Excluir o grupo "${grupo.id} - ${grupo.nome}"?`, textoConfirmar: 'Excluir', perigo: true })) {
                 return;
             }
 
@@ -100,7 +101,7 @@ export default {
             await this.fetchGruposRastreador();
         },
         async removerRastreadorDoGrupo(rastreador, grupo) {
-            if (!confirm(`Tem certeza que deseja remover o rastreador "${rastreador.id} - ${rastreador.nome}" do grupo "${grupo.id} - ${grupo.nome}"?`)) {
+            if (!await confirmar({ titulo: 'Remover do grupo', mensagem: `Remover o rastreador "${rastreador.id} - ${rastreador.nome}" do grupo "${grupo.id} - ${grupo.nome}"?`, textoConfirmar: 'Remover', perigo: true })) {
                 return;
             }
 

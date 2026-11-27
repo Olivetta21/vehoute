@@ -9,7 +9,7 @@ export default class ToastMessage {
         return ToastMessage._toasts.value;
     }
 
-    static add(title, message, type, _console){
+    static add(title, message, type, _console, codigo){
         if (!type) {
             type = "error";
             _console = true;
@@ -26,11 +26,11 @@ export default class ToastMessage {
 
         const id = ToastMessage._proximo_id++;
         
-        ToastMessage.toasts.unshift({id, title, message, type});
-        Notification.insertNotification(`[${type.toUpperCase()}] ${title} - ${message}`);
+        ToastMessage.toasts.unshift({id, title, message, type, codigo});
+        Notification.insertNotification(`[${type.toUpperCase()}] ${title} - ${message}${codigo ? ` (${codigo})` : ''}`);
 
         if (_console){
-            if (typeof console[type] === 'function') console[type](title, message);
+            if (typeof console[type] === 'function') console[type](title, message, codigo || '');
             else {
                 console.error("tipo de console nao reconhecido", type);
                 console.log(title, message);

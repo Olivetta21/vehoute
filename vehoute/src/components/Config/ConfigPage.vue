@@ -90,6 +90,8 @@ export default {
         },
         setOrUpdateConfigs(configs) {
             if  (configs && Array.isArray(configs)) { //set
+                // classes com id negativo são internas (ex.: Testes)
+                configs = configs.filter(classe => !(classe.classe_id < 0));
                 configs.forEach(classe => {
                     classe.configs.forEach(config => {
                         config.v_model_variavel = config.config_variavel;
@@ -128,7 +130,7 @@ export default {
             }
         },
         salvarTodos() {
-            for (let classe of this.configs) {
+            for (let classe of this.fetched_configs) {
                 for (let config of classe.configs) {
                     if (compararVariaveis(config.v_model_variavel, config.config_variavel) !== 0) {
                         this.atualizarConfigUsuario(config);
@@ -137,7 +139,7 @@ export default {
             }
         },
         cancelarAlteracoes() {
-            for (let classe of this.configs) {
+            for (let classe of this.fetched_configs) {
                 for (let config of classe.configs) {
                     config.v_model_variavel = config.config_variavel;
                 }
@@ -153,7 +155,7 @@ export default {
     },
     computed: {
         configsChanged() {
-            for (let classe of this.configs) {
+            for (let classe of this.fetched_configs) {
                 for (let config of classe.configs) {
                     if (compararVariaveis(config.v_model_variavel, config.config_variavel) !== 0) {
                         return true;
@@ -167,7 +169,7 @@ export default {
 </script>
 
 <style scoped>
-.tabela { width: 100%; max-width: 760px; }
+.tabela { width: 100%; max-width: 1100px; }
 .config-nome { width: 60%; }
 .tabela input { width: 100%; min-width: 4rem; }
 </style>

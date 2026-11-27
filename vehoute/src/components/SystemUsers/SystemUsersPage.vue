@@ -16,12 +16,12 @@
                 </div>
                 <input v-model="novoUsuario.nome" type="text" placeholder="Nome" required />
                 <input v-model="novoUsuario.email" type="email" placeholder="Email" required />
-                <input v-model="novoUsuario.identidade" type="text" placeholder="Identidade" required />
+                <input :value="novoUsuario.identidade" @input="novoUsuario.identidade = mascararCampo($event, mascara)" type="text" :placeholder="mascara || 'Identidade'" required />
                 <SelectInput
                     :searchFn="getLegalIdentTipos"
                     :searchAll="true"
                     placeholder="Tipo de identidade"
-                    @update:value="novoUsuario.tipoIdent = $event?.id || null"
+                    @update:value="selecionarTipo($event)"
                 />
                 <SwitchButtonInput
                     :value="novoUsuario.adm"
@@ -76,6 +76,8 @@
 </template>
 
 <script>
+import { confirmar } from '../../scripts/confirmacao';
+import { aplicarMascara, mascararCampo } from '../../scripts/mascara';
 import SystemUser from '../../scripts/SystemUserPage/SystemUser';
 import ToastMessage from '../../scripts/ToastMessage/ToastMessage';
 import CadastroUsuario from '../../scripts/CadastroPage/CadastroUsuario';
@@ -95,6 +97,7 @@ export default {
             mostrarFormulario: false,
             mensagem: '',
             credenciaisNovas: null,
+            mascara: null,
             novoUsuario: {
                 nome: '',
                 email: '',
@@ -108,6 +111,12 @@ export default {
         this.fetchUsers();
     },
     methods: {
+        mascararCampo,
+        selecionarTipo(tipo) {
+            this.novoUsuario.tipoIdent = tipo?.id || null;
+            this.mascara = tipo?.mascara || null;
+            this.novoUsuario.identidade = aplicarMascara(this.novoUsuario.identidade, this.mascara);
+        },
         alternarFormulario() {
             this.mostrarFormulario = !this.mostrarFormulario;
             this.mensagem = '';
@@ -120,13 +129,13 @@ export default {
             return await CadastroUsuario.getLegalIdentTipos();
         },
         async toggleAtivo(user) {
-            if (!confirm(`Confirma ${user.ativo ? 'desativar' : 'ativar'} ${user.nome}?`)) return;
+            if (!await confirmar({ titulo: user.ativo ? 'Desativar usuário' : 'Ativar usuário', mensagem: `${user.ativo ? 'Desativar' : 'Ativar'} ${user.nome}?`, perigo: user.ativo })) return;
             const response = await SystemUser.toggleAtivo(user.id);
             if (response.success) ToastMessage.add('Status do usuário atualizado.', '', 'success');
             await this.fetchUsers(this.termoPesquisa);
         },
         async toggleAdm(user) {
-            if (!confirm(`Confirma ${user.adm ? 'remover o acesso de administrador de' : 'tornar administrador'} ${user.nome}?`)) return;
+            if (!await confirmar({ titulo: 'Administrador', mensagem: `Confirma ${user.adm ? 'remover o acesso de administrador de' : 'tornar administrador'} ${user.nome}?`, perigo: user.adm })) return;
             const response = await SystemUser.toggleAdm(user.id);
             if (response.success) ToastMessage.add('Permissão de administrador atualizada.', '', 'success');
             await this.fetchUsers(this.termoPesquisa);

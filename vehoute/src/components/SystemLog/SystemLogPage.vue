@@ -7,6 +7,11 @@
 
         <section class="filtros-log filter-bar" aria-label="Filtros de logs" v-if="is_searching">
             <label class="campo-filtro filter-field">
+                <span>Código do erro</span>
+                <input type="number" min="1" v-model="id_erro" placeholder="Informado ao suporte" @keyup.enter="fetchLogs()">
+            </label>
+
+            <label class="campo-filtro filter-field">
                 <span>Título</span>
                 <SelectInput
                     :searchFn="getSimpleTitulos"
@@ -100,6 +105,7 @@ export default {
             SystemLog,
             is_searching: false,
 
+            id_erro: '',
             titulo: '',
             mensagem: '',
             ip: '',
@@ -118,7 +124,7 @@ export default {
             this.carregando = true;
             try {
                 const offset = acrescentar ? this.logs.length : 0;
-                const result = await SystemLog.getLogs(this.titulo, this.mensagem, this.ip, this.data_inicio, this.data_fim, offset);
+                const result = await SystemLog.getLogs(this.titulo, this.mensagem, this.ip, this.data_inicio, this.data_fim, offset, Number(this.id_erro) || null);
                 if (!result) return;
                 const encurtar = (t) => t?.length > 35 ? t.substring(0, 32) + '...' : t;
                 const novos = result.itens.map(log => ({

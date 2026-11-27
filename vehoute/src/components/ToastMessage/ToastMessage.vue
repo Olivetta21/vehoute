@@ -5,6 +5,7 @@
                 <div :class="['toast', toast.type]">
                     <div class="textToast title"> {{ toast.title }} </div>
                     <div class="textToast message"> {{ toast.message }} </div>
+                    <div v-if="toast.codigo" class="codigo">{{ toast.codigo }}</div>
                 </div>
             </div>
         </transition-group>
@@ -58,6 +59,7 @@ export default {
 .textToast { overflow: hidden; white-space: pre-line; overflow-wrap: anywhere; }
 .textToast.title { color: var(--toast-accent); font-size: var(--font-xs); font-weight: var(--weight-bold); }
 .textToast.message { color: var(--color-text); font-size: var(--font-sm); }
+.codigo { margin-top: var(--space-1); color: var(--color-text-subtle); font-family: var(--font-mono); font-size: 0.65rem; text-align: right; user-select: all; }
 
 .slide-enter-active,
 .slide-leave-active { transition: opacity var(--transition), transform var(--transition); }

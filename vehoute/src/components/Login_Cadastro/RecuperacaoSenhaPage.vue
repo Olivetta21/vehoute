@@ -5,6 +5,7 @@
                 <input v-model="email" type="email" placeholder="Email" required />
             </InputCheck>
 
+            <p class="dica">O email também informa o seu login, caso você o tenha esquecido.</p>
             <button type="submit">Enviar código</button>
         </form>
 
@@ -18,11 +19,11 @@
 
         <form v-else @submit.prevent="salvarNovaSenha()" class="blue-formulary">
             <InputCheck :check="Validate.Senha(senha1)" inv="A senha deve ter no mínimo 8 caracteres, uma letra maiúscula e minúscula, um número e caractere especial">
-                <input v-model="senha1" type="password" placeholder="Nova Senha" required />
+                <PasswordInput v-model="senha1" placeholder="Nova senha" autocomplete="new-password" required />
             </InputCheck>
 
             <InputCheck :check="this.senha1 === this.senha2" inv="As senhas não coincidem">
-                <input v-model="senha2" type="password" placeholder="Repita a senha" required />
+                <PasswordInput v-model="senha2" placeholder="Repita a senha" autocomplete="new-password" required />
             </InputCheck>
             <button type="submit">Salvar nova senha</button>
         </form>
@@ -36,12 +37,14 @@ import AuthCont from './AuthCont.vue';
 import router from '../../router';
 import InputCheck from '../utils/InputCheck.vue';
 import Validate from '../../scripts/Validate';
+import PasswordInput from '../utils/PasswordInput.vue';
 
 export default {
     name: 'RecuperacaoSenhaPage',
     components: {
         AuthCont,
-        InputCheck
+        InputCheck,
+        PasswordInput
     },
     data() {
         return {
@@ -83,3 +86,7 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.dica { color: var(--color-text-muted); font-size: var(--font-xs); }
+</style>

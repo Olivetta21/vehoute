@@ -42,6 +42,8 @@
             </div>
         </aside>
 
+        <div v-if="!isCollapsed" class="sidebar-fundo" @click="isCollapsed = true"></div>
+
         <main class="page-content-wrapper">
             <router-view />
         </main>
@@ -61,8 +63,14 @@ export default {
     data() {
         return {
             FullScreenController,
-            isCollapsed: false,
+            // em telas estreitas o menu começa fechado para não cobrir o conteúdo
+            isCollapsed: window.innerWidth < 900,
             menuItems: PagesRoutes.byCaracteristic('sidebarIcon')
+        }
+    },
+    watch: {
+        '$route'() {
+            if (window.innerWidth < 900) this.isCollapsed = true;
         }
     },
     methods: {
@@ -174,4 +182,12 @@ export default {
     background: var(--color-bg);
 }
 .page-content-wrapper > :deep(*) { flex-shrink: 0; }
+
+/* telas largas: o menu aberto empurra o conteúdo em vez de cobri-lo */
+.sidebar-fundo { position: absolute; inset: 0; z-index: 9; background: var(--color-overlay); }
+@media (min-width: 900px) {
+    .sidebar-fundo { display: none; }
+    .sidebar { box-shadow: none; }
+    .sidebar:not(.is-collapsed) ~ .page-content-wrapper { margin-left: var(--sidebar-width); }
+}
 </style>

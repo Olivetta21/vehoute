@@ -7,7 +7,18 @@
 <script>
 export default {
     name: 'GenericModalWindow',
-    emits: ['close']
+    emits: ['close'],
+    mounted() {
+        window.addEventListener('keydown', this.aoTeclar);
+    },
+    beforeUnmount() {
+        window.removeEventListener('keydown', this.aoTeclar);
+    },
+    methods: {
+        aoTeclar(evento) {
+            if (evento.key === 'Escape') this.$emit('close');
+        }
+    }
 }
 </script>
 

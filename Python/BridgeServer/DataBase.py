@@ -29,7 +29,8 @@ class DataBase:
                 LogService.log("[DB] Inicializando pool de conexões...")
 
                 pool = ConnectionPool(
-                    conninfo=f"{DB_URL}?connect_timeout=5",
+                    conninfo=DB_URL,
+                    kwargs={"connect_timeout": 5},  # não quebra URLs que já têm "?parametros"
                     min_size=5,
                     max_size=50,
                     timeout=3,

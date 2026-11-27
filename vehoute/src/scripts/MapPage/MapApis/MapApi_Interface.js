@@ -63,6 +63,9 @@ export default class MapApi_Interface {
     static panTo(){
         throw new Error("Method 'panTo()' must be implemented.");
     }
+    // opcional: bibliotecas que não percebem sozinhas a mudança de tamanho
+    static resize() {}
+
     static flyTo() {
         throw new Error("Method 'flyTo()' must be implemented.");
     }

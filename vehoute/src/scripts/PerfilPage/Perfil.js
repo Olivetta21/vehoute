@@ -21,6 +21,21 @@ export default class Perfil {
         return null;
     }
 
+    static async novoCodigo() {
+        const response = await fetch_('/usuario/perfil/perfil.php', [{ novo_codigo: true }]);
+        return response?.success ? response.perfil : null;
+    }
+
+    static async confirmarEmail(codigo) {
+        const response = await fetch_('/usuario/perfil/perfil.php', [{ confirmar_email: codigo }]);
+        return response?.success ? response.perfil : null;
+    }
+
+    static async cancelarEmail() {
+        const response = await fetch_('/usuario/perfil/perfil.php', [{ cancelar_email: true }]);
+        return response?.success ? response.perfil : null;
+    }
+
     static async getSimpleLegalIdentTipos() {
         const response = await fetch_('/usuario/perfil/perfil.php', [{ getSimpleLegalIdentTipo: true }]);
         if (response && response.success) {

@@ -2,11 +2,10 @@ from DataBase import DataBase
 from FormatMessage import FormatMessage
 from TrackerLocation import TrackerLocation
 from WebSocketServer import WebSocketServer
-from ProgramStop import ProgramStop
 from LogService import LogService
 import queue
 import asyncio
-import threading
+import math
 
 class NewLocProcessing:
     FILA_NEW_LOC = queue.Queue()
@@ -23,6 +22,14 @@ class NewLocProcessing:
             NewLocProcessing.log(f"[!] Tentou se comunicar com {cli_ws.remote_address} mas a conexão estava encerrada.")
 
     @staticmethod
+    def isValid(lat, lng):
+        return (
+            isinstance(lat, (int, float)) and isinstance(lng, (int, float))
+            and math.isfinite(lat) and math.isfinite(lng)
+            and -90 <= lat <= 90 and -180 <= lng <= 180
+        )
+
+    @staticmethod
     def trackerCanSendLoc(tracker_id):
         return DataBase.tracker_has_permission(tracker_id, 2)
 
@@ -30,20 +37,16 @@ class NewLocProcessing:
     def processNewLocation():
         NewLocProcessing.log("[O] Iniciando processamento de novas localizações...")
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        threading.Thread(target=loop.run_forever, daemon=True).start()
-
         while True:
             try:
                 new_loc = NewLocProcessing.FILA_NEW_LOC.get()
 
-                new_loc.lat = float(round(new_loc.lat, 6))
-                new_loc.lng = float(round(new_loc.lng, 6))
-                
-                if new_loc is None or not isinstance(new_loc, TrackerLocation):
+                if not isinstance(new_loc, TrackerLocation) or not NewLocProcessing.isValid(new_loc.lat, new_loc.lng):
                     NewLocProcessing.log("[!] Localização inválida recebida. Ignorando...")
                     continue
+
+                new_loc.lat = float(round(new_loc.lat, 6))
+                new_loc.lng = float(round(new_loc.lng, 6))
 
                 NewLocProcessing.log(f"[<] Recebido loc do {new_loc.tracker} LAT:{new_loc.lat} LNG:{new_loc.lng}")
                 
@@ -102,9 +105,11 @@ class NewLocProcessing:
                         formatted_loc = FormatMessage.loc(new_loc.tracker, new_loc.lat, new_loc.lng, loc_recuperada[0], loc_recuperada[1])
                         
                     NewLocProcessing.log(f"[>] Enviando loc do {new_loc.tracker} para o cliente({client.CID}) {client.identidade}")
-                    loop.call_soon_threadsafe(
-                        asyncio.create_task,
-                        NewLocProcessing.sendNewLocToCLients(formatted_loc, client.ws)
-                    )
+                    if WebSocketServer.LOOP is not None:
+                        asyncio.run_coroutine_threadsafe(
+                            NewLocProcessing.sendNewLocToCLients(formatted_loc, client.ws),
+                            WebSocketServer.LOOP,
+                        )
             except Exception as e:
-                ProgramStop.set("Process new location error: " + str(e))
+                # uma falha pontual (ex.: banco oscilando) não derruba o servidor inteiro
+                NewLocProcessing.log(f"[Erro] Falha ao processar localização: {e}")

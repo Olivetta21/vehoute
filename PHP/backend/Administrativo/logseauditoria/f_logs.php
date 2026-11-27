@@ -1,12 +1,16 @@
 <?php
 
 
-function getLogsDoSistema($credenciais, $titulo = null, $mensagem = null, $ip = null, $data_inicio = null, $data_fim = null, $limite = 200, $offset = 0) {
+function getLogsDoSistema($credenciais, $titulo = null, $mensagem = null, $ip = null, $data_inicio = null, $data_fim = null, $limite = 200, $offset = 0, $id = null) {
     $limite = max(1, min(1000, (int) $limite));
     $offset = max(0, (int) $offset);
     $params = [];
     $where = [];
 
+    if ($id) { // referência de erro informada pelo usuário ao suporte
+        $params[':id'] = (int) $id;
+        $where[] = "el.id = :id";
+    }
     if ($titulo) {
         $params[':titulo'] = "%$titulo%";
         $where[] = "el.titulo ILIKE :titulo";

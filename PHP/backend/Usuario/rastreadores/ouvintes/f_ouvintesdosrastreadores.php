@@ -37,7 +37,13 @@ function getOuvintesDoRastreador($credenciais, $rastreador_id, $name_filter) {
 
         $Audit->depois(["qnt_ouvintes" => $stmt->rowCount()]);
         $Audit->sucesso(true);
-        return ["success" => true, "ouvintes" => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+        $ouvintes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Independe do filtro: permite à tela oferecer a auto-inclusão do dono
+        $stmt = $pdo->prepare("select 1 from usuario_rastreador where usuario_id = :usuario_id and rastreador_id = :rastreador_id");
+        $stmt->execute(["usuario_id" => $usuario_id, "rastreador_id" => $rastreador_id]);
+
+        return ["success" => true, "ouvintes" => $ouvintes, "dono_vinculado" => $stmt->fetchColumn() !== false];
     } catch (Exception $e) {
         return ["error" => errorMessage("Erro ao buscar ouvintes do rastreador", $e->getMessage())];
     }
@@ -255,11 +261,16 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
             return ["error" => "Este usuário já está vinculado ao rastreador"];
         }
 
-        $stmt = $pdo->prepare("insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (:usuario_id, :rastreador_id, :nome, 4) returning id");
+        // O dono incluindo a si mesmo não precisa aceitar proposta nem herda ocultações
+        $eh_o_dono = $usuario_id_destino == $credenciais["id"];
+        $status_inicial = $eh_o_dono ? 1 : 4;
+
+        $stmt = $pdo->prepare("insert into usuario_rastreador (usuario_id, rastreador_id, nome, status) values (:usuario_id, :rastreador_id, :nome, :status) returning id");
         $stmt->execute([
             "usuario_id" => $usuario_id_destino,
             "rastreador_id" => $rastreador_id,
-            "nome" => $nome
+            "nome" => $nome,
+            "status" => $status_inicial
         ]);
 
         if ($stmt->rowCount() !== 1) {
@@ -267,12 +278,12 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
             return ["error" => errorMessage("Erro ao enviar proposta de ouvinte para o usuário", $rastreador_id . " - " . $usuario_id_destino)];
         }
         $ur_id = $stmt->fetchColumn();
-        $Audit->depois(["usuario_rastreador" => ["id" => $ur_id, "status" => 4]]);
+        $Audit->depois(["usuario_rastreador" => ["id" => $ur_id, "status" => $status_inicial]]);
         
         //Adiciona o ouvinte no vinculo de localizacoes ocultas do rastreador, caso existam
         $stmt = $pdo->prepare("select id from intervalo_loc_oculta where novos_ouvintes = true and rastreador_id = :rastreador_id");
         $stmt->execute(["rastreador_id" => $rastreador_id]);
-        if ($stmt->rowCount() > 0) {
+        if (!$eh_o_dono && $stmt->rowCount() > 0) {
             $Audit->tabela("vinc_loc_oculta_usuario_rastreador");
             $lococulta_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
             $Audit->depois(["vinc_loc_oculta_usuario_rastreador" => ["ids_to_vinc" => $lococulta_ids]]);
@@ -304,10 +315,12 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
 
         $Audit->sucesso(true);
         $pdo->commit();
-        enviarEmailAvisarOuvinteQueTemNovoRastreador(
-            $usuario_id_destino,
-            $credenciais['id']
-        );
+        if (!$eh_o_dono) {
+            enviarEmailAvisarOuvinteQueTemNovoRastreador(
+                $usuario_id_destino,
+                $credenciais['id']
+            );
+        }
         return ["success" => true];
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
@@ -317,6 +330,28 @@ function donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nom
     }
 }
 
+
+/** Convite pelo código público do usuário: ids sequenciais não são aceitos vindos do cliente. */
+function donoEnviaPropostaDeOuvintePorCodigo($credenciais, $rastreador_id, $nome, $codigo) {
+    $codigo = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $codigo));
+    $stmt = $credenciais["pdo"]->prepare("select id from usuario where codigo = :codigo and ativo = true");
+    $stmt->execute(["codigo" => $codigo]);
+    $usuario_id_destino = $stmt->fetchColumn();
+    if ($usuario_id_destino === false) {
+        return ["error" => errorMessage("Código de usuário não encontrado", $codigo)];
+    }
+    return donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, (string) $nome, $usuario_id_destino);
+}
+
+function donoIncluiASiMesmo($credenciais, $rastreador_id, $nome = null) {
+    $nome = trim((string) $nome);
+    if ($nome === '') {
+        $stmt = $credenciais["pdo"]->prepare("select hardware from rastreador where id = :id and dono_id = :dono_id");
+        $stmt->execute(["id" => (int) $rastreador_id, "dono_id" => $credenciais["id"]]);
+        $nome = (string) $stmt->fetchColumn();
+    }
+    return donoEnviaPropostaDeOuvinteAUmUsuario($credenciais, $rastreador_id, $nome, $credenciais["id"]);
+}
 
 function validarDonoCorretoForAcceptDecline($credenciais, $ur_id) {
     return checkCorrectStatusForAction($credenciais, $ur_id, [3]);

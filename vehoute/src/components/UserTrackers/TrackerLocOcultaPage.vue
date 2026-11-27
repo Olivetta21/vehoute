@@ -126,6 +126,7 @@
 </template>
 
 <script>
+import { confirmar } from '../../scripts/confirmacao';
 import PagesRoutes from '../../scripts/PagesRoutes.js';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import TrackerLocOculta from '../../scripts/UserTracker/TrackerLocOculta.js';
@@ -331,7 +332,7 @@ export default {
             }
         },
         async deletarLocOculta(locs_ids) {
-            if (!confirm('Deseja deletar localizações ocultas: ' + locs_ids.join(', '))) {
+            if (!await confirmar({ titulo: 'Excluir localizações ocultas', mensagem: 'Excluir as localizações ocultas: ' + locs_ids.join(', ') + '?', textoConfirmar: 'Excluir', perigo: true })) {
                 return;
             }
 
@@ -354,7 +355,7 @@ export default {
 .selection-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .selection-item { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-sm); }
 
-.elementos-page-content { width: 100%; max-width: 1080px; padding: var(--space-5); }
+.elementos-page-content { width: 100%; padding: var(--space-5); }
 .loc-oculta-table,
 .loc-oculta-table tbody,
 .loc-oculta-table tr,

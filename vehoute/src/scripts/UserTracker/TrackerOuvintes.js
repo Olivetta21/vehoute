@@ -24,10 +24,15 @@ export default class TrackerOuvintes {
         // u.nome as u_nome, u.email, u.telefone
         const result = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ get: { rastreador_id: TrackerOuvintes.tracker.r_id, name_filter: name } }]);
         if (result.success) {
-            return result.ouvintes;
+            return { ouvintes: result.ouvintes, dono_vinculado: result.dono_vinculado };
         }
         console.error("Erro ao buscar ouvintes:");
-        return [];
+        return { ouvintes: [], dono_vinculado: true };
+    }
+
+    static async incluirMe(rastreador_id, nome) {
+        const response = await fetch_('/usuario/rastreadores/ouvintes/ouvintesdosrastreadores.php', [{ incluir_me: { rastreador_id, nome } }]);
+        return Boolean(response?.success);
     }
 
     static async donoEnviaPropostaParaTransferirPosse(ur_id) {

@@ -1,20 +1,26 @@
 import Gatekeeper from "../GateKeeper";
 import Usuario from "../LoginPage/Usuario";
 import MapPagina from "../MapPage/Map";
+import { avisarSessaoExpirada, encerrarSessaoExpirada } from "../session";
+
+const TOKEN_INVALIDO = 4001;
 
 export default class MainWS {
     static _ws = null;
     static _manter_conectado = false;
     static _tentativas = 0;
     static _timer = null;
+    static _identificado = false;
+    static _aguardando = [];
+    static _pedido = 0;
 
     static genWS() {
         const protocolo = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const ws = new WebSocket(`${protocolo}//${window.location.host}/ws/`);
         MainWS._ws = ws;
         ws.onopen = () => MainWS.on_open();
-        ws.onmessage = (e) => MainWS.on_message(e);
-        ws.onclose = () => MainWS.on_close(ws);
+        ws.onmessage = (e) => { if (MainWS._ws === ws) MainWS.on_message(e); };
+        ws.onclose = (e) => MainWS.on_close(ws, e);
         ws.onerror = (e) => MainWS.on_error(e);
     }
 
@@ -29,8 +35,40 @@ export default class MainWS {
         MainWS._tentativas = 0;
         // ENVIA IDENTIFICAÇÃO EM JSON:
         MainWS._ws.send("ident:" + Usuario.access_token);
+    }
+
+    static on_identified() {
+        MainWS._identificado = true;
+        MainWS._aguardando.splice(0).forEach(resolver => resolver(true));
         // Após uma reconexão, volta a acompanhar o rastreador que estava aberto no mapa
         MapPagina.rewatch();
+    }
+
+    /** O token não vale mais: para de reconectar e age como o fetch. */
+    static on_session_expired() {
+        MainWS.disconnect();
+        avisarSessaoExpirada();
+        encerrarSessaoExpirada();
+    }
+
+    /** Resolve true quando a conexão estiver identificada (ou false após o tempo limite). */
+    static whenReady(tempo_maximo_ms = 5000) {
+        if (MainWS._identificado) return Promise.resolve(true);
+        return new Promise((resolve) => {
+            MainWS._aguardando.push(resolve);
+            setTimeout(() => resolve(false), tempo_maximo_ms);
+        });
+    }
+
+    /** Conjunto dos ids (entre os informados) que estão conectados, ou null se não foi possível saber. */
+    static async connectedTrackers(ids) {
+        if (!ids.length) return new Set();
+        if (!(await MainWS.whenReady())) return null;
+        const pedido = ++MainWS._pedido;
+        const resposta = Gatekeeper.openFor(`connected_${pedido}`, 4000);
+        MainWS.message(`con:${pedido}:${ids.join(',')}`);
+        const conectados = await resposta;
+        return conectados ? new Set(conectados.map(Number)) : null;
     }
 
     static on_message(evento) {
@@ -42,8 +80,18 @@ export default class MainWS {
             return;
         }
 
+        if (message.t === "ident") {
+            if (message.r === true) MainWS.on_identified();
+            else if (message.reason === "invalid_token") MainWS.on_session_expired();
+        }
+        else if (message.t === "expired") {
+            MainWS.on_session_expired();
+        }
+        else if (message.t === "con") {
+            Gatekeeper.openGate(`connected_${message.req}`, message.ids);
+        }
         //{"t": "wTrk", "tk": "23", "a": true, "r": true}
-        if (message.t === "wTrk" && message.r === true) {
+        else if (message.t === "wTrk" && message.r === true) {
             const gate_token = `watch_tracker_${message.a ? 'add' : 'del'}_${message.tk}`;
             Gatekeeper.openGate(gate_token, true);
         }
@@ -57,9 +105,14 @@ export default class MainWS {
         console.error("Erro no WebSocket:", error);
     }
 
-    static on_close(ws) {
+    static on_close(ws, evento) {
         if (MainWS._ws !== ws) return;
         MainWS._ws = null;
+        MainWS._identificado = false;
+        if (evento?.code === TOKEN_INVALIDO) {
+            MainWS.on_session_expired();
+            return;
+        }
         if (!MainWS._manter_conectado || !Usuario.access_token) return;
 
         // Reconexão com espera exponencial (1s, 2s, 4s ... até 30s)
@@ -75,6 +128,7 @@ export default class MainWS {
         clearTimeout(MainWS._timer);
         const ws = MainWS._ws;
         MainWS._ws = null;
+        MainWS._identificado = false;
         ws?.close();
     }
 

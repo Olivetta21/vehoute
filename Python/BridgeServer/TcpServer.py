@@ -16,6 +16,7 @@ class AuthError(Exception):
 class TcpServer:
     TRACKER_PERMISSION_CONNECTION = 1
     TRACKER_PERMISSION_SEND_LOCATION = 2
+    AUTH_TIMEOUT_S = 60  # tempo máximo para cada etapa da autenticação (GSM é lento)
     # RESPONSE TABLE
     R_OK = b"receb\n"
     R_PLAIN_TOKEN_OK = b'plain\n'
@@ -72,6 +73,27 @@ class TcpServer:
             TcpServer.TRACKERS_ATIVOS.pop(CID, None)
 
     @staticmethod
+    def connectedTrackerIds():
+        """Ids dos rastreadores autenticados e com conexão aberta."""
+        with TcpServer.TRACKERS_ATIVOS_LOCK:
+            return {info["tracker_id"] for info in TcpServer.TRACKERS_ATIVOS.values() if info["auth"]}
+
+    @staticmethod
+    def detectDeadConnection(conn):
+        """Faz o sistema derrubar em poucos minutos um rastreador que sumiu sem avisar."""
+        try:
+            conn.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            if hasattr(socket, "SIO_KEEPALIVE_VALS"):  # Windows: (ligado, ociosidade ms, intervalo ms)
+                conn.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 60_000, 10_000))
+            else:
+                for opcao, valor in (("TCP_KEEPIDLE", 60), ("TCP_KEEPINTVL", 10), ("TCP_KEEPCNT", 6),
+                                     ("TCP_USER_TIMEOUT", 180_000)):
+                    if hasattr(socket, opcao):
+                        conn.setsockopt(socket.IPPROTO_TCP, getattr(socket, opcao), valor)
+        except OSError as e:
+            TcpServer.log(f"[!] Não foi possível configurar a detecção de conexão morta: {e}")
+
+    @staticmethod
     def logTrackersAtivos():
         with TcpServer.TRACKERS_ATIVOS_LOCK:
             if not TcpServer.TRACKERS_ATIVOS:
@@ -98,8 +120,8 @@ class TcpServer:
                 public_token = conn.recv(32).decode(errors='ignore').rstrip('\x00')                
                 TcpServer.log(f"[$][Public] Rastreador({self.CID}): {public_token}")
                 result = None
-                with DataBase.get() as conn:
-                    with conn.cursor() as cur:
+                with DataBase.get() as db_conn:
+                    with db_conn.cursor() as cur:
                         cur.execute(
                             "SELECT id, token from rastreador where token_publico = %s",
                             (public_token,)
@@ -120,7 +142,7 @@ class TcpServer:
                     return False
 
                 result_byte = TcpServer.converter(result[1])
-                TcpServer.log(f"[$][Private] Rastreador({self.CID}): {result}")
+                TcpServer.log(f"[$][Private] Rastreador({self.CID}): chave carregada para o id {self.tracker_id}")
 
                 self.Crypt = Crypt()
                 self.Crypt.setKeys(result_byte)
@@ -150,6 +172,7 @@ class TcpServer:
         def __enter__(self):
             TcpServer.addTrackerAtivo(self.CID, self.addr, auth=False, conn=self.conn)
             TcpServer.log(f"[+] Rastreador({self.CID}) fazendo conexão por {self.addr}")
+            self.conn.settimeout(TcpServer.AUTH_TIMEOUT_S)
 
             # Pegar plain token do rastreador            
             if not self.recTrackerPlainToken(self.conn):
@@ -162,6 +185,10 @@ class TcpServer:
                 TcpServer.log(f"[!] O rastreador({self.CID}) não foi validado. Desconectando...")
                 raise AuthError(f"O rastreador({self.CID}) não foi validado.")
             self.conn.sendall(TcpServer.R_TOKEN_OK)
+
+            # Autenticado: pode ficar em silêncio (sem sinal de GPS); o keepalive detecta conexões mortas
+            self.conn.settimeout(None)
+            TcpServer.detectDeadConnection(self.conn)
 
             TcpServer.addTrackerAtivo(self.CID, self.addr, self.tracker_id, auth=True, conn=self.conn)
             
@@ -187,8 +214,7 @@ class TcpServer:
 
                     try: # Desencripta e separa
                         DATA_DECRYPTED = bytearray(DATA)
-                        tracker.Crypt.decrypt(DATA_DECRYPTED)
-                        if len(DATA_DECRYPTED) != 8:
+                        if not tracker.Crypt.decrypt(DATA_DECRYPTED) or len(DATA_DECRYPTED) != 8:
                             TcpServer.log(f"[!] Rastreador({tracker.CID}) Pacote decifrado inválido ({len(DATA_DECRYPTED)} bytes)")
                             continue
                         lat, lng = struct.unpack('<ff', DATA_DECRYPTED)
@@ -225,6 +251,7 @@ class TcpServer:
 
     def start(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.host, self.port))
             s.listen()
             TcpServer.log(f"[O] Servidor escutando em {self.host}:{self.port}...")
@@ -234,9 +261,13 @@ class TcpServer:
                 try:
                     conn, addr = s.accept()
                     threading.Thread(target=self.handleTracker, args=(conn, addr), daemon=True).start()
-                except Exception as e:
+                except RuntimeError as e:  # sem recursos para nova thread: recusa só esta conexão
                     TcpServer.log(f"[Falha ao iniciar thread]: {e}")
-                    break
+                    conn.close()
+                except OSError as e:
+                    TcpServer.log(f"[Falha ao aceitar conexão]: {e}")
+                    if s.fileno() == -1:
+                        break
         
         TcpServer.log("\n[-] Servidor encerrado.")
         ProgramStop.set("Servidor TCP encerrado")
@@ -272,3 +303,7 @@ class HeartBeat:
                         conn.sendall("\n".encode())
                     except Exception as e:
                         TcpServer.log(f"[!] Erro ao enviar heartbeat para rastreador: {e}")
+                        try:  # libera o recv da thread, que remove o rastreador da lista
+                            conn.shutdown(socket.SHUT_RDWR)
+                        except OSError:
+                            pass

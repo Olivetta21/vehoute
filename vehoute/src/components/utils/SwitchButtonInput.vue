@@ -133,10 +133,13 @@ export default {
     min-height: 0;
     padding: 0;
     background: transparent;
+    color: black;
     border: none;
     border-radius: var(--radius-pill);
 }
 .switch-button.disabled { cursor: not-allowed; opacity: 0.55; }
+.switch-button.active { color: var(--color-primary); }
+.switch-button.inactive { color: var(--color-text-subtle); }
 
 .switch-button-track {
     position: relative;

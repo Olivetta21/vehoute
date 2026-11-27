@@ -109,7 +109,7 @@ class LocOcultasDosRastreadoresTest extends TestCase {
             ], $result['localizacoes_ocultas'][0]);
 
             $result_sem_resultados = getLocOcultaDoRastreador($credenciais_dono, -1, 'nao-encontrada');
-            $this->assertSame('Nenhuma localização oculta encontrada para o rastreador:-1', $result_sem_resultados['error']);
+            $this->assertSame([], $result_sem_resultados['localizacoes_ocultas']); // lista vazia não é erro
 
             $result_sem_permissao = getLocOcultaDoRastreador(['pdo' => $pdo, 'id' => -2], -1, null);
             $this->assertSame('Usuário não tem permissão para ver as localizações ocultas do rastreador:-2 - -1', $result_sem_permissao['error']);

@@ -8,7 +8,7 @@ try {
 userHasPermission("Administrador");
 
 if ($params = getRequestValue("get", "is_array")) {
-    returnJson(getLogsDoSistema($credenciais, $params['titulo'] ?? null, $params['mensagem'] ?? null, $params['ip'] ?? null, $params['data_inicio'] ?? null, $params['data_fim'] ?? null, $params['limite'] ?? 200, $params['offset'] ?? 0));
+    returnJson(getLogsDoSistema($credenciais, $params['titulo'] ?? null, $params['mensagem'] ?? null, $params['ip'] ?? null, $params['data_inicio'] ?? null, $params['data_fim'] ?? null, $params['limite'] ?? 200, $params['offset'] ?? 0, $params['id'] ?? null));
 }
 
 if (($filter = getRequestValue("getSimpleTitulos", "is_string")) !== null) {

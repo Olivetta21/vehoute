@@ -8,6 +8,7 @@ create table legal_ident_tipo   (
     descricao varchar(100) not null,
     regex varchar(200) not null,
     invalido boolean not null default false,
+    mascara varchar(100), -- opcional: # = digito, A = letra, * = letra ou digito; demais caracteres sao fixos
     unique (id, regex)
 );
 
@@ -33,6 +34,29 @@ create table usuario_cadastrando (
     ip varchar(100) not null
 );
 
+-- Codigo publico do usuario (usado para compartilhar no lugar do id, que e sequencial)
+create or replace function gerarCodigoUsuario()
+returns varchar
+language plpgsql
+volatile
+as $$
+declare
+    alfabeto constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; -- sem 0/O e 1/I
+    var_codigo text;
+    var_bytes bytea;
+begin
+    loop
+        var_bytes := gen_random_bytes(8);
+        var_codigo := '';
+        for i in 0..7 loop
+            var_codigo := var_codigo || substr(alfabeto, (get_byte(var_bytes, i) % 32) + 1, 1);
+        end loop;
+        exit when not exists (select 1 from usuario u where u.codigo = var_codigo);
+    end loop;
+    return var_codigo;
+end;
+$$;
+
 create table usuario (
     id serial primary key,
     nome varchar(100) not null,
@@ -41,7 +65,8 @@ create table usuario (
     legal_ident_id integer not null references legal_ident(id),
     ativo boolean not null default true,
     email varchar(100) unique not null,
-    telefone varchar(15)
+    telefone varchar(15),
+    codigo varchar(12) unique not null default gerarCodigoUsuario()
 );
 
 
@@ -88,6 +113,7 @@ BEGIN
     FROM usuario_recuperacao_senha 
     WHERE email = p_email 
       AND ip = p_ip
+      AND verificado = false
       AND expires_at > now() + interval '2 minutes';
     
     IF FOUND THEN
@@ -166,6 +192,16 @@ create table usuario_access_token(
     token varchar(256) not null primary key,
     usuario_id integer not null references usuario(id),
     created_at timestamp with time zone default now(),
+    expires_at timestamp with time zone not null
+);
+
+-- Troca de email so e efetivada apos confirmar o codigo enviado ao novo endereco
+create table usuario_alteracao_email (
+    usuario_id integer primary key references usuario(id) on delete cascade,
+    novo_email varchar(100) not null,
+    otp varchar(256) not null,
+    tentativas integer not null default 0,
+    criado_em timestamp with time zone not null default now(),
     expires_at timestamp with time zone not null
 );
 
@@ -272,7 +308,7 @@ create table rastreador (
     hardware varchar(100) not null,
     token varchar(100) not null,
     token_publico varchar(100) not null,
-    senha varchar(100) not null, --sem criptografia por enquanto
+    senha varchar(100) not null,
     obs varchar(200),
     status integer not null,--
     ativo boolean not null default true,
@@ -339,14 +375,14 @@ create table grupo_usuario (
 );
 create table vinc_grupo_usuario (
     id serial primary key,
-    usuario_id integer not null references usuario(id),
+    usuario_id integer not null references usuario(id) on delete cascade,
     grupo_id integer not null references grupo_usuario(id),
     unique (usuario_id, grupo_id)
 );
 create table vinc_perm_usuario (
     id serial primary key,
     grupo_id integer references grupo_usuario(id),
-    usuario_id integer references usuario(id),
+    usuario_id integer references usuario(id) on delete cascade,
     perm_id integer not null references permissao_usuario(id),
     negado boolean not null default false,
     unique nulls not distinct (grupo_id, usuario_id, perm_id, negado),
@@ -457,6 +493,7 @@ BEGIN
     FROM usuario_cadastrando 
     WHERE email = p_email 
       AND ip = p_ip
+      AND verificado = false
       AND expires_at > now() + interval '2 minutes';
     
     IF FOUND THEN
@@ -510,10 +547,11 @@ BEGIN
     WHERE otp = p_otp 
       AND nome = p_nome 
       AND email = p_email
-      AND verificado = true;
+      AND verificado = true
+      AND expires_at > now();
 
     IF NOT FOUND THEN
-        RETURN QUERY SELECT FALSE, 'OTP inválido ou cadastro não encontrado', p_otp::TEXT;
+        RETURN QUERY SELECT FALSE, 'OTP inválido, expirado ou cadastro não encontrado', p_otp::TEXT;
         RETURN;
     END IF;
     
@@ -577,14 +615,18 @@ BEGIN
         RETURN;
     END IF;
 
-    -- Insere permissão
-    --INSERT INTO vinc_perm_usuario (usuario_id, perm_id, negado)
-    --VALUES (var_usuario_id, 1, false);
-    insert into vinc_grupo_usuario(usuario_id, grupo_id) values (var_usuario_id, (select id from grupo_usuario where nome = 'TodasPermissoes'));
+    -- Insere permissão: usa o grupo 'TodasPermissoes' se existir; senão concede apenas 'Login'
+    INSERT INTO vinc_grupo_usuario (usuario_id, grupo_id)
+    SELECT var_usuario_id, id FROM grupo_usuario WHERE nome = 'TodasPermissoes';
 
     IF NOT FOUND THEN
-        RETURN QUERY SELECT FALSE, 'Falha ao inserir permissão', p_email::TEXT;
-        RETURN;
+        INSERT INTO vinc_perm_usuario (usuario_id, perm_id, negado)
+        SELECT var_usuario_id, id, false FROM permissao_usuario WHERE nome = 'Login';
+
+        IF NOT FOUND THEN
+            RETURN QUERY SELECT FALSE, 'Falha ao inserir permissão', p_email::TEXT;
+            RETURN;
+        END IF;
     END IF;
 
     RETURN QUERY SELECT TRUE, 'OK', ''::TEXT;
@@ -734,6 +776,7 @@ BEGIN
     else
         inserted_count = 0;
         RETURN NEXT;
+        RETURN;
     end if;
 
     IF rastr_loc_id != rastr_usr_id THEN
@@ -796,8 +839,12 @@ create function getLocDoRastreadorParaOuvinte(
             select id from usuario_rastreador where usuario_id = var_usuario_id and rastreador_id = var_rastreador_id limit 1
         )
         and (
-            (l.data >= ilo.data_inicial and l.data <= ilo.data_final) or
-            (l.id >= ilo.id_inicial and l.id <= ilo.id_final)
+            ((ilo.data_inicial is not null or ilo.data_final is not null)
+                and (ilo.data_inicial is null or l.data >= ilo.data_inicial)
+                and (ilo.data_final is null or l.data <= ilo.data_final)) or
+            ((ilo.id_inicial is not null or ilo.id_final is not null)
+                and (ilo.id_inicial is null or l.id >= ilo.id_inicial)
+                and (ilo.id_final is null or l.id <= ilo.id_final))
         )
         limit 1
     ) then true else false end as is_oculto	
@@ -811,7 +858,7 @@ create function getLocDoRastreadorParaOuvinte(
         (var_tipo = 'salvos' and ur.loc_salvos = true)
     )
     order by l.id
-$$ language sql;
+$$ language sql stable;
 
 
 
@@ -988,11 +1035,22 @@ CREATE TABLE audit_log (
 );
 
 
+-- Índices para as consultas mais frequentes
+create index if not exists idx_localizacao_rastreador_data on localizacao (rastreador_id, data desc);
+create index if not exists idx_usuario_rastreador_rastreador on usuario_rastreador (rastreador_id);
+create index if not exists idx_access_token_usuario on usuario_access_token (usuario_id);
+create index if not exists idx_rastreador_dono on rastreador (dono_id);
+create index if not exists idx_errors_log_data on errors_log (data desc);
+create index if not exists idx_audit_log_data on audit_log (data desc);
+
 
 insert into legal_ident_tipo (id, descricao, regex) values (1, 'Geral', '.+');
-insert into legal_ident_tipo (id, descricao, regex) values (2, 'CPF', '^[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}$');
+insert into legal_ident_tipo (id, descricao, regex, mascara) values (2, 'CPF', '^[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}$', '###.###.###-##');
 insert into legal_ident (id, tipo_id, regex, identidade) values (1, 1, '.+', '123456789');
 insert into legal_ident (id, tipo_id, regex, identidade) values (2, 2, '^[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}$', '000.000.000-00');
+-- ids fixos acima: avança as sequências para o primeiro cadastro não colidir
+select setval(pg_get_serial_sequence('legal_ident_tipo', 'id'), (select max(id) from legal_ident_tipo));
+select setval(pg_get_serial_sequence('legal_ident', 'id'), (select max(id) from legal_ident));
 
 insert into classe_configuracao (id, nome) values (-1, 'Testes');
 insert into classe_configuracao (nome) values ('Notificações');

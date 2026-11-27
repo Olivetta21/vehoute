@@ -80,7 +80,8 @@ export default class Map {
     static async loadTrackers() {
         try {
             const trackers = await Map.fetchTrackers();
-            Map.trackers = trackers.map(t => ({
+            // linhas sem vínculo (dono que não é ouvinte) não têm localizações para mostrar
+            Map.trackers = trackers.filter(t => t.ur_id != null).map(t => ({
                 id: t.ur_id,
                 name: t.ur_nome,
                 rastreador_id: t.r_id,
@@ -97,7 +98,7 @@ export default class Map {
 
     static insertLocationWithRealTrackerID(id, location) {
         const tracker_id = Map.trackers.find(t => Number(t.rastreador_id) === Number(id))?.id;
-        if (tracker_id !== undefined) Map.insertLocation(tracker_id, location);
+        if (tracker_id !== undefined) Map.insertLocation(tracker_id, { ...location, tempo_real: true });
     }
 
     /** Insere mantendo a ordem por id (busca binária, O(log n)) e ignorando repetidos. */
@@ -119,20 +120,31 @@ export default class Map {
     }
 
 
-    static async fetchLocations(rastreador_id) {
-        const response = await fetch_('/usuario/rastreadores/localizacoes/localizacoesdosrastreadores.php', [{ rastreador_id }]);
+    static async fetchLocations(rastreador_id, periodo) {
+        const response = await fetch_('/usuario/rastreadores/localizacoes/localizacoesdosrastreadores.php', [{ rastreador_id }, { periodo }]);
         if (response.success) {
-            return response.localizacoes;
+            return response;
         }
         console.error("Erro ao buscar localizações do rastreador");
-        return [];
+        return null;
     }
 
-    static async loadLocations(ur_id) {
+    /**
+     * Busca no servidor as localizações do período selecionado.
+     * ajustarPeriodo: se não houver nada no período, amplia o filtro até a última localização
+     * (a mudança do filtro dispara uma nova busca na tela).
+     */
+    static async loadLocations(ur_id, { ajustarPeriodo = false } = {}) {
         try {
             const tracker = Map.trackers.find(t => t.id === ur_id);
             if (tracker) {
-                const locations = await Map.fetchLocations(tracker.rastreador_id);
+                const pedido = tracker.pedido = (tracker.pedido || 0) + 1;
+                const { start, end } = Map._date_filter.value;
+                const resposta = await Map.fetchLocations(tracker.rastreador_id, { inicio: start || null, fim: end || null });
+                // uma busca mais nova já foi feita: esta resposta está velha
+                if (!resposta || pedido !== tracker.pedido) return false;
+
+                const locations = resposta.localizacoes;
                 locations.sort((a, b) => Number(a.l_id) - Number(b.l_id));
                 const converted = locations.map(l => ({
                     id: Number(l.l_id),
@@ -141,11 +153,13 @@ export default class Map {
                     l_data: l.l_data,
                 }));
 
-                tracker.localizacoes.splice(0, tracker.localizacoes.length, ...converted);
+                // não perde o que chegou em tempo real enquanto a busca acontecia
+                const ultimoId = converted[converted.length - 1]?.id || 0;
+                const recentes = tracker.localizacoes.filter(l => l.tempo_real && l.id > ultimoId);
+                tracker.localizacoes.splice(0, tracker.localizacoes.length, ...converted, ...recentes);
 
-                let last = tracker.localizacoes[tracker.localizacoes.length - 1]?.l_data || null;
-                if (last) {
-                    last = last.split('T')[0].split(' ')[0]
+                if (ajustarPeriodo && !converted.length && resposta.ultima_data) {
+                    const last = resposta.ultima_data.split('T')[0].split(' ')[0];
                     if (last < Map._date_filter.value.start) {
                         Map._date_filter.value.start = last;
                     } else if (last > Map._date_filter.value.end) {

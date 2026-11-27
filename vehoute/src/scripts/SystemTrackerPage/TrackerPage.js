@@ -26,6 +26,10 @@ export default class TrackerPage {
         } }]);
     }
 
+    static async editRastreador(id, campos) {
+        return await fetch_('/administrativo/rastreadores/rastreadores.php', [{ edit_rastreador: { id, campos } }]);
+    }
+
     static async getUsuariosDisponiveis(nome) {
         const response = await fetch_('/administrativo/usuarios/usuarios.php', [{ getSimple: nome }]);
         if (response && response.success) {

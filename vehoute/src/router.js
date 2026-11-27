@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import NotFoundPage from './components/NotFoundPage.vue'
 import HomePage from './components/Pagina_Inicial/HomePage.vue'
 import CadastroUsuarioPage from './components/Login_Cadastro/CadastroUsuario.vue'
 import FinalizarCadastroUsuarioPage from './components/Login_Cadastro/FinalizarCadastroUsuarioPage.vue'
@@ -85,7 +86,8 @@ const routes = [
         constructRoute('trackerlococulta', {component: TrackerLocOcultaPage, meta: { class: TrackerLocOculta } }),
     ]
   },
-  { path: '/:pathMatch(.*)*', redirect: { name: 'home', params: {} } }
+  { path: '/', redirect: { name: 'home' } },
+  { path: '/:pathMatch(.*)*', name: 'nao-encontrada', component: NotFoundPage }
 ]
 
 const router = createRouter({

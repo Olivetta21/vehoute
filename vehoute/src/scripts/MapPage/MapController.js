@@ -29,6 +29,11 @@ export default class MapController {
         return true
     }
 
+    /** Recalcula o tamanho do mapa quando a área dele muda (menu lateral, rotação...). */
+    static resize() {
+        if (MapApi.isMapInitialized()) MapApi.resize();
+    }
+
     static initTrack(coords) {
         if (!coords || coords.length < 1) {
             console.error("No coordinates provided for tracking");

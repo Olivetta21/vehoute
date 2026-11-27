@@ -75,6 +75,7 @@
 </template>
 
 <script>
+import { confirmar } from '../../scripts/confirmacao';
 import SystemUserPermission from '../../scripts/SystemUserPermissionPage/SystemUserPermission';
 import PagesRoutes from '../../scripts/PagesRoutes';
 import HeaderTelas from '../utils/HeaderTelas.vue';
@@ -129,7 +130,7 @@ export default {
             this.preSelPerm = null;
         },
         async removeVinculoPermissao(permissao) {
-            if (!confirm(`Tem certeza que deseja remover este vínculo de permissão?\n\nVinculo ID: ${permissao.vpu_id}\nEntidade: ${permissao.is_user ? 'Usuário' : 'Grupo'} ${permissao.x_id} - ${permissao.x_nome}\nPermissão: ${permissao.pu_id} - ${permissao.pu_nome}\nNegado: ${permissao.vpu_negado}`)) {
+            if (!await confirmar({ titulo: 'Remover vínculo de permissão', mensagem: `Vínculo ID: ${permissao.vpu_id}\nEntidade: ${permissao.is_user ? 'Usuário' : 'Grupo'} ${permissao.x_id} - ${permissao.x_nome}\nPermissão: ${permissao.pu_id} - ${permissao.pu_nome}\nNegado: ${permissao.vpu_negado}`, textoConfirmar: 'Remover', perigo: true })) {
                 return;
             }
 

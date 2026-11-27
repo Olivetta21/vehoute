@@ -212,6 +212,14 @@ function adicionarUsuario($pdo, $nome, $email, $identidade, $tipo_ident, $adm = 
             return ["error" => errorMessage("Falha ao cadastrar usuário", $nome)];
         }
 
+        // Sem nenhuma permissão o usuário criado não conseguiria entrar (mesma regra do autocadastro)
+        $stmt = $pdo->prepare("insert into vinc_grupo_usuario (usuario_id, grupo_id) select :id, id from grupo_usuario where nome = 'TodasPermissoes'");
+        $stmt->execute(["id" => $usuario["id"]]);
+        if ($stmt->rowCount() === 0) {
+            $stmt = $pdo->prepare("insert into vinc_perm_usuario (usuario_id, perm_id, negado) select :id, id, false from permissao_usuario where nome = 'Login'");
+            $stmt->execute(["id" => $usuario["id"]]);
+        }
+
         if ($adm) {
             $stmt = $pdo->prepare("insert into administrador (id) values (:id)");
             $stmt->execute(["id" => $usuario["id"]]);

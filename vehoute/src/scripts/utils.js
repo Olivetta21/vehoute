@@ -13,6 +13,11 @@ export function getDateWithOffset(dayOffset = 0) {
   return `${year}-${month}-${day}`;
 }
 
+/** '2026-08-29 22:56:57.929631' -> '2026-08-29 22:56:57' (somente para exibição). */
+export function semMilissegundos(data) {
+    return String(data ?? '').replace(/(\d{2}:\d{2}:\d{2})\.\d+/, '$1');
+}
+
 export function compararVariaveis(a, b) {
     if (a === b) return 0;
     if ((a === null || a === undefined || String(a) === '') && (b === null || b === undefined || String(b) === '')) return 0;

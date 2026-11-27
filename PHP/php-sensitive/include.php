@@ -75,7 +75,7 @@
         }
 
         try {
-            $stmt = getLogDataBase()->prepare("INSERT INTO errors_log (titulo, mensagem, u_access_token, ip, url) VALUES (:titulo, :mensagem, :u_access_token, :ip, :url)");
+            $stmt = getLogDataBase()->prepare("INSERT INTO errors_log (titulo, mensagem, u_access_token, ip, url) VALUES (:titulo, :mensagem, :u_access_token, :ip, :url) RETURNING id");
             $stmt->execute([
                 ':titulo' => $error_title,
                 ':mensagem' => $detalhe,
@@ -83,6 +83,8 @@
                 ':ip' => substr(getClientIp(), 0, 45),
                 ':url' => $_SERVER['REQUEST_URI'] ?? null
             ]);
+            // returnJson anexa este id à resposta, para o usuário informar ao suporte
+            $GLOBALS['ULTIMO_ERRO_ID'] = (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
             error_log("Vehoute: falha ao gravar errors_log: " . $e->getMessage());
         }
@@ -298,6 +300,13 @@
         return filter_var($valor, FILTER_VALIDATE_INT, ["options" => ["min_range" => $min]]) !== false;
     }
 
+    /** Identificação do erro para o suporte: id em errors_log (se houve registro) e horário. */
+    function anexarReferenciaDoErro(array $result) {
+        if (!empty($GLOBALS['ULTIMO_ERRO_ID'])) $result['erro_id'] = $GLOBALS['ULTIMO_ERRO_ID'];
+        $result['erro_data'] = date(DATE_ATOM);
+        return $result;
+    }
+
 	function returnJson($data, $type = null) {
         if (is_array($data) && count($data) > 0) {
             $type = $type ?: array_keys($data)[0];
@@ -311,6 +320,7 @@
             'success' => 200,
             'error' => 400,
             'invalid_token' => 401,
+            'nopermission' => 403,
             'warn' => 409,
             'rate_limit' => 429,
             'in_error' => 500,
@@ -319,6 +329,7 @@
             header('Content-Type: application/json; charset=utf-8');
             http_response_code($responses[$type] ?? 200);
         }
+        if (($responses[$type] ?? 200) >= 400) $result = anexarReferenciaDoErro($result);
 		echo json_encode($result, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE);
         exit;
 	}
@@ -469,6 +480,12 @@
             $r = in_array($perm, $permissions);
         }
         if ($throw_error && !$r) {
+            // Em requisições web o frontend recebe a chave "nopermission"; em CLI (testes) segue a exceção
+            if (PHP_SAPI !== 'cli') {
+                $nomes = implode(', ', (array) $perm);
+                errorMessage("Usuario não possui permissão", $nomes);
+                returnJson(["nopermission" => $nomes]);
+            }
             throw new Exception("Usuario não possui permissão: " . (is_array($perm) ? implode(',', $perm) : $perm));
         }
         return $r;

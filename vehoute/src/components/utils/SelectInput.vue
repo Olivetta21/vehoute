@@ -4,7 +4,7 @@
         <div class="select-input-container">
             <template v-if="searchFn && !searchAll">
                 <input v-if="is_searching" type="text" v-model="searchText" :placeholder="searchPlaceholder" @input="search" class="search-input"/>
-                <button v-else @click="startSearch" class="search-bttn btn-secondary"> {{ searchBttnText }} </button>
+                <button v-else type="button" @click="startSearch" class="search-bttn btn-secondary"> {{ searchBttnText }} </button>
             </template>
             <select @change="handleChange" class="select-input" v-model="selected_value" :required="required">
                 <option value=""> {{ !real_data || real_data?.length < 1 ? 'Nenhuma opção encontrada' : 'Selecione' }} </option>
@@ -49,9 +49,9 @@ export default {
                 }
             }
             */
-            type: Object,
+            type: Array,
             required: false,
-            default: () => {}
+            default: () => []
         },
         placeholder: {
             type: String,
@@ -101,7 +101,7 @@ export default {
             this.$emit('update:value', this.preSelectedValue);
         }
         if (this.selectedId) {
-            const selectedItem = this.real_data.find(item => item.id === this.selectedId);
+            const selectedItem = this.real_data?.find(item => item.id === this.selectedId);
             if (selectedItem) {
                 this.selected_value = selectedItem.id;
                 this.$emit('update:value', selectedItem);
@@ -110,9 +110,8 @@ export default {
     },
     watch: {
         selectedId(newVal) {
-            console.log("selectedId changed:", newVal);
             if (newVal) {
-                const selectedItem = this.real_data.find(item => item.id === newVal);
+                const selectedItem = this.real_data?.find(item => item.id === newVal);
                 if (selectedItem) {
                     this.selected_value = selectedItem.id;
                     this.$emit('update:value', selectedItem);

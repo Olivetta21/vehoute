@@ -25,20 +25,20 @@
                 <SelectInput
                     :searchFn="getLegalIdentTipos"
                     :searchAll="true"
-                    @update:value="this.tipo_ident = $event || null"
+                    @update:value="selecionarTipo($event)"
                 />
             </InputCheck>
 
             <InputCheck :check="validarRegex(identidade, tipo_ident?.regex)" inv="Identidade não atende aos requisitos">
-                <input v-model="identidade" type="text" placeholder="Identidade" required />
+                <input :value="identidade" @input="identidade = mascararCampo($event, tipo_ident?.mascara)" type="text" :placeholder="tipo_ident?.mascara || 'Identidade'" required />
             </InputCheck>
 
             <InputCheck :check="Validate.Senha(senha1)" inv="A senha deve ter no mínimo 8 caracteres, uma letra maiúscula e minúscula, um número e caractere especial">
-                <input v-model="senha1" type="password" placeholder="Senha" required />
+                <PasswordInput v-model="senha1" placeholder="Senha" autocomplete="new-password" required />
             </InputCheck>
 
             <InputCheck :check="this.senha1 === this.senha2" inv="As senhas não coincidem">
-                <input v-model="senha2" type="password" placeholder="Repita a senha" required />
+                <PasswordInput v-model="senha2" placeholder="Repita a senha" autocomplete="new-password" required />
             </InputCheck>
             
             <button type="submit">Cadastrar-se</button>
@@ -55,13 +55,16 @@ import SelectInput from '../utils/SelectInput.vue';
 import { validarRegex } from '../../scripts/utils';
 import InputCheck from '../utils/InputCheck.vue';
 import Validate from '../../scripts/Validate';
+import PasswordInput from '../utils/PasswordInput.vue';
+import { aplicarMascara, mascararCampo } from '../../scripts/mascara';
 
 export default {
     name: 'FinalizarCadastroUsuarioPage',
     components: {
         AuthCont,
         SelectInput,
-        InputCheck
+        InputCheck,
+        PasswordInput
     },
     data() {
         return {
@@ -82,6 +85,11 @@ export default {
         }
     },
     methods: {
+        mascararCampo,
+        selecionarTipo(tipo) {
+            this.tipo_ident = tipo || null;
+            this.identidade = aplicarMascara(this.identidade, tipo?.mascara);
+        },
         async testOTP() {
             const resp = await CadastroUsuario.testarOTP(this.otp);
             if (resp.success) {

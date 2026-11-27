@@ -53,7 +53,7 @@ export default {
     gap: var(--space-4);
     align-content: start;
     width: 100%;
-    max-width: 960px;
+    max-width: 1400px;
     padding: var(--space-5);
 }
 .links-card {

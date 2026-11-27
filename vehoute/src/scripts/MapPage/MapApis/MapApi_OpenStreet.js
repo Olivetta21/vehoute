@@ -76,6 +76,10 @@ export default class MapApi_OpenStreet extends MapApi_Interface {
         }
     }
 
+    static resize() {
+        MapApi_OpenStreet.map?.invalidateSize();
+    }
+
     static haveMarker() {
         return MapApi_OpenStreet.marker !== null;
     }

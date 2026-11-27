@@ -18,7 +18,19 @@ if ($id = getRequestValue("toggle_ativo", "is_int")) {
 	returnJson(toggleRastreadorAtivo($credenciais["pdo"], $id));
 }
 
+if ($dados = getRequestValue("edit_rastreador", "is_array")) {
+	$campos = $dados["campos"] ?? [];
+	// Valida o formato só do que está sendo alterado: cadastros antigos continuam editáveis
+	if ($erro = validarFormatoTokens($campos["token"] ?? null, $campos["token_publico"] ?? null)) {
+		returnJson(["error" => $erro]);
+	}
+	returnJson(editarRastreador($credenciais["pdo"], $dados["id"] ?? null, $campos));
+}
+
 if ($dados = getRequestValue("add_rastreador", "is_array")) {
+	if ($erro = validarFormatoTokens($dados["token"] ?? null, $dados["token_publico"] ?? null)) {
+		returnJson(["error" => $erro]);
+	}
 	returnJson(adicionarRastreador(
 		$credenciais["pdo"],
 		$dados["hardware"] ?? null,

@@ -9,7 +9,7 @@
             @adicionar="showAddTrackerForm = true"
         />
 
-        <GenericModalWindow v-if="this.showAddTrackerForm" @close="showAddTrackerForm = false; newTracker.checked = false; newTracker.validated = false;">
+        <GenericModalWindow v-if="this.showAddTrackerForm" @close="showAddTrackerForm = false; newTracker = {}">
             <div class="modal-container">
                 <form class="modal-form" @submit.prevent>
                     <template v-if="!newTracker.checked || !newTracker.validated">
@@ -27,8 +27,10 @@
             </div>
         </GenericModalWindow>
 
+        <p v-if="buscou && !trackers.length" class="empty-state">Nenhum rastreador por aqui. Use o botão + para adicionar um.</p>
             <div class="trackers-container cards-grid">
-            <TrackerCard v-for="(tracker, index) in trackers" :key="tracker.ur_id" :tracker="tracker"
+            <TrackerCard v-for="(tracker, index) in trackers" :key="tracker.ur_id ?? 'r' + tracker.r_id" :tracker="tracker"
+                :conexao="conexaoDe(tracker)"
                 @ouvintes="TrackerOuvintes.openPage(tracker)"
                 @lococulta="TrackerLocOculta.openPage(tracker)"
                 @rastrear="MapPagina.enterWithTracker(tracker.ur_id)"
@@ -43,6 +45,7 @@
 </template>
 
 <script>
+import { confirmar } from '../../scripts/confirmacao';
 import UserTrackers from '../../scripts/UserTracker/UserTrackers';
 import HeaderTelas from '../utils/HeaderTelas.vue';
 import PagesRoutes from '../../scripts/PagesRoutes.js';
@@ -50,6 +53,8 @@ import TrackerOuvintes from '../../scripts/UserTracker/TrackerOuvintes.js';
 import TrackerLocOculta from '../../scripts/UserTracker/TrackerLocOculta.js';
 import TrackerCard from './TrackerCard.vue';
 import GenericModalWindow from '../utils/GenericModalWindow.vue';
+import MainWS from '../../scripts/Websockets/Main_Websocket';
+import Usuario from '../../scripts/LoginPage/Usuario';
 import MapPagina from '../../scripts/MapPage/Map.js';
 import ToastMessage from '../../scripts/ToastMessage/ToastMessage';
 
@@ -62,17 +67,45 @@ export default {
             TrackerLocOculta,
             MapPagina,
             trackers: [],
+            buscou: false,
+            conexoes: {}, // r_id -> true | false | null (não foi possível saber)
             showAddTrackerForm: false,
 
             newTracker: {}
         }
     },
     mounted() {
-         this.fetchTrackers();
+        this.fetchTrackers();
+        this.verificador = setInterval(() => {
+            if (!document.hidden) this.atualizarConexoes();
+        }, 20000);
+    },
+    beforeUnmount() {
+        clearInterval(this.verificador);
     },
     methods: {
         async fetchTrackers(nome) {
             this.trackers = await UserTrackers.getRastreadores(nome);
+            this.buscou = true;
+            this.atualizarConexoes();
+        },
+
+        // o status só vale para o dono e para ouvintes com o vínculo operante
+        podeVerConexao(t) {
+            return Boolean(t.r_ativo && (t.dono_id == Usuario.id || (t.ur_status === 1 && t.ur_ativo)));
+        },
+        conexaoDe(t) {
+            if (!this.podeVerConexao(t)) return 'oculta';
+            if (!(t.r_id in this.conexoes)) return 'verificando';
+            if (this.conexoes[t.r_id] === null) return 'indisponivel';
+            return this.conexoes[t.r_id] ? 'conectado' : 'desconectado';
+        },
+        async atualizarConexoes() {
+            const ids = [...new Set(this.trackers.filter(this.podeVerConexao).map(t => t.r_id))];
+            const pedido = this.pedidoConexao = (this.pedidoConexao || 0) + 1;
+            const conectados = await MainWS.connectedTrackers(ids);
+            if (pedido !== this.pedidoConexao) return;
+            this.conexoes = Object.fromEntries(ids.map(id => [id, conectados ? conectados.has(Number(id)) : null]));
         },
 
         async verificarRastreador() {
@@ -102,7 +135,8 @@ export default {
             );
 
             if (usuario_rastreador) {
-                this.trackers.push(usuario_rastreador);
+                // a lista do servidor substitui a linha "sem vínculo" que o dono já via
+                await this.fetchTrackers('');
             }
 
             this.showAddTrackerForm = false;
@@ -139,7 +173,7 @@ export default {
         },
 
         async handleDeleteTracker(ur_id) {
-            if (!confirm('Confirma remover esse rastreador da sua lista?')) return;
+            if (!await confirmar({ titulo: 'Remover rastreador', mensagem: 'Remover esse rastreador da sua lista?', textoConfirmar: 'Remover', perigo: true })) return;
             const ok = await UserTrackers.excluirRastreador(ur_id);
             if (ok) {
                 this.trackers = this.trackers.filter(t => t.ur_id !== ur_id);

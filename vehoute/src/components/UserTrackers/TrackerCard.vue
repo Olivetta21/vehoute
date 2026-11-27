@@ -17,7 +17,7 @@
                 <span class="expand-indicator" @click.stop="detailed = !detailed">{{ detailed ? '−' : '+' }}</span>
             </div>
 
-            <input v-if="trackerVModel" type="text" v-model="trackerVModel.ur_nome" placeholder="Nome do rastreador">
+            <input v-if="trackerVModel && tracker.ur_id != null" type="text" @click.stop v-model="trackerVModel.ur_nome" placeholder="Nome do rastreador">
             <div class="tracker-image-container">
                 <div class="tracker-image"
                     :style="{backgroundImage: `url('${tracker.r_imagem || '/api/imagens/card_systracker.png'}')`}"
@@ -25,6 +25,11 @@
             </div>
 
             <div class="tracker-info">
+                <div class="tracker-info-row" v-if="conexao !== 'oculta'">
+                    <span class="info-label">Conexão</span>
+                    <span :class="['badge', { 'is-success': conexao === 'conectado' }]" role="status">{{ textosConexao[conexao] }}</span>
+                </div>
+
                 <div class="tracker-info-row">
                     <span class="info-label">Vínculo</span>
                     <div class="info-value">
@@ -68,7 +73,7 @@
             
             <div class="tracker-token">
                 <span class="info-label">Senha</span>
-                <input v-if="trackerVModel && tracker.dono_id == Usuario.id" type="text" v-model="trackerVModel.r_senha" placeholder="Nova senha">
+                <input v-if="trackerVModel && tracker.dono_id == Usuario.id" type="password" autocomplete="new-password" v-model="trackerVModel.r_senha" placeholder="Nova senha">
                 <span v-else class="token-value"> ********** </span>
             </div>
         </div>
@@ -95,7 +100,7 @@
                     <button type="button" class="action-decline" aria-label="Recusar transferência" @click="$emit('decline-transfer', tracker.ur_id)" > ✕ </button>
                 </template>
 
-                <button v-if="tracker.ur_status !== 5" type="button" class="action-delete" aria-label="Excluir vínculo" @click="$emit('delete', tracker.ur_id)"> Excluir vínculo </button>
+                <button v-if="tracker.ur_status !== 5 && tracker.ur_id != null" type="button" class="action-delete" aria-label="Excluir vínculo" @click="$emit('delete', tracker.ur_id)"> Excluir vínculo </button>
             </div>
         </div>
     </div>
@@ -129,6 +134,12 @@ export default {
                 {id: 4, nome: 'Desativado', color: 'black'}
             ],
 
+            textosConexao: {
+                conectado: '● Conectado',
+                desconectado: '○ Desconectado',
+                verificando: 'Verificando…',
+                indisponivel: 'Indisponível'
+            },
             trackerVModel: null
         }
     },
@@ -149,14 +160,16 @@ export default {
         },
         async saveUrChanges() {
             if (compararVariaveis(this.trackerVModel.ur_nome, this.tracker.ur_nome) === 0) {
-                return;
+                return true;
             }
             const r = await UserTrackers.atualizaVinculoUsuarioRastreador(this.tracker.ur_id, this.tracker.ur_status, {ur_nome: this.trackerVModel.ur_nome});
             if (r) {
                 let updatedTracker = {...this.tracker};
                 updatedTracker.ur_nome = r.nome;
                 this.$emit('update:tracker', updatedTracker);
+                await this.$nextTick();
             }
+            return Boolean(r);
         },
         async saveRChanges() {
             let new_values = {};
@@ -171,7 +184,7 @@ export default {
             }
 
             if (Object.keys(new_values).length === 0) {
-                return;
+                return true;
             }
 
             const r = await UserTrackers.atualizarRastreador(this.tracker.r_id, this.tracker.r_token_publico, this.tracker.r_status, new_values);
@@ -182,16 +195,23 @@ export default {
                 this.trackerVModel.r_senha = null;
                 this.$emit('update:tracker', updatedTracker);
             }
+            return Boolean(r);
         },
-        saveAllChanges() {
-            this.saveUrChanges();
-            this.saveRChanges();
+        async saveAllChanges() {
+            // uma de cada vez: cada resposta atualiza o cartão sem sobrescrever a outra
+            const nomeOk = this.tracker.ur_id == null || await this.saveUrChanges();
+            const rastreadorOk = await this.saveRChanges();
+            if (nomeOk && rastreadorOk) this.trackerVModel = null;
         }
     },
     props: {
         tracker: {
             type: Object,
             required: true
+        },
+        conexao: {
+            type: String,
+            default: 'oculta'
         }
     },
     components: {
